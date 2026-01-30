@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+postgres_data/
+mosquitto/data/
+mosquitto/log/
+.env
+backups/

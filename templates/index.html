@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>School Bus Command Center</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* The Video Modal (Hidden by default) */
+        #video-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        video {
+            width: 80%;
+            max-width: 800px;
+            background: black;
+            border: 2px solid white;
+        }
+
+        .close-btn {
+            background: red;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            margin-top: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        /* The Button inside the Map Popup */
+        .watch-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        #status-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 15px;
+            z-index: 1000;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            width: 250px;
+            border: 2px solid #007bff;
+            /* Debug Border */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="video-modal">
+        <h2 style="color:white;">Live Feed: Bus <span id="modal-bus-id">--</span></h2>
+        <video id="video-player" controls autoplay></video>
+        <button class="close-btn" onclick="closeCamera()">CLOSE FEED</button>
+    </div>
+
+    <div id="status-panel">
+        <h3>🚌 Live Fleet</h3>
+        <div id="bus-list">Waiting for signal...</div>
+        <hr>
+        <a href="/admin"
+            style="display:block; text-align:center; background:#eee; padding:5px; text-decoration:none; border-radius:4px; margin-top:10px;">⚙️
+            Admin Panel</a>
+
+        <a href="/login"
+            style="display:block; text-align:center; background:#ffecb3; padding:5px; text-decoration:none; border-radius:4px; margin-top:5px; color:#d35400;">👨‍👩‍👧‍👦
+            Parent Login</a>
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        var map = L.map('map').setView([24.7136, 46.6753], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        var busMarkers = {};
+        var socket = io();
+
+        // --- A. The Logic to Open Camera ---
+        function openCamera(busId) {
+            console.log("Requesting camera for Bus " + busId);
+
+            // 1. Call our Python Backend
+            fetch(`/get_camera/${busId}`)
+                .then(response => response.json())
+                .then(data => {
+                    // 2. Show the Modal
+                    document.getElementById('video-modal').style.display = 'flex';
+                    document.getElementById('modal-bus-id').innerText = busId;
+
+                    // 3. Play the Stream (using HLS.js)
+                    var video = document.getElementById('video-player');
+                    var streamUrl = data.stream_url;
+
+                    if (Hls.isSupported()) {
+                        var hls = new Hls();
+                        hls.loadSource(streamUrl);
+                        hls.attachMedia(video);
+                        hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                            video.play();
+                        });
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        video.src = streamUrl; // For Safari
+                        video.addEventListener('loadedmetadata', function () {
+                            video.play();
+                        });
+                    }
+                })
+                .catch(err => console.error("Error fetching camera:", err));
+        }
+
+        function closeCamera() {
+            document.getElementById('video-modal').style.display = 'none';
+            var video = document.getElementById('video-player');
+            video.pause();
+            video.src = ""; // Stop buffering
+        }
+
+        // --- B. The Map Updates ---
+        socket.on('update_map', function (data) {
+            var busId = data.bus_id;
+            var lat = data.lat;
+            var lng = data.lng;
+            var speed = data.speed;
+
+            // Update List Panel
+            var listHtml = `<b>Bus ${busId}</b><br>Speed: ${speed} km/h`;
+            document.getElementById('bus-list').innerHTML = listHtml;
+
+            // Create the Popup HTML with the "Watch" button
+            var popupContent = `
+                <b>Bus ${busId}</b><br>
+                Speed: ${speed} km/h<br><br>
+                <button class="watch-btn" onclick="openCamera('${busId}')">🎥 WATCH LIVE</button>
+            `;
+
+            if (busMarkers[busId]) {
+                busMarkers[busId].setLatLng([lat, lng])
+                    .bindPopup(popupContent);
+            } else {
+                busMarkers[busId] = L.marker([lat, lng])
+                    .addTo(map)
+                    .bindPopup(popupContent);
+            }
+        });
+    </script>
+</body>
+
+</html>

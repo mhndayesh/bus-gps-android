@@ -1,0 +1,6 @@
+flask
+flask-socketio
+eventlet
+paho-mqtt
+psycopg2-binary
+gunicorn

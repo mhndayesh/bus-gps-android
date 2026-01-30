@@ -1,0 +1,48 @@
+services:
+  # 1. The Database (PostGIS)
+  db:
+    image: postgis/postgis:15-3.4
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: bus_tracker_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. The Nervous System (MQTT Broker)
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+
+  # 3. The Web App (Command Center)
+  web:
+    build: .
+    command: python web_app.py
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+      - mqtt
+    environment:
+      DB_HOST: db
+      MQTT_BROKER: mqtt
+
+  # 4. The Listener (Background Worker)
+  listener:
+    build: .
+    command: python listener.py
+    depends_on:
+      - db
+      - mqtt
+    environment:
+      DB_HOST: db
+      MQTT_BROKER: mqtt
+
+volumes:
+  postgres_data:

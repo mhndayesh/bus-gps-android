@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>School Admin Panel</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            background: #f9f9f9;
+            max-width: 500px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        .note {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .result-box {
+            margin-top: 10px;
+            padding: 10px;
+            background: #eef;
+            border-left: 4px solid #007bff;
+            display: none;
+            word-break: break-all;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div
+        style="background:#333; color:white; padding:15px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <span>User: <b>{{ user }}</b> | Role: <b style="color:#4caf50">{{ role }}</b></span>
+        <a href="/logout"
+            style="background:red; color:white; text-decoration:none; padding:5px 15px; border-radius:3px; font-size:0.9em;">Logout</a>
+    </div>
+
+    <!-- STEP 1: CREATE PARENT -->
+    <div class="section">
+        <h2>1. Create Parent</h2>
+        <input type="text" id="parent_name" placeholder="Parent Name (e.g. Mrs. Bouvier)">
+        <button onclick="createParent()">Create Parent Account</button>
+        <div id="res_parent" class="result-box"></div>
+    </div>
+
+    <!-- STEP 2: REGISTER STUDENT -->
+    <div class="section">
+        <h2>2. Register Student</h2>
+        <input type="text" id="s_name" placeholder="Student Name (e.g. Ling)">
+
+        <label class="note">Parent UUID (Paste from Step 1):</label>
+        <input type="text" id="p_id" placeholder="Parent UUID">
+
+        <label class="note">NFC Tag ID:</label>
+        <input type="text" id="nfc_id" placeholder="NFC Tag (e.g. TAG_LING)">
+
+        <label class="note">Home Location (Lat, Lng):</label>
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="lat" placeholder="21.543">
+            <input type="text" id="lng" placeholder="39.172">
+        </div>
+
+        <button onclick="addStudent()">Register Student</button>
+        <div id="res_student" class="result-box"></div>
+    </div>
+
+    <!-- STEP 3: ASSIGN BUS -->
+    <div class="section">
+        <h2>3. Assign Bus (Create Stop)</h2>
+        <label class="note">Student ID (Paste from Step 2 if available, or UUID):</label>
+        <input type="text" id="assign_student_id" placeholder="Student UUID">
+
+        <label class="note">Select Bus:</label>
+        <select id="bus_id">
+            <option value="" disabled selected>Loading buses...</option>
+        </select>
+
+        <button onclick="assignBus()" style="background:orange; color:black; margin-top:10px;">Assign & Create
+            Stop</button>
+        <div id="res_bus" class="result-box"></div>
+    </div>
+
+    <!-- SUPER ADMIN ZONE -->
+    <div class="section" style="border-color: red; background: #fff0f0;">
+        <h2 style="color:red">Super Admin Zone</h2>
+
+        <h3>Add New Bus</h3>
+        <input type="text" id="new_bus_plate" placeholder="Plate Number (e.g. BUS-500)">
+        <button onclick="addBus()" style="background:#d32f2f;">+ Add Bus</button>
+        <div id="res_add_bus" class="result-box"></div>
+        <br><br>
+
+        <h3 style="color:#d32f2f">Danger Zone</h3>
+        <button onclick="deleteBus()" style="background:red;">Delete Last Bus (Demo)</button>
+    </div>
+
+    <script>
+        function showResult(elementId, msg) {
+            const el = document.getElementById(elementId);
+            el.style.display = 'block';
+            el.innerText = msg;
+        }
+
+        function createParent() {
+            const name = document.getElementById('parent_name').value;
+            fetch('/api/create_parent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showResult('res_parent', '✅ Created! UUID: ' + data.id);
+                        document.getElementById('p_id').value = data.id;
+                    } else {
+                        showResult('res_parent', '❌ Error');
+                    }
+                });
+        }
+
+        function addStudent() {
+            const data = {
+                name: document.getElementById('s_name').value,
+                parent_id: document.getElementById('p_id').value,
+                nfc_id: document.getElementById('nfc_id').value,
+                lat: document.getElementById('lat').value,
+                lng: document.getElementById('lng').value
+            };
+
+            fetch('/api/add_student', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showResult('res_student', "✅ Student Added! UUID: " + data.id);
+                        document.getElementById('assign_student_id').value = data.id;
+                    }
+                    else showResult('res_student', "❌ Error");
+                });
+        }
+
+        function assignBus() {
+            const sid = document.getElementById('assign_student_id').value;
+            const bid = document.getElementById('bus_id').value;
+
+            fetch('/api/assign_bus', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ student_id: sid, bus_id: bid })
+            })
+                .then(res => {
+                    if (res.status === 200) showResult('res_bus', "✅ Bus Assigned (Stop Created)");
+                    else res.text().then(t => showResult('res_bus', "❌ " + t));
+                });
+        }
+
+        // --- Super Admin Functions ---
+
+        function addBus() {
+            const plate = document.getElementById('new_bus_plate').value;
+            fetch('/api/add_bus', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ plate: plate })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showResult('res_add_bus', '✅ Bus Added! ID: ' + data.id);
+                        loadBuses(); // Refresh dropdown
+                    } else {
+                        showResult('res_add_bus', '❌ Error');
+                    }
+                });
+        }
+
+        function deleteBus() {
+            fetch('/api/delete_bus', { method: 'POST' })
+                .then(res => {
+                    if (res.status === 200) alert("✅ Bus Deleted");
+                    else alert("⛔ Permission Denied");
+                });
+        }
+
+        // Load Buses on Page Load
+        function loadBuses() {
+            fetch('/api/get_buses')
+                .then(res => res.json())
+                .then(data => {
+                    const select = document.getElementById('bus_id');
+                    select.innerHTML = '<option value="" disabled selected>Select a Bus</option>';
+                    data.forEach(bus => {
+                        const opt = document.createElement('option');
+                        opt.value = bus.id;
+                        opt.innerText = `Plate: ${bus.plate} (ID: ${bus.id.substring(0, 4)}...)`;
+                        select.appendChild(opt);
+                    });
+                })
+                .catch(err => {
+                    console.error("Error loading buses", err);
+                    document.getElementById('bus_id').innerHTML = '<option>Error loading buses</option>';
+                });
+        }
+
+        // Init
+        loadBuses();
+    </script>
+</body>
+
+</html>

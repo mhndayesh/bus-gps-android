@@ -1,0 +1,781 @@
+import eventlet
+eventlet.monkey_patch()
+
+import json
+import paho.mqtt.client as mqtt
+from flask import Flask, render_template, request, abort, session, redirect, url_for
+from flask_socketio import SocketIO
+from functools import wraps
+import psycopg2
+
+# --- CONFIGURATION (CLOUD vs LOCAL) ---
+import os
+import ssl
+
+if os.environ.get('RENDER'):
+    # --- CLOUD SETTINGS (Render + HiveMQ) ---
+    print("☁️ Detected Cloud Environment (Render)")
+    DB_HOST = os.environ.get("DB_HOST")
+    DB_NAME = os.environ.get("DB_NAME")
+    DB_USER = os.environ.get("DB_USER")
+    DB_PASS = os.environ.get("DB_PASS")
+    DB_PORT = "5432"
+    
+    MQTT_BROKER = os.environ.get("MQTT_BROKER")
+    MQTT_PORT = 8883 # SSL Port for HiveMQ
+    MQTT_USER = os.environ.get("MQTT_USER")
+    MQTT_PASS = os.environ.get("MQTT_PASS")
+    USE_SSL = True
+else:
+    # --- LOCAL SETTINGS (Docker Compose) ---
+    print("💻 Detected Local Environment")
+    DB_HOST = os.environ.get("DB_HOST", "localhost")
+    DB_NAME = os.environ.get("DB_NAME", "bus_tracker_db")
+    DB_USER = os.environ.get("DB_USER", "postgres")
+    DB_PASS = os.environ.get("DB_PASS", "password")
+    DB_PORT = "5432"
+    
+    MQTT_BROKER = os.environ.get("MQTT_BROKER", "localhost")
+    MQTT_PORT = 1883
+    MQTT_USER = None
+    MQTT_PASS = None
+    USE_SSL = False
+
+MQTT_TOPIC = "bus/+/telemetry"
+
+# Mock User Session REMOVED - Using Flask Session now
+
+# --- DATABASE HELPERS ---
+def get_db_connection():
+    conn = psycopg2.connect(
+        host=DB_HOST,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASS,
+        port=DB_PORT
+    )
+    return conn
+
+def init_db():
+    """Initialize the database with the schema."""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # 1. Enable PostGIS
+    cur.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
+    
+    # 2. Key Tables
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS schools (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE
+        );
+        
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY, -- UUID
+            name TEXT NOT NULL,
+            role TEXT NOT NULL, -- SUPER_ADMIN, SCHOOL_ADMIN, PARENT
+            school_id INTEGER REFERENCES schools(id),
+            password_hash TEXT
+        );
+        
+        CREATE TABLE IF NOT EXISTS buses (
+            id SERIAL PRIMARY KEY,
+            plate_number TEXT NOT NULL,
+            iot_device_id TEXT UNIQUE,
+            school_id INTEGER REFERENCES schools(id),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE TABLE IF NOT EXISTS students (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            student_code TEXT,
+            parent_id TEXT REFERENCES users(id),
+            school_id INTEGER REFERENCES schools(id),
+            nfc_tag_id TEXT UNIQUE,
+            home_location GEOMETRY(Point, 4326)
+        );
+
+        CREATE TABLE IF NOT EXISTS bus_manifest (
+            bus_id INTEGER REFERENCES buses(id),
+            student_id TEXT, -- Storing NFC Tag ID for simplicity in prototype
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (bus_id, student_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS trip_logs (
+            id SERIAL PRIMARY KEY,
+            bus_id INTEGER REFERENCES buses(id),
+            location GEOMETRY(Point, 4326),
+            speed FLOAT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS route_stops (
+            id SERIAL PRIMARY KEY,
+            stop_name TEXT,
+            location GEOMETRY(Point, 4326),
+            assigned_student_id TEXT
+        );
+    """)
+    
+    # 3. Create Default Super Admin (if checks users empty?)
+    # We will let the user create it via setup or SQL if needed, 
+    # but for prototype let's ensure School 1 and Admin exists?
+    # Better to leave empty or checked.
+    # Let's check if School 1 exists.
+    cur.execute("SELECT count(*) FROM schools")
+    if cur.fetchone()[0] == 0:
+        print("SEEDING: Creating Default School and Super Admin")
+        cur.execute("INSERT INTO schools (name) VALUES ('Happy Valley School') RETURNING id")
+        sid = cur.fetchone()[0]
+        cur.execute("INSERT INTO users (id, name, role, school_id, password_hash) VALUES ('admin', 'Super Admin', 'SUPER_ADMIN', %s, 'admin')", (sid,))
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    print("✅ Database Initialized")
+
+def role_required(allowed_roles):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # 1. Check if user is logged in
+            if 'user_role' not in session:
+                return redirect(url_for('login'))
+            
+            # 2. Check Role
+            if session['user_role'] not in allowed_roles:
+                return abort(403) # Forbidden
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+# --- SETUP FLASK & SOCKETIO ---
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# --- MQTT LISTENER (Background Task) ---
+# This runs separately so it doesn't block the website
+def mqtt_listener():
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    
+    def on_connect(c, u, f, rc, properties=None):
+        c.subscribe(MQTT_TOPIC)
+        print("✅ Connected to MQTT Broker. Listening for buses...")
+
+    def on_message(c, u, msg):
+        try:
+            # 1. Receive GPS from Bus
+            payload = json.loads(msg.payload.decode())
+            bus_id = payload.get("bus_id")
+            
+            print(f"📡 Data received from Bus {bus_id}")
+            
+            # 2. Push to Web Browser immediately (Real-time!)
+            socketio.emit('update_map', payload)
+        except Exception as e:
+            print(f"Error forwarding message: {e}")
+
+    client.on_connect = on_connect
+    client.on_message = on_message
+    
+    # Auth and SSL
+    if MQTT_USER and MQTT_PASS:
+        client.username_pw_set(MQTT_USER, MQTT_PASS)
+    
+    if USE_SSL:
+        client.tls_set(cert_reqs=ssl.CERT_NONE)
+        client.tls_insecure_set(True)
+
+    try:
+        client.connect(MQTT_BROKER, int(MQTT_PORT), 60)
+        client.loop_forever()
+    except Exception as e:
+        print(f"MQTT Connection Error: {e}")
+
+# --- WEB ROUTES ---
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+# --- PARENT DASHBOARD ---
+@app.route('/parent')
+@role_required(['PARENT'])
+def parent_dashboard():
+    user = session.get('user_name', 'Parent')
+    return render_template('parent_dashboard.html', user=user)
+
+# --- API: Get My Kids (Parent Only) ---
+@app.route('/api/get_my_kids')
+@role_required(['PARENT'])
+def get_my_kids():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # In a real app, we'd check if they are ON a bus (join with attendance/trips)
+        # For now, simplistic view
+        cur.execute("SELECT id, name, student_code FROM students WHERE parent_id = %s", (session['user_id'],))
+        rows = cur.fetchall()
+        
+        # Mocking 'on_bus' status for demo
+        kids = [{"id": str(r[0]), "name": r[1], "code": r[2], "on_bus": False} for r in rows]
+        
+        cur.close()
+        conn.close()
+        return json.dumps(kids), 200
+    except Exception as e:
+        print(f"Error getting kids: {e}")
+        return str(e), 500
+
+@app.route('/admin')
+@role_required(['SUPER_ADMIN', 'SCHOOL_ADMIN'])
+def admin():
+    role = session.get('user_role')
+    user = session.get('user_name', 'User')
+    
+    if role == 'SUPER_ADMIN':
+        return render_template('super_admin.html', user=user, role=role)
+    elif role == 'SCHOOL_ADMIN':
+        return render_template('school_admin.html', user=user, role=role)
+    else:
+        return "Unknown Role", 403
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        # Simple Logic: Check DB
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id, name, role, school_id FROM users WHERE name = %s AND password_hash = %s", (username, password))
+        user = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if user:
+            # Login Success!
+            session['user_id'] = user[0]
+            session['user_name'] = user[1]
+            session['user_role'] = user[2]
+            session['school_id'] = user[3]
+            
+            if session['user_role'] == 'PARENT':
+                return redirect(url_for('parent_dashboard'))
+            else:
+                return redirect(url_for('admin'))
+        else:
+            return "❌ Invalid Login", 401
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
+# --- API: Add Student (SCHOOL_ADMIN & SUPER_ADMIN) ---
+@app.route('/api/add_student', methods=['POST'])
+@role_required(['SUPER_ADMIN', 'SCHOOL_ADMIN'])
+def add_student():
+    data = request.json
+    
+    # SECURITY: Force the student into the Admin's school
+    # (Prevents School A adding students to School B)
+    # SECURITY: Force the student into the Admin's school
+    # (Prevents School A adding students to School B)
+    if session['user_role'] == 'SCHOOL_ADMIN':
+        school_target = session['school_id']
+    else:
+        school_target = data.get('school_id', 1) # Super Admin can pick any school
+
+    # VALIDATION: Check if parent_id is a valid UUID
+    import uuid
+    try:
+        uuid.UUID(str(data['parent_id']))
+    except ValueError:
+        return f"❌ Error: Parent ID '{data['parent_id']}' is not a valid UUID. Please use the pre-filled value.", 400
+
+    try:
+        # Insert into DB
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # We need a parent_id (User ID). For now, assume provided or create dummy.
+        # Ensure parent exists or handle error. 
+        # For this demo, let's assume the user passes a valid parent_id or we insert NULL if allowed (it's FK though).
+        # We will wrap in try/catch.
+        
+        cur.execute("""
+            INSERT INTO students (name, parent_id, school_id, nfc_tag_id, home_location, student_code)
+            VALUES (%s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s)
+            RETURNING id
+        """, (data['name'], data['parent_id'], school_target, data['nfc_id'], data['lng'], data['lat'], data.get('student_code')))
+        new_student_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return json.dumps({"status": "success", "id": new_student_id}), 200
+    except Exception as e:
+        print(f"Error adding student: {e}")
+        return str(e), 500
+
+# --- API: Create Parent (SCHOOL_ADMIN ONLY) ---
+@app.route('/api/create_parent', methods=['POST'])
+@role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
+def create_parent():
+    data = request.json
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Generator for ID (Simple UUID for prototype)
+        import uuid
+        new_id = str(uuid.uuid4())
+        
+        # School ID Logic
+        if session['user_role'] == 'SCHOOL_ADMIN':
+             school_id = session['school_id']
+        else:
+             # SUPER_ADMIN: Must provide school_id
+             school_id = data.get('school_id')
+             if not school_id:
+                 return "Missing School ID", 400
+
+        cur.execute("""
+            INSERT INTO users (id, name, role, school_id, password_hash)
+            VALUES (%s, %s, 'PARENT', %s, 'parent123')
+        """, (new_id, data['name'], school_id))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return json.dumps({"status": "success", "id": new_id}), 200
+    except Exception as e:
+        print(f"Error creating parent: {e}")
+        return str(e), 500
+
+# --- API: Get Parents (Helper for Dropdown) ---
+@app.route('/api/get_parents', methods=['GET'])
+@role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
+def get_parents():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Filter by school if School Admin
+        if session['user_role'] == 'SCHOOL_ADMIN':
+             cur.execute("SELECT id, name FROM users WHERE role = 'PARENT' AND school_id = %s", (session['school_id'],))
+        else:
+             # SUPER_ADMIN: Check if specific school requested via Query Param
+             target_school = request.args.get('school_id')
+             if target_school:
+                 cur.execute("SELECT id, name FROM users WHERE role = 'PARENT' AND school_id = %s", (target_school,))
+             else:
+                 cur.execute("SELECT id, name FROM users WHERE role = 'PARENT'")
+             
+        rows = cur.fetchall()
+        parents = [{"id": r[0], "name": r[1]} for r in rows]
+        
+        cur.close()
+        conn.close()
+        return json.dumps(parents), 200
+    except Exception as e:
+        print(f"Error fetching parents: {e}")
+        return str(e), 500
+
+# --- API: Get Students (Helper for Dropdown) ---
+@app.route('/api/get_students', methods=['GET'])
+@role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
+def get_students():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Filter by school if School Admin
+        if session['user_role'] == 'SCHOOL_ADMIN':
+             cur.execute("SELECT id, name, student_code, parent_id FROM students WHERE school_id = %s", (session['school_id'],))
+        else:
+             cur.execute("SELECT id, name, student_code, parent_id FROM students")
+             
+        rows = cur.fetchall()
+        # Handle cases where student_code might be None
+        students = [{"id": str(r[0]), "name": r[1], "code": r[2] if r[2] else "", "parent_id": str(r[3])} for r in rows]
+        
+        cur.close()
+        conn.close()
+        return json.dumps(students), 200
+    except Exception as e:
+        print(f"Error fetching students: {e}")
+        return str(e), 500
+
+# --- API: Delete Student (SCHOOL_ADMIN & SUPER_ADMIN) ---
+@app.route('/api/delete_student', methods=['POST'])
+@role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
+def delete_student():
+    data = request.json
+    student_id = data.get('student_id')
+    
+    if not student_id: return "Student ID Required", 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Security: School Admin can only delete their own students
+        if session['user_role'] == 'SCHOOL_ADMIN':
+            cur.execute("DELETE FROM students WHERE id = %s AND school_id = %s", (student_id, session['school_id']))
+        else:
+            cur.execute("DELETE FROM students WHERE id = %s", (student_id,))
+            
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "Student Deleted", 200
+    except Exception as e:
+        print(f"Error deleting student: {e}")
+        return str(e), 500
+
+# --- API: Update Student Location (SCHOOL_ADMIN & SUPER_ADMIN) ---
+@app.route('/api/update_student_location', methods=['POST'])
+@role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
+def update_student_location():
+    data = request.json
+    student_id = data.get('student_id')
+    lat = data.get('lat')
+    lng = data.get('lng')
+    address_text = data.get('address_text', '') # Optional
+
+    if not student_id or not lat or not lng:
+        return "Missing ID, Lat, or Lng", 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Security Check
+        if session['user_role'] == 'SCHOOL_ADMIN':
+            cur.execute("""
+                UPDATE students 
+                SET home_location = ST_SetSRID(ST_MakePoint(%s, %s), 4326),
+                    home_address_text = %s
+                WHERE id = %s AND school_id = %s
+            """, (lng, lat, address_text, student_id, session['school_id']))
+        else:
+            cur.execute("""
+                UPDATE students 
+                SET home_location = ST_SetSRID(ST_MakePoint(%s, %s), 4326),
+                    home_address_text = %s
+                WHERE id = %s
+            """, (lng, lat, address_text, student_id))
+            
+        if cur.rowcount == 0:
+             # Just in case
+             pass
+            
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "Location Updated", 200
+    except Exception as e:
+        print(f"Error updating location: {e}")
+        return str(e), 500
+
+# --- API: Assign Bus / Create Stop (SCHOOL_ADMIN ONLY) ---
+@app.route('/api/assign_bus', methods=['POST'])
+@role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
+def assign_bus():
+    data = request.json
+    student_id = data.get('student_id')
+    bus_id = data.get('bus_id') # We don't strictly use this in the simple logic yet, but good for record
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # 1. Get Student Name & Location
+        cur.execute("SELECT name, home_location FROM students WHERE id = %s", (student_id,))
+        student = cur.fetchone()
+        
+        if not student:
+            return "Student not found", 404
+            
+        student_name = student[0]
+        location = student[1] # This is a geometry object
+        
+        if not location:
+            return "Student has no home location set", 400
+
+        # 2. Create Stop in route_stops
+        # Note: 'location' in variable is Python object, we need to handle it carefully or just use SQL subquery
+        cur.execute("""
+            INSERT INTO route_stops (stop_name, assigned_student_id, location)
+            SELECT %s, id, home_location FROM students WHERE id = %s
+        """, (f"{student_name}'s Home", student_id))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "Bus Assigned (Stop Created)", 200
+    except Exception as e:
+        print(f"Error assigning bus: {e}")
+        return str(e), 500
+
+# --- API: Get Buses (Helper for Dropdown) ---
+@app.route('/api/get_buses', methods=['GET'])
+@role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
+def get_buses():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # SCHOOL ADMIN: Only see OWN buses
+        if session['user_role'] == 'SCHOOL_ADMIN':
+            cur.execute("SELECT id, plate_number FROM buses WHERE school_id = %s", (session['school_id'],))
+        
+        # SUPER ADMIN: Sees ALL (or could filter if we add UI for it)
+        else:
+            cur.execute("SELECT id, plate_number, school_id FROM buses")
+            
+        rows = cur.fetchall()
+        
+        if session['user_role'] == 'SCHOOL_ADMIN':
+            buses = [{"id": str(r[0]), "plate": r[1]} for r in rows]
+        else:
+            # For Super Admin, maybe useful to know which school owns it
+            buses = [{"id": str(r[0]), "plate": r[1] + f" (School {r[2]})"} for r in rows]
+
+        cur.close()
+        conn.close()
+        return json.dumps(buses), 200
+    except Exception as e:
+        print(f"Error fetching buses: {e}")
+        return str(e), 500
+
+# --- API: Delete Bus (SUPER_ADMIN ONLY) ---
+@app.route('/api/delete_bus', methods=['POST'])
+@role_required(['SUPER_ADMIN'])
+def delete_bus():
+    data = request.json
+    bus_id = data.get('bus_id')
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    if bus_id:
+        cur.execute("DELETE FROM buses WHERE id = %s", (bus_id,))
+    else:
+        cur.execute("DELETE FROM buses WHERE id = (SELECT id FROM buses ORDER BY created_at DESC LIMIT 1)")
+        
+    conn.commit()
+    cur.close()
+    conn.close()
+    return "Bus Deleted", 200
+
+# --- API: Add Bus (SUPER_ADMIN ONLY) ---
+@app.route('/api/add_bus', methods=['POST'])
+@role_required(['SUPER_ADMIN'])
+def add_bus():
+    data = request.json
+    plate = data.get('plate')
+    school_id = data.get('school_id', 1) # Default to School 1 if not specified
+
+    if not plate: 
+        return "Plate Number Required", 400
+        
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        import uuid
+        iot_id = str(uuid.uuid4())
+        
+        cur.execute("INSERT INTO buses (plate_number, iot_device_id, school_id) VALUES (%s, %s, %s) RETURNING id", (plate, iot_id, school_id))
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return json.dumps({"status": "success", "id": new_id}), 200
+    except Exception as e:
+        print(f"Error adding bus: {e}")
+        return str(e), 500
+
+# --- API: Get Schools (Helper) ---
+@app.route('/api/get_schools', methods=['GET'])
+@role_required(['SUPER_ADMIN'])
+def get_schools():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id, name FROM schools")
+        rows = cur.fetchall()
+        schools = [{"id": r[0], "name": r[1]} for r in rows]
+        cur.close()
+        conn.close()
+        return json.dumps(schools), 200
+    except Exception as e:
+        print(f"Error fetching schools: {e}")
+        return str(e), 500
+
+# --- NEW: Create School Admin (SUPER_ADMIN ONLY) ---
+@app.route('/api/create_school_admin', methods=['POST'])
+@role_required(['SUPER_ADMIN'])
+def create_school_admin():
+    data = request.json
+    school_name = data.get('school_name')
+    username = data.get('username')
+    password = data.get('password')
+
+    if not school_name or not username or not password:
+        return "Missing Fields (School Name, Username, Password)", 400
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # 1. Create School
+        cur.execute("INSERT INTO schools (name) VALUES (%s) RETURNING id", (school_name,))
+        new_school_id = cur.fetchone()[0]
+        
+        # 2. Create School Admin User linked to this School
+        import uuid
+        new_user_id = str(uuid.uuid4())
+        
+        cur.execute("""
+            INSERT INTO users (id, name, role, school_id, password_hash)
+            VALUES (%s, %s, 'SCHOOL_ADMIN', %s, %s)
+        """, (new_user_id, username, new_school_id, password))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return json.dumps({"status": "success", "school_id": new_school_id, "admin_id": new_user_id}), 200
+    except Exception as e:
+        print(f"Error creating school admin: {e}")
+        return str(e), 500
+
+# --- NEW: Update Parent Credentials (SUPER_ADMIN ONLY) ---
+@app.route('/api/update_parent_credentials', methods=['POST'])
+@role_required(['SUPER_ADMIN'])
+def update_parent_credentials():
+    data = request.json
+    parent_id = data.get('parent_id')
+    new_username = data.get('username')
+    new_password = data.get('password')
+
+    if not parent_id or not new_username or not new_password:
+        return "Missing Fields", 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Update entry
+        cur.execute("""
+            UPDATE users 
+            SET name = %s, password_hash = %s 
+            WHERE id = %s AND role = 'PARENT'
+        """, (new_username, new_password, parent_id))
+        
+        if cur.rowcount == 0:
+            return "Parent not found", 404
+            
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "Parent Credentials Updated", 200
+    except Exception as e:
+        print(f"Error updating credentials: {e}")
+        return str(e), 500
+
+# --- NEW: Camera "Switchboard" ---
+@app.route('/get_camera/<bus_id>')
+def get_camera_url(bus_id):
+    # IN THE FUTURE: Query DB for 'camera_stream_url'
+    
+    # FOR NOW: Public Test Stream
+    fake_camera_feed = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+    
+    return json.dumps({
+        "bus_id": bus_id, 
+        "stream_url": fake_camera_feed,
+        "status": "live"
+    })
+
+# --- PARENT ROUTES ---
+
+@app.route('/parent/login', methods=['POST'])
+def parent_login():
+    # 1. Verify Credentials (Simple mock for now)
+    data = request.json
+    username = data.get('username')
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # 2. Find Parent ID
+    cur.execute("SELECT id, name, school_id FROM users WHERE name = %s AND role = 'PARENT'", (username,))
+    user = cur.fetchone()
+    
+    cur.close()
+    conn.close()
+
+    if user:
+        return json.dumps({"status": "success", "parent_id": user[0], "name": user[1]})
+    return json.dumps({"status": "error", "message": "Invalid Parent"}), 401
+
+@app.route('/api/my_children/<parent_id>')
+def get_my_children(parent_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # 3. Get Children & Their Status
+    query = """
+        SELECT s.id, s.name, s.nfc_tag_id, 
+               bm.bus_id, 
+               b.plate_number
+        FROM students s
+        LEFT JOIN bus_manifest bm ON s.nfc_tag_id = bm.student_id
+        LEFT JOIN buses b ON bm.bus_id = b.id
+        WHERE s.parent_id = %s
+    """
+    cur.execute(query, (parent_id,))
+    children = cur.fetchall()
+    
+    cur.close()
+    conn.close()
+
+    # Format for JSON
+    result = []
+    for child in children:
+        result.append({
+            "name": child[1],
+            "status": "ON BUS" if child[3] else "AT SCHOOL / HOME",
+            "bus_id": child[3],  # None if not on bus
+            "bus_plate": child[4]
+        })
+        
+    return json.dumps(result)
+
+@app.route('/parent/dashboard')
+def parent_dashboard_view():
+    return render_template('parent_dashboard.html')
+
+# --- START ---
+if __name__ == '__main__':
+    # Initialize DB (Create tables if missing)
+    try:
+        init_db()
+    except Exception as e:
+        print(f"DB Init Failed: {e}")
+
+    # Start the MQTT listener in the background
+    eventlet.spawn(mqtt_listener)
+    # Start the Web Server
+    print("🚀 Web App running at http://localhost:5000")
+    socketio.run(app, host='0.0.0.0', port=5000)

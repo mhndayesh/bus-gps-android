@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Parent Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #f0f2f5;
+        }
+
+        /* Mobile Header */
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+
+        /* Child Cards */
+        .card-container {
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+        }
+
+        .child-card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            min-width: 200px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #ddd;
+        }
+
+        .status-on {
+            border-left-color: #27ae60;
+        }
+
+        /* Green for On Bus */
+        .status-off {
+            border-left-color: #95a5a6;
+        }
+
+        /* Grey for Off */
+
+        /* The Map */
+        #map {
+            height: 60vh;
+            width: 100%;
+            border-top: 1px solid #ccc;
+        }
+
+        /* Video Overlay */
+        #video-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        video {
+            width: 100%;
+        }
+
+        .btn-close {
+            padding: 15px;
+            background: red;
+            color: white;
+            border: none;
+            font-size: 16px;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="login-screen"
+        style="position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:2000; padding:20px; text-align:center;">
+        <h2>🔐 Parent Login</h2>
+        <input type="text" id="username_input" placeholder="Enter your name (e.g., Parent1)"
+            style="padding:10px; width:80%;">
+        <br><br>
+        <button onclick="doLogin()"
+            style="padding:10px 20px; background:#2c3e50; color:white; border:none;">Login</button>
+    </div>
+
+    <div class="header">
+        <h3 style="margin:0;">🚸 My Kids</h3>
+    </div>
+
+    <div class="card-container" id="kids-list">
+        <div style="padding:20px;">Loading children...</div>
+    </div>
+
+    <div id="map"></div>
+
+    <div id="video-modal">
+        <video id="video-player" controls autoplay></video>
+        <button class="btn-close" onclick="closeCam()">CLOSE CAMERA</button>
+    </div>
+
+    <script>
+        var map = L.map('map').setView([21.5433, 39.1728], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        var socket = io();
+        var myParentId = null;
+        var trackedBusIds = []; // List of buses my kids are on
+        var busMarkers = {};
+
+        // --- A. Login Logic ---
+        function doLogin() {
+            var name = document.getElementById('username_input').value;
+            fetch('/parent/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: name })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        myParentId = data.parent_id;
+                        document.getElementById('login-screen').style.display = 'none';
+                        loadMyChildren();
+                    } else {
+                        alert("User not found (Try creating a parent in Admin Panel first!)");
+                    }
+                });
+        }
+
+        // --- B. Load Children Data ---
+        function loadMyChildren() {
+            fetch(`/api/my_children/${myParentId}`)
+                .then(res => res.json())
+                .then(children => {
+                    var html = "";
+                    trackedBusIds = []; // Reset tracking list
+
+                    children.forEach(child => {
+                        var statusClass = child.bus_id ? "status-on" : "status-off";
+                        var statusText = child.bus_id ? `🚌 ON BUS <b>${child.bus_plate}</b>` : "🏫 AT SCHOOL / HOME";
+
+                        // Button only appears if child is ON a bus
+                        var camButton = child.bus_id
+                            ? `<button onclick="openCam('${child.bus_id}')" style="margin-top:10px; width:100%; background:#e74c3c; color:white; border:none; padding:5px;">🎥 WATCH LIVE</button>`
+                            : "";
+
+                        html += `
+                    <div class="child-card ${statusClass}">
+                        <h3>${child.name}</h3>
+                        <div>${statusText}</div>
+                        ${camButton}
+                    </div>`;
+
+                        if (child.bus_id) trackedBusIds.push(child.bus_id.toString());
+                    });
+
+                    document.getElementById('kids-list').innerHTML = html;
+                });
+        }
+
+        // --- C. Real-Time Map (Filtered) ---
+        socket.on('update_map', function (data) {
+            // SECURITY FILTER: Only show bus if my child is on it
+            // In a real app, filtering happens on server (Socket Rooms)
+            if (trackedBusIds.includes(data.bus_id.toString())) {
+
+                var markerPos = [data.lat, data.lng];
+
+                if (busMarkers[data.bus_id]) {
+                    busMarkers[data.bus_id].setLatLng(markerPos);
+                } else {
+                    var icon = L.divIcon({ className: 'bus-icon', html: '🚌', iconSize: [30, 30] });
+                    busMarkers[data.bus_id] = L.marker(markerPos, { icon: icon })
+                        .addTo(map)
+                        .bindPopup(`Bus ${data.bus_id}`);
+
+                    // Auto-zoom to the bus
+                    map.setView(markerPos, 15);
+                }
+            }
+        });
+
+        // --- D. Camera Logic ---
+        function openCam(busId) {
+            fetch(`/get_camera/${busId}`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('video-modal').style.display = 'flex';
+                    var video = document.getElementById('video-player');
+                    if (Hls.isSupported()) {
+                        var hls = new Hls();
+                        hls.loadSource(data.stream_url);
+                        hls.attachMedia(video);
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        video.src = data.stream_url;
+                    }
+                });
+        }
+
+        function closeCam() {
+            document.getElementById('video-modal').style.display = 'none';
+            document.getElementById('video-player').pause();
+        }
+
+        // Poll for child status updates every 10 seconds (e.g., did they get off?)
+        setInterval(() => {
+            if (myParentId) loadMyChildren();
+        }, 10000);
+
+    </script>
+</body>
+
+</html>

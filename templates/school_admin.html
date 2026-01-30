@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>School Admin Dashboard</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            background: white;
+            max-width: 600px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        input,
+        select {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .note {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .result-box {
+            margin-top: 10px;
+            padding: 10px;
+            background: #eef;
+            border-left: 4px solid #007bff;
+            display: none;
+            word-break: break-all;
+        }
+
+        .header {
+            background: #333;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <span>🏫 <b>School Admin Panel</b> (Alpha 1.1) | User: {{ user }}</span>
+        <a href="/logout"
+            style="background:red; color:white; text-decoration:none; padding:5px 15px; border-radius:3px; font-size:0.9em;">Logout</a>
+    </div>
+
+    <!-- STEP 1: CREATE PARENT -->
+    <div class="section">
+        <h2>1. Create Parent</h2>
+        <input type="text" id="parent_name" placeholder="Parent Name (e.g. Mrs. Bouvier)">
+        <button onclick="createParent()">Create Parent Account</button>
+        <div id="res_parent" class="result-box"></div>
+    </div>
+
+    <!-- STEP 2: REGISTER STUDENT -->
+    <div class="section">
+        <h2>2. Register Student</h2>
+        <input type="text" id="s_name" placeholder="Student Name (e.g. Ling)">
+
+        <label class="note">Parent:</label>
+        <select id="p_id">
+            <option value="" disabled selected>Loading parents...</option>
+        </select>
+
+        <label class="note">NFC Tag ID:</label>
+        <input type="text" id="nfc_id" placeholder="NFC Tag (e.g. TAG_LING)">
+
+        <label class="note">Home Location (Lat, Lng):</label>
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="lat" placeholder="21.543">
+            <input type="text" id="lng" placeholder="39.172">
+        </div>
+        <input type="text" id="address_text" placeholder="Location Note (e.g. Building A)">
+
+        <button onclick="addStudent()">Register Student</button>
+        <div id="res_student" class="result-box"></div>
+    </div>
+
+    <!-- STEP 2.5: REMOVE STUDENT -->
+    <div class="section">
+        <h2>Remove Student</h2>
+        <select id="del_student_id">
+            <option value="" disabled selected>Loading students...</option>
+        </select>
+        <button onclick="deleteStudent()" style="background:#c0392b;">Remove Student</button>
+        <div id="res_del_student" class="result-box"></div>
+    </div>
+
+    <!-- STEP 2.7: UPDATE LOCATION -->
+    <div class="section">
+        <h2>Update Location</h2>
+        <label class="note">Filter by Parent:</label>
+        <select id="upd_parent_filter" onchange="filterStudentsByParent()">
+            <option value="" disabled selected>Loading parents...</option>
+        </select>
+
+        <label class="note">Select Student:</label>
+        <select id="upd_student_id">
+            <option value="" disabled selected>Select Parent First</option>
+        </select>
+
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <input type="text" id="upd_lat" placeholder="New Lat">
+            <input type="text" id="upd_lng" placeholder="New Lng">
+        </div>
+        <input type="text" id="upd_address_text" placeholder="Location Note (e.g. Building A, near Store)">
+        <button onclick="updateLocation()" style="background:#8e44ad;">Update Location</button>
+        <div id="res_upd_loc" class="result-box"></div>
+    </div>
+
+    <!-- STEP 3: ASSIGN BUS -->
+    <div class="section">
+        <h2>3. Assign Bus (Create Stop)</h2>
+        <label class="note">Filter by Parent:</label>
+        <select id="assign_parent_filter" onchange="filterStudentsForAssignment()">
+            <option value="" disabled selected>Loading parents...</option>
+        </select>
+
+        <label class="note">Select Student:</label>
+        <select id="assign_student_id">
+            <option value="" disabled selected>Select Parent First</option>
+        </select>
+
+        <label class="note">Select Bus:</label>
+        <select id="bus_id">
+            <option value="" disabled selected>Loading buses...</option>
+        </select>
+
+        <button onclick="assignBus()" style="background:orange; color:black; margin-top:10px;">Assign & Create
+            Stop</button>
+        <div id="res_bus" class="result-box"></div>
+    </div>
+
+    <script>
+        function showResult(elementId, msg) {
+            const el = document.getElementById(elementId);
+            el.style.display = 'block';
+            el.innerText = msg;
+        }
+
+        function createParent() {
+            const name = document.getElementById('parent_name').value;
+            fetch('/api/create_parent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showResult('res_parent', '✅ Created! UUID: ' + data.id);
+                        loadParents(); // Refresh dropdown
+                        setTimeout(() => {
+                            document.getElementById('p_id').value = data.id; // Auto-select
+                        }, 500);
+                    } else {
+                        showResult('res_parent', '❌ Error');
+                    }
+                });
+        }
+
+        function updateLocation() {
+            const sid = document.getElementById('upd_student_id').value;
+            const lat = document.getElementById('upd_lat').value;
+            const lng = document.getElementById('upd_lng').value;
+
+            if (!sid || !lat || !lng) { alert("Missing Data"); return; }
+
+            fetch('/api/update_student_location', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ student_id: sid, lat: lat, lng: lng })
+            })
+                .then(res => {
+                    if (res.status === 200) showResult('res_upd_loc', "✅ Location Updated");
+                    else res.text().then(t => showResult('res_upd_loc', "❌ " + t));
+                });
+        }
+
+        function deleteStudent() {
+            const sid = document.getElementById('del_student_id').value;
+            if (!sid) { alert("Select a student!"); return; }
+            if (!confirm("⚠️ Remove this student?")) return;
+
+            fetch('/api/delete_student', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ student_id: sid })
+            })
+                .then(res => {
+                    if (res.status === 200) {
+                        showResult('res_del_student', "✅ Student Removed");
+                        loadStudents(); // Refresh list
+                    }
+                    else res.text().then(t => showResult('res_del_student', "❌ " + t));
+                });
+        }
+
+        function loadStudents() {
+            fetch('/api/get_students')
+                .then(res => res.json())
+                .then(data => {
+                    const selDel = document.getElementById('del_student_id');
+                    const selUpd = document.getElementById('upd_student_id');
+
+                    if (selDel) selDel.innerHTML = '<option value="" disabled selected>Select Student to Remove</option>';
+                    if (selUpd) selUpd.innerHTML = '<option value="" disabled selected>Select Student to Update</option>';
+
+                    data.forEach(s => {
+                        const text = `${s.name} (${s.code})`;
+
+                        // Add to Delete Dropdown
+                        if (selDel) {
+                            const opt1 = document.createElement('option');
+                            opt1.value = s.id;
+                            opt1.innerText = text;
+                            selDel.appendChild(opt1);
+                        }
+
+                        // Add to Update Dropdown
+                        if (selUpd) {
+                            const opt2 = document.createElement('option');
+                            opt2.value = s.id;
+                            opt2.innerText = text;
+                            selUpd.appendChild(opt2);
+                        }
+                    });
+                });
+        }
+
+        function addStudent() {
+            const data = {
+                name: document.getElementById('s_name').value,
+                parent_id: document.getElementById('p_id').value,
+                nfc_id: document.getElementById('nfc_id').value,
+                lat: document.getElementById('lat').value,
+                lng: document.getElementById('lng').value
+            };
+
+            fetch('/api/add_student', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showResult('res_student', "✅ Student Added! UUID: " + data.id);
+                        // document.getElementById('assign_student_id').value = data.id; // Removed: using dropdown
+                    }
+                    else showResult('res_student', "❌ Error");
+                });
+        }
+
+        function assignBus() {
+            const sid = document.getElementById('assign_student_id').value;
+            const bid = document.getElementById('bus_id').value;
+
+            if (!sid || sid === "Select Parent First") { alert("Select a student!"); return; }
+            if (!bid) { alert("Select a bus!"); return; }
+
+            fetch('/api/assign_bus', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ student_id: sid, bus_id: bid })
+            })
+                .then(res => {
+                    if (res.status === 200) showResult('res_bus', "✅ Bus Assigned (Stop Created)");
+                    else res.text().then(t => showResult('res_bus', "❌ " + t));
+                });
+        }
+
+        function filterStudentsForAssignment() {
+            const pid = document.getElementById('assign_parent_filter').value;
+            const selAssign = document.getElementById('assign_student_id');
+            const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
+
+            selAssign.innerHTML = '<option value="" disabled selected>Select Student</option>' +
+                filtered.map(s => `<option value="${s.id}">${s.name} (${s.code})</option>`).join('');
+        }
+
+        // Load Buses on Page Load
+        function loadBuses() {
+            fetch('/api/get_buses')
+                .then(res => res.json())
+                .then(data => {
+                    const select = document.getElementById('bus_id');
+                    select.innerHTML = '<option value="" disabled selected>Select a Bus</option>';
+                    data.forEach(bus => {
+                        const opt = document.createElement('option');
+                        opt.value = bus.id;
+                        opt.innerText = `Plate: ${bus.plate} (ID: ${bus.id.substring(0, 4)}...)`;
+                        select.appendChild(opt);
+                    });
+                })
+                .catch(err => {
+                    console.error("Error loading buses", err);
+                    document.getElementById('bus_id').innerHTML = '<option>Error loading buses</option>';
+                });
+        }
+
+        let ALL_STUDENTS = [];
+        let ALL_PARENTS = [];
+
+        function loadParents() {
+            fetch('/api/get_parents')
+                .then(res => res.json())
+                .then(data => {
+                    ALL_PARENTS = data;
+                    const sel = document.getElementById('p_id');
+                    const selFilter = document.getElementById('upd_parent_filter');
+                    const selAssignFilter = document.getElementById('assign_parent_filter');
+
+                    const html = '<option value="" disabled selected>Select Parent</option>' +
+                        data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+                    if (sel) sel.innerHTML = html;
+                    if (selFilter) selFilter.innerHTML = html;
+                    if (selAssignFilter) selAssignFilter.innerHTML = html;
+                });
+        }
+
+        function loadStudents() {
+            fetch('/api/get_students')
+                .then(res => res.json())
+                .then(data => {
+                    ALL_STUDENTS = data;
+                    const selDel = document.getElementById('del_student_id');
+                    // We don't populate upd_student_id initially anymore, waiting for filter
+
+                    if (selDel) {
+                        selDel.innerHTML = '<option value="" disabled selected>Select Student to Remove</option>' +
+                            data.map(s => `<option value="${s.id}">${s.name} (${s.code})</option>`).join('');
+                    }
+                });
+        }
+
+        function filterStudentsByParent() {
+            const pid = document.getElementById('upd_parent_filter').value;
+            const selUpd = document.getElementById('upd_student_id');
+            const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
+
+            selUpd.innerHTML = '<option value="" disabled selected>Select Student</option>' +
+                filtered.map(s => `<option value="${s.id}">${s.name} (${s.code})</option>`).join('');
+        }
+
+        // Init
+        loadBuses();
+        loadParents();
+        loadStudents();
+    </script>
+</body>
+
+</html>
