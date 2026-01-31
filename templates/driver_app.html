@@ -89,7 +89,8 @@
 <body>
 
     <div class="header">
-        <h2>🚌 Bus <span id="bus-id-display">101</span></h2>
+        <h2>🚌 Bus <span id="bus-id-display">{{ plate_number }}</span></h2>
+        <small style="color:#ccc;">(System ID: {{ bus_id }})</small>
     </div>
 
     <div class="status-box">
@@ -101,20 +102,14 @@
     <button class="big-btn btn-stop" onclick="stopTrip()">🔴 END TRIP</button>
 
     <div class="student-list" id="student-container">
-        <div class="student-row">
-            <span>Ahmed</span>
-            <button class="toggle-btn btn-board" onclick="toggleStudent(this, 'S1')">Board Bus</button>
-        </div>
-        <div class="student-row">
-            <span>Sara</span>
-            <button class="toggle-btn btn-board" onclick="toggleStudent(this, 'S2')">Board Bus</button>
-        </div>
+        <!-- We will populate this later dynamically -->
+        <p style="color:#aaa; text-align:center;">Students will appear here...</p>
     </div>
 
     <script>
         const socket = io();
         let watchId = null;
-        const busId = "101";
+        const busId = "{{ bus_id }}";  // Injected from Server
 
         // --- GPS LOGIC ---
         function startTrip() {

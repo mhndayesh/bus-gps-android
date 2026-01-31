@@ -212,8 +212,21 @@ def mqtt_listener():
 
 # --- WEB ROUTES ---
 @app.route('/driver')
+@login_required
+@role_required(['DRIVER'])
 def driver_ui():
-    return render_template('driver_app.html')
+    # Find assigned bus
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, plate_number FROM buses WHERE driver_id = %s", (session['user_id'],))
+    bus = cur.fetchone()
+    cur.close()
+    conn.close()
+    
+    if not bus:
+        return "<h1>❌ You are not assigned to a bus yet. Ask your Admin.</h1>"
+        
+    return render_template('driver_app.html', bus_id=str(bus[0]), plate_number=bus[1])
 
 @app.route('/parent')
 def parent_ui():
@@ -856,5 +869,7 @@ if __name__ == '__main__':
     # Start the MQTT listener in the background
     eventlet.spawn(mqtt_listener)
     # Start the Web Server
-    print("🚀 Web App running at http://localhost:5000")
-    socketio.run(app, host='0.0.0.0', port=5000)
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    print(f"🚀 Web App running at http://localhost:{port}")
+    socketio.run(app, host='0.0.0.0', port=port)

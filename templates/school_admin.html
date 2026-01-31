@@ -181,6 +181,33 @@
         <div id="res_bus" class="result-box"></div>
     </div>
 
+    <!-- STEP 4: DRIVER MANAGEMENT -->
+    <div class="section" style="border-color: #27ae60;">
+        <h2 style="color:#27ae60;">4. Manage Drivers</h2>
+
+        <h3>Create Driver Account</h3>
+        <input type="text" id="driver_user" placeholder="Driver Username (e.g. driver_bob)">
+        <input type="text" id="driver_pass" placeholder="Password">
+        <button onclick="createDriver()" style="background:#27ae60;">Create Driver</button>
+        <div id="res_driver" class="result-box"></div>
+
+        <hr style="margin:20px 0; border:0; border-top:1px solid #ccc;">
+
+        <h3>Assign Driver to Bus</h3>
+        <label class="note">Select Driver:</label>
+        <select id="assign_driver_id">
+            <option value="" disabled selected>Loading drivers...</option>
+        </select>
+
+        <label class="note">Select Bus:</label>
+        <select id="assign_driver_bus_id">
+            <option value="" disabled selected>Loading buses...</option>
+        </select>
+
+        <button onclick="assignDriverToBus()" style="background:#16a085; margin-top:10px;">Assign Driver</button>
+        <div id="res_assign_driver" class="result-box"></div>
+    </div>
+
     <script>
         function showResult(elementId, msg) {
             const el = document.getElementById(elementId);
@@ -325,23 +352,64 @@
                 filtered.map(s => `<option value="${s.id}">${s.name} (${s.code})</option>`).join('');
         }
 
+        // --- DRIVER OPS ---
+        function createDriver() {
+            const u = document.getElementById('driver_user').value;
+            const p = document.getElementById('driver_pass').value;
+
+            fetch('/api/create_driver', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: u, password: p })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showResult('res_driver', '✅ Driver Created!');
+                        loadDrivers(); // Refresh list
+                    } else showResult('res_driver', '❌ Error');
+                });
+        }
+
+        function loadDrivers() {
+            fetch('/api/get_drivers')
+                .then(res => res.json())
+                .then(data => {
+                    const sel = document.getElementById('assign_driver_id');
+                    sel.innerHTML = '<option value="" disabled selected>Select Driver</option>' +
+                        data.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+                });
+        }
+
+        function assignDriverToBus() {
+            const did = document.getElementById('assign_driver_id').value;
+            const bid = document.getElementById('assign_driver_bus_id').value;
+
+            fetch('/api/assign_driver', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ driver_id: did, bus_id: bid })
+            })
+                .then(res => {
+                    if (res.status === 200) showResult('res_assign_driver', "✅ Driver Assigned!");
+                    else res.text().then(t => showResult('res_assign_driver', "❌ " + t));
+                });
+        }
+
         // Load Buses on Page Load
         function loadBuses() {
             fetch('/api/get_buses')
                 .then(res => res.json())
                 .then(data => {
                     const select = document.getElementById('bus_id');
-                    select.innerHTML = '<option value="" disabled selected>Select a Bus</option>';
-                    data.forEach(bus => {
-                        const opt = document.createElement('option');
-                        opt.value = bus.id;
-                        opt.innerText = `Plate: ${bus.plate} (ID: ${bus.id.substring(0, 4)}...)`;
-                        select.appendChild(opt);
-                    });
+                    const selectDriver = document.getElementById('assign_driver_bus_id');
+
+                    const opts = '<option value="" disabled selected>Select a Bus</option>' +
+                        data.map(bus => `<option value="${bus.id}">Plate: ${bus.plate} (ID: ${bus.id.substring(0, 4)}...)</option>`).join('');
+
+                    select.innerHTML = opts;
+                    if (selectDriver) selectDriver.innerHTML = opts;
                 })
                 .catch(err => {
                     console.error("Error loading buses", err);
-                    document.getElementById('bus_id').innerHTML = '<option>Error loading buses</option>';
                 });
         }
 
@@ -401,6 +469,7 @@
         loadBuses();
         loadParents();
         loadStudents();
+        loadDrivers();
     </script>
 </body>
 
