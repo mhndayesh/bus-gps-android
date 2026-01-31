@@ -709,6 +709,9 @@
             const u = document.getElementById('driver_user').value;
             const p = document.getElementById('driver_pass').value;
 
+            if (!sid) { alert("Please Select a School"); return; }
+            if (!u || !p) { alert("Please enter Username and Password"); return; }
+
             fetch('/api/create_driver', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ school_id: sid, username: u, password: p })
@@ -718,7 +721,13 @@
                     if (data.status === 'success') {
                         showResult('res_driver', '✅ Created!');
                         loadDrivers();
-                    } else showResult('res_driver', '❌ Error');
+                        // Clear inputs
+                        document.getElementById('driver_user').value = '';
+                        document.getElementById('driver_school_id').value = '';
+                    } else showResult('res_driver', '❌ Error: ' + (data.message || 'Unknown'));
+                })
+                .catch(err => {
+                    showResult('res_driver', '❌ Network Error: ' + err);
                 });
         }
 
