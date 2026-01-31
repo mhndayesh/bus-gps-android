@@ -180,10 +180,10 @@
                 <div id="res_activate" class="result-box" style="border-color: #27ae60;"></div>
             </div>
 
-            <!-- ADDED: CREATE PARENT (Name/UUID) -->
+            <!-- CREATE PARENT PROFILE (With Credentials) -->
             <div class="section">
                 <h2>👨‍👩‍👧 Create Parent Profile</h2>
-                <p>Register a new parent (Generates UUID).</p>
+                <p>Register a new parent with login credentials.</p>
 
                 <label class="note">Select School:</label>
                 <select id="parent_school_id">
@@ -191,6 +191,8 @@
                 </select>
 
                 <input type="text" id="parent_name" placeholder="Parent Name (e.g. Mr. Smith)">
+                <input type="text" id="parent_username" placeholder="Login Username">
+                <input type="password" id="parent_password" placeholder="Login Password">
                 <button onclick="createParent()" class="btn-add" style="background:#e67e22;">+ Create Parent</button>
                 <div id="res_parent" class="result-box" style="border-color: #e67e22;"></div>
             </div>
@@ -228,146 +230,131 @@
             </div>
         </div>
 
-        <!-- COLUMN 2: SCHOOL OPS -->
-        <div style="flex:1; min-width:300px;">
-            <h3 style="color:#bdc3c7; border-bottom:2px solid #3498db; display:inline-block; margin-bottom:20px;">
-                PERSONNEL OPERATIONS</h3>
 
-            <!-- CREATE PARENT -->
-            <div class="section section-white">
-                <h2>1. Create Parent</h2>
-                <label class="note">Assign to School:</label>
-                <select id="parent_school_id">
-                    <option value="" disabled selected>Loading schools...</option>
-                </select>
-                <input type="text" id="parent_name" placeholder="Name (e.g. Mrs. Bouvier)">
-                <button class="btn-admin" onclick="createParent()">Create Account</button>
-                <div id="res_parent" class="result-box"></div>
+
+        <!-- REGISTER STUDENT -->
+        <div class="section section-white">
+            <h2>2. Register Student</h2>
+            <input type="text" id="s_name" placeholder="Student Name">
+
+            <label class="note">Parent:</label>
+            <select id="p_id">
+                <option value="" disabled selected>Loading parents...</option>
+            </select>
+
+            <label class="note">NFC Tag:</label>
+            <input type="text" id="nfc_id" placeholder="TAG_ID">
+
+            <label class="note">Location (Lat/Lng):</label>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="lat" placeholder="21.543">
+                <input type="text" id="lng" placeholder="39.172">
             </div>
+            <input type="text" id="address_text" placeholder="Location Note (e.g. Building A)">
 
-            <!-- REGISTER STUDENT -->
-            <div class="section section-white">
-                <h2>2. Register Student</h2>
-                <input type="text" id="s_name" placeholder="Student Name">
-
-                <label class="note">Parent:</label>
-                <select id="p_id">
-                    <option value="" disabled selected>Loading parents...</option>
-                </select>
-
-                <label class="note">NFC Tag:</label>
-                <input type="text" id="nfc_id" placeholder="TAG_ID">
-
-                <label class="note">Location (Lat/Lng):</label>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="lat" placeholder="21.543">
-                    <input type="text" id="lng" placeholder="39.172">
-                </div>
-                <input type="text" id="address_text" placeholder="Location Note (e.g. Building A)">
-
-                <button class="btn-admin" onclick="addStudent()">Register</button>
-                <div id="res_student" class="result-box"></div>
-            </div>
-
-            <!-- REMOVE STUDENT -->
-            <div class="section section-white">
-                <h2>Remove Student</h2>
-                <label class="note">Filter by Parent:</label>
-                <select id="del_parent_filter" onchange="filterStudentsToDelete()">
-                    <option value="" disabled selected>Loading parents...</option>
-                </select>
-
-                <label class="note">Select Student:</label>
-                <select id="del_student_id">
-                    <option value="" disabled selected>Select Parent First</option>
-                </select>
-                <button class="btn-delete" onclick="deleteStudent()">Remove Student</button>
-                <div id="res_del_student" class="result-box"></div>
-            </div>
-
-            <!-- UPDATE LOCATION -->
-            <div class="section section-white">
-                <h2>Update Location</h2>
-                <label class="note">Filter by Parent:</label>
-                <select id="upd_parent_filter" onchange="filterStudentsByParent()">
-                    <option value="" disabled selected>Loading parents...</option>
-                </select>
-
-                <label class="note">Select Student:</label>
-                <select id="upd_student_id">
-                    <option value="" disabled selected>Select Parent First</option>
-                </select>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="upd_lat" placeholder="New Lat">
-                    <input type="text" id="upd_lng" placeholder="New Lng">
-                </div>
-                <input type="text" id="upd_address_text" placeholder="Location Note (e.g. Building A)">
-                <button class="btn-admin" style="background:#8e44ad;" onclick="updateLocation()">Update
-                    Location</button>
-                <div id="res_upd_loc" class="result-box"></div>
-            </div>
-
-            <!-- ASSIGN BUS -->
-            <div class="section section-white">
-                <h2>3. Assign Bus</h2>
-                <label class="note">Filter by Parent:</label>
-                <select id="assign_parent_filter" onchange="filterStudentsForAssignment()">
-                    <option value="" disabled selected>Loading parents...</option>
-                </select>
-
-                <label class="note">Select Student:</label>
-                <select id="assign_student_id">
-                    <option value="" disabled selected>Select Parent First</option>
-                </select>
-
-                <label class="note">Select Bus:</label>
-                <select id="assign_bus_id">
-                    <option value="" disabled selected>Loading buses...</option>
-                </select>
-
-                <button class="btn-admin" style="background:orange; color:black;" onclick="assignBus()">Assign & Create
-                    Stop</button>
-                <div id="res_bus_assign" class="result-box"></div>
-            </div>
-
-            <!-- DRIVER MANAGEMENT -->
-            <div class="section section-white" style="border-left: 5px solid #27ae60;">
-                <h2 style="color:#27ae60;">4. Manage Drivers</h2>
-
-                <h3>Create Driver Account</h3>
-                <label class="note">Select School (Optional for Super Admin):</label>
-                <select id="driver_school_id">
-                    <option value="" disabled selected>Loading Schools...</option>
-                </select>
-                <input type="text" id="driver_user" placeholder="Driver Username">
-                <input type="text" id="driver_pass" placeholder="Password">
-                <button onclick="createDriver()" class="btn-admin" style="background:#27ae60;">Create Driver</button>
-                <div id="res_driver" class="result-box"></div>
-
-                <hr>
-
-                <h3>Assign Driver</h3>
-
-                <label class="note">Filter by School:</label>
-                <select id="assign_filter_school" onchange="filterAssignmentOptions()">
-                    <option value="" disabled selected>Loading Schools...</option>
-                </select>
-
-                <label class="note">Select Driver:</label>
-                <select id="assign_driver_id">
-                    <option value="" disabled selected>Select School First</option>
-                </select>
-
-                <label class="note">Select Bus:</label>
-                <select id="assign_driver_bus_id">
-                    <option value="" disabled selected>Loading buses...</option>
-                </select>
-
-                <button onclick="assignDriverToBus()" class="btn-admin" style="background:#16a085;">Assign
-                    Driver</button>
-                <div id="res_assign_driver" class="result-box"></div>
-            </div>
+            <button class="btn-admin" onclick="addStudent()">Register</button>
+            <div id="res_student" class="result-box"></div>
         </div>
+
+        <!-- REMOVE STUDENT -->
+        <div class="section section-white">
+            <h2>Remove Student</h2>
+            <label class="note">Filter by Parent:</label>
+            <select id="del_parent_filter" onchange="filterStudentsToDelete()">
+                <option value="" disabled selected>Loading parents...</option>
+            </select>
+
+            <label class="note">Select Student:</label>
+            <select id="del_student_id">
+                <option value="" disabled selected>Select Parent First</option>
+            </select>
+            <button class="btn-delete" onclick="deleteStudent()">Remove Student</button>
+            <div id="res_del_student" class="result-box"></div>
+        </div>
+
+        <!-- UPDATE LOCATION -->
+        <div class="section section-white">
+            <h2>Update Location</h2>
+            <label class="note">Filter by Parent:</label>
+            <select id="upd_parent_filter" onchange="filterStudentsByParent()">
+                <option value="" disabled selected>Loading parents...</option>
+            </select>
+
+            <label class="note">Select Student:</label>
+            <select id="upd_student_id">
+                <option value="" disabled selected>Select Parent First</option>
+            </select>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="upd_lat" placeholder="New Lat">
+                <input type="text" id="upd_lng" placeholder="New Lng">
+            </div>
+            <input type="text" id="upd_address_text" placeholder="Location Note (e.g. Building A)">
+            <button class="btn-admin" style="background:#8e44ad;" onclick="updateLocation()">Update
+                Location</button>
+            <div id="res_upd_loc" class="result-box"></div>
+        </div>
+
+        <!-- ASSIGN BUS -->
+        <div class="section section-white">
+            <h2>3. Assign Bus</h2>
+            <label class="note">Filter by Parent:</label>
+            <select id="assign_parent_filter" onchange="filterStudentsForAssignment()">
+                <option value="" disabled selected>Loading parents...</option>
+            </select>
+
+            <label class="note">Select Student:</label>
+            <select id="assign_student_id">
+                <option value="" disabled selected>Select Parent First</option>
+            </select>
+
+            <label class="note">Select Bus:</label>
+            <select id="assign_bus_id">
+                <option value="" disabled selected>Loading buses...</option>
+            </select>
+
+            <button class="btn-admin" style="background:orange; color:black;" onclick="assignBus()">Assign & Create
+                Stop</button>
+            <div id="res_bus_assign" class="result-box"></div>
+        </div>
+
+        <!-- DRIVER MANAGEMENT -->
+        <div class="section section-white" style="border-left: 5px solid #27ae60;">
+            <h2 style="color:#27ae60;">4. Manage Drivers</h2>
+
+            <h3>Create Driver Account</h3>
+            <label class="note">Select School (Optional for Super Admin):</label>
+            <select id="driver_school_id">
+                <option value="" disabled selected>Loading Schools...</option>
+            </select>
+            <input type="text" id="driver_user" placeholder="Driver Username">
+            <input type="text" id="driver_pass" placeholder="Password">
+            <button onclick="createDriver()" class="btn-admin" style="background:#27ae60;">Create Driver</button>
+            <div id="res_driver" class="result-box"></div>
+
+            <hr>
+
+            <h3>Assign Driver</h3>
+
+            <label class="note">Filter by School:</label>
+            <select id="assign_filter_school" onchange="filterAssignmentOptions()">
+                <option value="" disabled selected>Loading Schools...</option>
+            </select>
+
+            <label class="note">Select Driver:</label>
+            <select id="assign_driver_id">
+                <option value="" disabled selected>Select School First</option>
+            </select>
+
+            <label class="note">Select Bus:</label>
+            <select id="assign_driver_bus_id">
+                <option value="" disabled selected>Loading buses...</option>
+            </select>
+
+            <button onclick="assignDriverToBus()" class="btn-admin" style="background:#16a085;">Assign
+                Driver</button>
+            <div id="res_assign_driver" class="result-box"></div>
+        </div>
+    </div>
 
     </div>
 
@@ -535,21 +522,30 @@
 
         function createParent() {
             const name = document.getElementById('parent_name').value;
+            const username = document.getElementById('parent_username').value;
+            const password = document.getElementById('parent_password').value;
             const sid = document.getElementById('parent_school_id') ? document.getElementById('parent_school_id').value : null;
+
+            if (!name) { alert("Please enter a name"); return; }
+            if (!username || !password) { alert("Please enter username and password"); return; }
 
             fetch('/api/create_parent', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name, school_id: sid })
+                body: JSON.stringify({ name: name, school_id: sid, username: username, password: password })
             })
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        showResult('res_parent', '✅ Created! UUID: ' + data.id);
+                        showResult('res_parent', '✅ Created! UUID: ' + data.id + ' Login: ' + username);
                         loadParents(); // Refresh dropdown
+                        // Clear form
+                        document.getElementById('parent_name').value = '';
+                        document.getElementById('parent_username').value = '';
+                        document.getElementById('parent_password').value = '';
                         setTimeout(() => {
                             document.getElementById('p_id').value = data.id; // Auto-select new parent
-                        }, 500); // Small delay to allow fetch to complete
-                    } else showResult('res_parent', '❌ Error');
+                        }, 500);
+                    } else showResult('res_parent', '❌ Error: ' + (data.message || 'Unknown'));
                 });
         }
 

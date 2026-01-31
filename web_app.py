@@ -501,6 +501,10 @@ def create_parent():
         import uuid
         new_id = str(uuid.uuid4())
         
+        # Get username/password from request (or use defaults)
+        username = data.get('username', data['name'])  # Default to name if no username
+        password = data.get('password', 'parent123')   # Default password
+        
         # School ID Logic
         if session['user_role'] == 'SCHOOL_ADMIN':
              school_id = session['school_id']
@@ -508,12 +512,12 @@ def create_parent():
              # SUPER_ADMIN: Must provide school_id
              school_id = data.get('school_id')
              if not school_id:
-                 return "Missing School ID", 400
+                 return json.dumps({"status": "error", "message": "Missing School ID"}), 400
 
         cur.execute("""
             INSERT INTO users (id, name, role, school_id, password_hash)
-            VALUES (%s, %s, 'PARENT', %s, 'parent123')
-        """, (new_id, data['name'], school_id))
+            VALUES (%s, %s, 'PARENT', %s, %s)
+        """, (new_id, username, school_id, password))
         
         conn.commit()
         cur.close()
@@ -521,7 +525,7 @@ def create_parent():
         return json.dumps({"status": "success", "id": new_id}), 200
     except Exception as e:
         print(f"Error creating parent: {e}")
-        return str(e), 500
+        return json.dumps({"status": "error", "message": str(e)}), 500
 
 # --- API: Get Driver Manifest ---
 @app.route('/api/driver/manifest')
