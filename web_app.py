@@ -212,7 +212,6 @@ def mqtt_listener():
 
 # --- WEB ROUTES ---
 @app.route('/driver')
-@login_required
 @role_required(['DRIVER'])
 def driver_ui():
     # Find assigned bus
