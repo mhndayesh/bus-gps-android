@@ -179,6 +179,21 @@
                     Credentials</button>
                 <div id="res_activate" class="result-box" style="border-color: #27ae60;"></div>
             </div>
+
+            <!-- ADDED: CREATE PARENT (Name/UUID) -->
+            <div class="section">
+                <h2>👨‍👩‍👧 Create Parent Profile</h2>
+                <p>Register a new parent (Generates UUID).</p>
+
+                <label class="note">Select School:</label>
+                <select id="parent_school_id">
+                    <option value="" disabled selected>Loading Schools...</option>
+                </select>
+
+                <input type="text" id="parent_name" placeholder="Parent Name (e.g. Mr. Smith)">
+                <button onclick="createParent()" class="btn-add" style="background:#e67e22;">+ Create Parent</button>
+                <div id="res_parent" class="result-box" style="border-color: #e67e22;"></div>
+            </div>
         </div>
 
         <!-- COLUMN 2: BUS OPS -->
@@ -318,17 +333,6 @@
             <!-- DRIVER MANAGEMENT -->
             <div class="section section-white" style="border-left: 5px solid #27ae60;">
                 <h2 style="color:#27ae60;">4. Manage Drivers</h2>
-
-                <h3>Create Parent Account</h3>
-                <label class="note">Select School (for Parent):</label>
-                <select id="parent_school_id">
-                    <option value="" disabled selected>Loading Schools...</option>
-                </select>
-                <input type="text" id="parent_name" placeholder="Parent Name (e.g. Mr. Smith)">
-                <button onclick="createParent()" class="btn-admin">Create Parent Account</button>
-                <div id="res_parent" class="result-box"></div>
-
-                <hr>
 
                 <h3>Create Driver Account</h3>
                 <label class="note">Select School (Optional for Super Admin):</label>
@@ -705,12 +709,17 @@
         }
 
         function createDriver() {
+            console.log("createDriver called");
             const sid = document.getElementById('driver_school_id').value;
             const u = document.getElementById('driver_user').value;
             const p = document.getElementById('driver_pass').value;
 
+            console.log("Values:", sid, u, p);
+
             if (!sid) { alert("Please Select a School"); return; }
             if (!u || !p) { alert("Please enter Username and Password"); return; }
+
+            showResult('res_driver', '⏳ Creating...');
 
             fetch('/api/create_driver', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
