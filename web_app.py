@@ -142,7 +142,10 @@ def role_required(allowed_roles):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             # 1. Check if user is logged in
+            # 1. Check if user is logged in
             if 'user_role' not in session:
+                if request.path.startswith('/api/'):
+                    return json.dumps({"status": "error", "message": "Unauthorized: Please Login"}), 401
                 return redirect(url_for('login'))
             
             # 2. Check Role
