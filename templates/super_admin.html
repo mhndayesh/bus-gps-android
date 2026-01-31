@@ -319,9 +319,22 @@
             <div class="section section-white" style="border-left: 5px solid #27ae60;">
                 <h2 style="color:#27ae60;">4. Manage Drivers</h2>
 
+                <h3>Create Parent Account</h3>
+                <label class="note">Select School (for Parent):</label>
+                <select id="parent_school_id">
+                    <option value="" disabled selected>Loading Schools...</option>
+                </select>
+                <input type="text" id="parent_name" placeholder="Parent Name (e.g. Mr. Smith)">
+                <button onclick="createParent()" class="btn-admin">Create Parent Account</button>
+                <div id="res_parent" class="result-box"></div>
+
+                <hr>
+
                 <h3>Create Driver Account</h3>
-                <label class="note">School ID (Optional for Super Admin):</label>
-                <input type="text" id="driver_school_id" placeholder="School ID (e.g. 1)">
+                <label class="note">Select School (Optional for Super Admin):</label>
+                <select id="driver_school_id">
+                    <option value="" disabled selected>Loading Schools...</option>
+                </select>
                 <input type="text" id="driver_user" placeholder="Driver Username">
                 <input type="text" id="driver_pass" placeholder="Password">
                 <button onclick="createDriver()" class="btn-admin" style="background:#27ae60;">Create Driver</button>
@@ -669,6 +682,27 @@
         }
 
 
+
+        function loadSchools() {
+            fetch('/api/get_schools')
+                .then(res => res.json())
+                .then(data => {
+                    ALL_SCHOOLS = data;
+                    const html = '<option value="" disabled selected>Select School</option>' +
+                        data.map(s => `<option value="${s.id}">${s.name} (ID: ${s.id})</option>`).join('');
+
+                    // Populate Driver School Dropdown
+                    const drvSchool = document.getElementById('driver_school_id');
+                    if (drvSchool) drvSchool.innerHTML = html;
+
+                    // Populate Parent School Dropdown (if exists)
+                    const parSchool = document.getElementById('parent_school_id');
+                    if (parSchool) parSchool.innerHTML = html;
+
+                    // Populate School Admin Creation Dropdown (if exists)
+                    // Assuming there is one, or we can add it later
+                });
+        }
 
         function createDriver() {
             const sid = document.getElementById('driver_school_id').value;
