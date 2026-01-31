@@ -289,10 +289,24 @@ def add_student():
     # (Prevents School A adding students to School B)
     # SECURITY: Force the student into the Admin's school
     # (Prevents School A adding students to School B)
+    conn = get_db_connection()
+    cur = conn.cursor()
+
     if session['user_role'] == 'SCHOOL_ADMIN':
         school_target = session['school_id']
     else:
-        school_target = data.get('school_id', 1) # Super Admin can pick any school
+        # SUPER_ADMIN: Must match the Parent's School ID
+        # Since the UI selects a Parent, we should fetch that Parent's School ID.
+        p_id = data.get('parent_id')
+        if not p_id:
+             return "Parent Required", 400
+             
+        cur.execute("SELECT school_id FROM users WHERE id = %s", (p_id,))
+        row = cur.fetchone()
+        if row:
+            school_target = row[0] 
+        else:
+            return "Parent not found", 400
 
     # VALIDATION: Check if parent_id is a valid UUID
     import uuid
@@ -303,8 +317,8 @@ def add_student():
 
     try:
         # Insert into DB
-        conn = get_db_connection()
-        cur = conn.cursor()
+        # conn = get_db_connection() # Moved up
+        # cur = conn.cursor() # Moved up
         
         # We need a parent_id (User ID). For now, assume provided or create dummy.
         # Ensure parent exists or handle error. 
