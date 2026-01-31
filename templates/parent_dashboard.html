@@ -177,9 +177,9 @@
         }
 
         // --- C. Real-Time Map (Filtered) ---
+        // --- C. Real-Time Map (Filtered) ---
         socket.on('update_map', function (data) {
             // SECURITY FILTER: Only show bus if my child is on it
-            // In a real app, filtering happens on server (Socket Rooms)
             if (trackedBusIds.includes(data.bus_id.toString())) {
 
                 var markerPos = [data.lat, data.lng];
@@ -196,6 +196,16 @@
                     map.setView(markerPos, 15);
                 }
             }
+        });
+
+        // --- NEW: Live Attendance Updates ---
+        socket.on('student_status_update', function (data) {
+            // data = { student_id, status, bus_id }
+            console.log("🔔 Student Update:", data);
+
+            // Reload children to refresh status text and "Watch Live" button
+            // This is safer than DOM manipulation because it handles all state logic (bus_id, plate, etc)
+            loadMyChildren();
         });
 
         // --- D. Camera Logic ---
