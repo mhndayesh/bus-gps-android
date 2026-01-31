@@ -195,8 +195,40 @@ def handle_driver_gps(data):
 
 @socketio.on('manual_attendance')
 def handle_attendance(data):
-    print(f"📝 Attendance: Student {data['student_id']} is {data['status']}")
-    # You can save to DB here or notify parents
+    sid = data['student_id']
+    status = data['status'] # BOARDED or DROPPED
+    bus_id = data['bus_id']
+    
+    print(f"📝 Attendance: Student {sid} is {status}")
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        if status == "BOARDED":
+            # Add to Manifest
+            cur.execute("""
+                INSERT INTO bus_manifest (bus_id, student_id) 
+                VALUES (%s, %s) 
+                ON CONFLICT DO NOTHING
+            """, (bus_id, sid))
+        else:
+            # Remove from Manifest
+            cur.execute("DELETE FROM bus_manifest WHERE bus_id = %s AND student_id = %s", (bus_id, sid))
+            
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        # Notify Parents Live
+        socketio.emit('student_status_update', {
+            "student_id": sid,
+            "status": status,
+            "bus_id": bus_id if status == "BOARDED" else None
+        })
+        
+    except Exception as e:
+        print(f"❌ Attendance Error: {e}")
 def mqtt_listener():
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     
@@ -443,6 +475,52 @@ def create_parent():
     except Exception as e:
         print(f"Error creating parent: {e}")
         return str(e), 500
+
+# --- API: Get Driver Manifest ---
+@app.route('/api/driver/manifest')
+@role_required(['DRIVER'])
+def get_driver_manifest():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get Bus ID for this driver
+        cur.execute("SELECT id FROM buses WHERE driver_id = %s", (session['user_id'],))
+        row = cur.fetchone()
+        if not row: return "[]", 200
+        bus_id = row[0]
+        
+        # Get Assigned Students (via Route Stops)
+        # Assuming simplified model where stops link student to bus
+        cur.execute("""
+            SELECT s.id, s.name, 
+                   CASE WHEN m.student_id IS NOT NULL THEN 1 ELSE 0 END as on_board
+            FROM route_stops rs
+            JOIN students s ON rs.assigned_student_id = s.id::text
+            LEFT JOIN bus_manifest m ON m.student_id = s.id::text AND m.bus_id = %s
+            WHERE rs.bus_id = %s
+        """, (bus_id, bus_id))
+        
+        rows = cur.fetchall()
+        
+        students = [{
+            "id": r[0], 
+            "name": r[1], 
+            "status": "BOARDED" if r[2] else "DROPPED"
+        } for r in rows]
+        
+        # If no route stops assigned, maybe show ALL students (for testing)?
+        # For now, let's stick to route assignment. 
+        if not students:
+             # Fallback: Get all students in school? No, too messy.
+             pass
+             
+        cur.close()
+        conn.close()
+        return json.dumps(students), 200
+    except Exception as e:
+        print(f"Manifest Error: {e}")
+        return json.dumps([]), 500
 
 # --- API: Get Parents (Helper for Dropdown) ---
 @app.route('/api/get_parents', methods=['GET'])
