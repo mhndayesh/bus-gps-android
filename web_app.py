@@ -336,11 +336,11 @@ def admin():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """Admin Login Portal - Only for SUPER_ADMIN and SCHOOL_ADMIN"""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         
-        # Simple Logic: Check DB
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("SELECT id, name, role, school_id FROM users WHERE name = %s AND password_hash = %s", (username, password))
@@ -349,22 +349,49 @@ def login():
         conn.close()
         
         if user:
-            # Login Success!
+            role = user[2]
+            # Validate: Only Admins allowed here
+            if role not in ['SUPER_ADMIN', 'SCHOOL_ADMIN']:
+                return "❌ Access Denied: Use the correct portal for your role.", 403
+            
             session['user_id'] = user[0]
             session['user_name'] = user[1]
-            session['user_role'] = user[2]
+            session['user_role'] = role
             session['school_id'] = user[3]
-            
-            if session['user_role'] == 'PARENT':
-                return redirect(url_for('parent_dashboard'))
-            elif session['user_role'] == 'DRIVER':
-                return redirect(url_for('driver_ui'))
-            else:
-                return redirect(url_for('admin'))
+            return redirect(url_for('admin'))
         else:
             return "❌ Invalid Login", 401
     
     return render_template('login.html')
+
+@app.route('/driver/login', methods=['GET', 'POST'])
+def driver_login():
+    """Driver Login Portal - Only for DRIVER"""
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id, name, role, school_id FROM users WHERE name = %s AND password_hash = %s", (username, password))
+        user = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if user:
+            role = user[2]
+            if role != 'DRIVER':
+                return "❌ Access Denied: This portal is for Drivers only.", 403
+            
+            session['user_id'] = user[0]
+            session['user_name'] = user[1]
+            session['user_role'] = role
+            session['school_id'] = user[3]
+            return redirect(url_for('driver_ui'))
+        else:
+            return "❌ Invalid Login", 401
+    
+    return render_template('driver_login.html')
 
 @app.route('/logout')
 def logout():
