@@ -357,6 +357,8 @@ def login():
             
             if session['user_role'] == 'PARENT':
                 return redirect(url_for('parent_dashboard'))
+            elif session['user_role'] == 'DRIVER':
+                return redirect(url_for('driver_ui'))
             else:
                 return redirect(url_for('admin'))
         else:
