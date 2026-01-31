@@ -142,7 +142,6 @@ def role_required(allowed_roles):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             # 1. Check if user is logged in
-            # 1. Check if user is logged in
             if 'user_role' not in session:
                 if request.path.startswith('/api/'):
                     return json.dumps({"status": "error", "message": "Unauthorized: Please Login"}), 401
@@ -150,7 +149,28 @@ def role_required(allowed_roles):
             
             # 2. Check Role
             if session['user_role'] not in allowed_roles:
-                return abort(403) # Forbidden
+                # Clear wrong session and redirect to correct portal
+                current_role = session.get('user_role', 'Unknown')
+                session.clear()
+                
+                # Friendly message
+                msg = f"⚠️ Session cleared. You were logged in as '{current_role}' but this page requires {allowed_roles}. Please login again."
+                
+                if request.path.startswith('/api/'):
+                    return json.dumps({"status": "error", "message": msg}), 403
+                
+                # Redirect to appropriate login
+                return f'''
+                <html>
+                <head><meta http-equiv="refresh" content="3;url=/login"></head>
+                <body style="font-family:sans-serif; padding:40px; text-align:center;">
+                    <h2>⚠️ Wrong Account Type</h2>
+                    <p>You were logged in as <b>{current_role}</b>, but this page is for <b>{', '.join(allowed_roles)}</b>.</p>
+                    <p>Your session has been cleared. Redirecting to login...</p>
+                    <p><a href="/login">Click here if not redirected</a></p>
+                </body>
+                </html>
+                ''', 403
             return f(*args, **kwargs)
         return decorated_function
     return decorator
