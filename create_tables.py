@@ -118,3 +118,6 @@ def create_tables():
 
 if __name__ == "__main__":
     create_tables()
+
+# Alias for web_app.py import
+init_db = create_tables

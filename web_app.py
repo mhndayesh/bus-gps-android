@@ -170,6 +170,17 @@ try:
 except Exception as e:
     print(f"⚠️ Migration Warning: {e}")
 
+# --- MANUAL MIGRATION API (Safety Net) ---
+@app.route('/api/force_migrate')
+@role_required(['SUPER_ADMIN'])
+def force_migrate():
+    try:
+        from create_tables import init_db
+        init_db()
+        return "✅ Database Migration Forced Successfully!", 200
+    except Exception as e:
+        return f"❌ Migration Failed: {e}", 500
+
 # --- MQTT LISTENER (Background Task) ---
 # This runs separately so it doesn't block the website
 # --- SOCKET EVENTS (The Bridge) ---
