@@ -156,9 +156,19 @@ def role_required(allowed_roles):
     return decorator
 
 # --- SETUP FLASK & SOCKETIO ---
+# --- SETUP FLASK & SOCKETIO ---
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+# --- MIGRATION ON STARTUP (For Gunicorn/Cloud) ---
+try:
+    from create_tables import init_db
+    print("🔄 Running DB Migrations...")
+    init_db()
+    print("✅ DB Migrations Complete")
+except Exception as e:
+    print(f"⚠️ Migration Warning: {e}")
 
 # --- MQTT LISTENER (Background Task) ---
 # This runs separately so it doesn't block the website
