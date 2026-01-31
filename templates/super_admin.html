@@ -347,9 +347,15 @@
                 <hr>
 
                 <h3>Assign Driver</h3>
+
+                <label class="note">Filter by School:</label>
+                <select id="assign_filter_school" onchange="filterAssignmentOptions()">
+                    <option value="" disabled selected>Loading Schools...</option>
+                </select>
+
                 <label class="note">Select Driver:</label>
                 <select id="assign_driver_id">
-                    <option value="" disabled selected>Loading drivers...</option>
+                    <option value="" disabled selected>Select School First</option>
                 </select>
 
                 <label class="note">Select Bus:</label>
@@ -703,6 +709,11 @@
                     const parSchool = document.getElementById('parent_school_id');
                     if (parSchool) parSchool.innerHTML = html;
 
+                    // Populate Assign Filter Dropdown
+                    const filterSchool = document.getElementById('assign_filter_school');
+                    if (filterSchool) filterSchool.innerHTML = '<option value="" disabled selected>Select Filter School</option><option value="ALL">Show All</option>' +
+                        data.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+
                     // Populate School Admin Creation Dropdown (if exists)
                     // Assuming there is one, or we can add it later
                 });
@@ -746,13 +757,16 @@
                 });
         }
 
+        let ALL_DRIVERS = [];
+        let ALL_BUSES_DATA = [];
+
         function loadDrivers() {
             fetch('/api/get_drivers')
                 .then(res => res.json())
                 .then(data => {
-                    const sel = document.getElementById('assign_driver_id');
-                    sel.innerHTML = '<option value="" disabled selected>Select Driver</option>' +
-                        data.map(d => `<option value="${d.id}">${d.name} (School ${d.school_id})</option>`).join('');
+                    ALL_DRIVERS = data;
+                    // Initial update (if school selected)
+                    filterAssignmentOptions();
                 });
         }
 
@@ -775,35 +789,66 @@
             fetch('/api/get_buses')
                 .then(res => res.json())
                 .then(data => {
-                    // Populate Delete Dropdown
+                    ALL_BUSES_DATA = data;
+
+                    // Populate Delete Dropdown (Always All)
                     const selDel = document.getElementById('delete_bus_id');
                     selDel.innerHTML = '<option value="" disabled selected>Select Bus to Delete</option>';
-
-                    // Populate Assign Dropdown
-                    const selAssign = document.getElementById('assign_bus_id');
-                    selAssign.innerHTML = '<option value="" disabled selected>Select Bus to Assign</option>';
-
-                    // Populate Driver Assign Dropdown
-                    const selDriverBus = document.getElementById('assign_driver_bus_id');
-                    if (selDriverBus) selDriverBus.innerHTML = '<option value="" disabled selected>Select Bus to Assign</option>';
-
                     data.forEach(bus => {
                         const txt = `Plate: ${bus.plate} (ID: ${bus.id.substring(0, 4)}...)`;
-                        // Option for Delete
-                        const opt1 = document.createElement('option'); opt1.value = bus.id; opt1.innerText = txt;
-                        selDel.appendChild(opt1);
-
-                        // Option for Assign
-                        const opt2 = document.createElement('option'); opt2.value = bus.id; opt2.innerText = txt;
-                        selAssign.appendChild(opt2);
-
-                        // Option for Driver Assign
-                        if (selDriverBus) {
-                            const opt3 = document.createElement('option'); opt3.value = bus.id; opt3.innerText = txt;
-                            selDriverBus.appendChild(opt3);
-                        }
+                        const opt = document.createElement('option'); opt.value = bus.id; opt.innerText = txt;
+                        selDel.appendChild(opt);
                     });
+
+                    // Populate Assign Bus (Student) Dropdown (Always All for now or filter later)
+                    // Currently student assign assumes school selection filters student, but bus??
+                    // Let's leave student bus assign as ALL for now to avoid breaking it
+                    const selAssign = document.getElementById('assign_bus_id');
+                    selAssign.innerHTML = '<option value="" disabled selected>Select Bus to Assign</option>';
+                    data.forEach(bus => {
+                        const opt = document.createElement('option'); opt.value = bus.id; opt.innerText = bus.plate;
+                        selAssign.appendChild(opt);
+                    });
+
+                    // Trigger Filter for Driver Assign
+                    filterAssignmentOptions();
                 });
+        }
+
+        function filterAssignmentOptions() {
+            const schoolId = document.getElementById('assign_filter_school') ? document.getElementById('assign_filter_school').value : "";
+
+            // Drivers
+            const drvSel = document.getElementById('assign_driver_id');
+            if (drvSel) {
+                let filteredDrivers = ALL_DRIVERS;
+                if (schoolId && schoolId !== "ALL") {
+                    filteredDrivers = ALL_DRIVERS.filter(d => d.school_id == schoolId);
+                }
+
+                if (filteredDrivers.length === 0) {
+                    drvSel.innerHTML = '<option value="" disabled selected>No Drivers Found</option>';
+                } else {
+                    drvSel.innerHTML = '<option value="" disabled selected>Select Driver</option>' +
+                        filteredDrivers.map(d => `<option value="${d.id}">${d.name} (${d.school_id})</option>`).join('');
+                }
+            }
+
+            // Buses
+            const busSel = document.getElementById('assign_driver_bus_id');
+            if (busSel) {
+                let filteredBuses = ALL_BUSES_DATA;
+                if (schoolId && schoolId !== "ALL") {
+                    filteredBuses = ALL_BUSES_DATA.filter(b => b.school_id == schoolId);
+                }
+
+                if (filteredBuses.length === 0) {
+                    busSel.innerHTML = '<option value="" disabled selected>No Buses Found</option>';
+                } else {
+                    busSel.innerHTML = '<option value="" disabled selected>Select Bus</option>' +
+                        filteredBuses.map(b => `<option value="${b.id}">${b.plate}</option>`).join('');
+                }
+            }
         }
 
         loadBuses();
