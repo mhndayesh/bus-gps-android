@@ -321,23 +321,56 @@ def parent_dashboard():
 @role_required(['PARENT'])
 def get_my_kids():
     try:
+        parent_id = session['user_id']
+        print(f"🔍 get_my_kids called for parent_id: {parent_id}")
+        
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # In a real app, we'd check if they are ON a bus (join with attendance/trips)
-        # For now, simplistic view
-        cur.execute("SELECT id, name, student_code FROM students WHERE parent_id = %s", (session['user_id'],))
+        # Get children linked to this parent
+        cur.execute("""
+            SELECT s.id, s.name, s.student_code 
+            FROM students s 
+            WHERE s.parent_id = %s
+        """, (parent_id,))
         rows = cur.fetchall()
         
-        # Mocking 'on_bus' status for demo
-        kids = [{"id": str(r[0]), "name": r[1], "code": r[2], "on_bus": False} for r in rows]
+        print(f"📋 Found {len(rows)} children for parent {parent_id}")
+        
+        kids = []
+        for r in rows:
+            student_id = str(r[0])
+            
+            # Check if student is on a bus (in bus_manifest)
+            cur.execute("""
+                SELECT bm.bus_id, b.plate_number 
+                FROM bus_manifest bm
+                JOIN buses b ON bm.bus_id = b.id
+                WHERE bm.student_id = %s
+            """, (student_id,))
+            bus_row = cur.fetchone()
+            
+            on_bus = bus_row is not None
+            bus_id = bus_row[0] if bus_row else None
+            bus_plate = bus_row[1] if bus_row else None
+            
+            kids.append({
+                "id": student_id, 
+                "name": r[1], 
+                "code": r[2], 
+                "on_bus": on_bus,
+                "bus_id": bus_id,
+                "bus_plate": bus_plate
+            })
         
         cur.close()
         conn.close()
         return json.dumps(kids), 200
     except Exception as e:
-        print(f"Error getting kids: {e}")
-        return str(e), 500
+        print(f"❌ Error getting kids: {e}")
+        import traceback
+        traceback.print_exc()
+        return json.dumps({"status": "error", "message": str(e)}), 500
 
 @app.route('/admin')
 @role_required(['SUPER_ADMIN', 'SCHOOL_ADMIN'])
