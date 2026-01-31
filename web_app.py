@@ -283,9 +283,7 @@ def driver_ui():
         
     return render_template('driver_app.html', bus_id=str(bus[0]), plate_number=bus[1])
 
-@app.route('/parent')
-def parent_ui():
-    return render_template('parent_app.html')
+
 
 @app.route('/')
 def index():
@@ -931,25 +929,34 @@ def get_camera_url(bus_id):
 
 # --- PARENT ROUTES ---
 
-@app.route('/parent/login', methods=['POST'])
+@app.route('/parent/login', methods=['GET', 'POST'])
 def parent_login():
-    # 1. Verify Credentials (Simple mock for now)
-    data = request.json
-    username = data.get('username')
+    """Parent Login Portal - Only for PARENT"""
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id, name, role, school_id FROM users WHERE name = %s AND password_hash = %s", (username, password))
+        user = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if user:
+            role = user[2]
+            if role != 'PARENT':
+                return "❌ Access Denied: This portal is for Parents only.", 403
+            
+            session['user_id'] = user[0]
+            session['user_name'] = user[1]
+            session['user_role'] = role
+            session['school_id'] = user[3]
+            return redirect(url_for('parent_dashboard'))
+        else:
+            return "❌ Invalid Login", 401
     
-    conn = get_db_connection()
-    cur = conn.cursor()
-    
-    # 2. Find Parent ID
-    cur.execute("SELECT id, name, school_id FROM users WHERE name = %s AND role = 'PARENT'", (username,))
-    user = cur.fetchone()
-    
-    cur.close()
-    conn.close()
-
-    if user:
-        return json.dumps({"status": "success", "parent_id": user[0], "name": user[1]})
-    return json.dumps({"status": "error", "message": "Invalid Parent"}), 401
+    return render_template('parent_login.html')
 
 @app.route('/api/my_children/<parent_id>')
 def get_my_children(parent_id):
