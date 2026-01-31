@@ -856,6 +856,90 @@ def get_my_children(parent_id):
         
     return json.dumps(result)
 
+# --- API: Create Driver ---
+@app.route('/api/create_driver', methods=['POST'])
+@role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
+def create_driver():
+    data = request.json
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        import uuid
+        new_id = str(uuid.uuid4())
+        
+        # Determine School ID
+        if session['user_role'] == 'SCHOOL_ADMIN':
+            school_id = session['school_id']
+        else:
+            school_id = data.get('school_id')
+            if not school_id: return json.dumps({"status": "error", "message": "School ID required"}), 400
+
+        cur.execute("""
+            INSERT INTO users (id, name, role, school_id, password_hash)
+            VALUES (%s, %s, 'DRIVER', %s, %s)
+        """, (new_id, data['username'], school_id, data['password']))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return json.dumps({"status": "success", "id": new_id}), 200
+    except Exception as e:
+        print(f"Error creating driver: {e}")
+        return json.dumps({"status": "error", "message": str(e)}), 500
+
+# --- API: Get Drivers ---
+@app.route('/api/get_drivers', methods=['GET'])
+@role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
+def get_drivers():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        if session['user_role'] == 'SCHOOL_ADMIN':
+            cur.execute("SELECT id, name FROM users WHERE role = 'DRIVER' AND school_id = %s", (session['school_id'],))
+        else:
+            # Super Admin can filter by school if passed
+            target_school = request.args.get('school_id') # Not currently used by UI but good to have
+            if target_school:
+                cur.execute("SELECT id, name FROM users WHERE role = 'DRIVER' AND school_id = %s", (target_school,))
+            else:
+                cur.execute("SELECT id, name, school_id FROM users WHERE role = 'DRIVER'")
+        
+        rows = cur.fetchall()
+        drivers = [{"id": r[0], "name": r[1], "school_id": r[2] if len(r)>2 else ""} for r in rows]
+        
+        cur.close()
+        conn.close()
+        return json.dumps(drivers), 200
+    except Exception as e:
+        return str(e), 500
+
+# --- API: Assign Driver to Bus ---
+@app.route('/api/assign_driver', methods=['POST'])
+@role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
+def assign_driver():
+    data = request.json
+    driver_id = data.get('driver_id')
+    bus_id = data.get('bus_id')
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # 1. Clear previous assignment for this bus
+        cur.execute("UPDATE buses SET driver_id = NULL WHERE id = %s", (bus_id,))
+        
+        # 2. Assign new driver
+        cur.execute("UPDATE buses SET driver_id = %s WHERE id = %s", (driver_id, bus_id))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "Driver Assigned", 200
+    except Exception as e:
+        return str(e), 500
+
 @app.route('/parent/dashboard')
 def parent_dashboard_view():
     return render_template('parent_dashboard.html')
