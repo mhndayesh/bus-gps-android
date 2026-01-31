@@ -120,10 +120,17 @@
     </div>
 
     <!-- STEP 2.5: REMOVE STUDENT -->
+    <!-- STEP 2.5: REMOVE STUDENT -->
     <div class="section">
         <h2>Remove Student</h2>
+        <label class="note">Filter by Parent:</label>
+        <select id="del_parent_filter" onchange="filterStudentsForDelete()">
+            <option value="" disabled selected>Loading parents...</option>
+        </select>
+
+        <label class="note">Select Student:</label>
         <select id="del_student_id">
-            <option value="" disabled selected>Loading students...</option>
+            <option value="" disabled selected>Select Parent First</option>
         </select>
         <button onclick="deleteStudent()" style="background:#c0392b;">Remove Student</button>
         <div id="res_del_student" class="result-box"></div>
@@ -349,6 +356,7 @@
                     const sel = document.getElementById('p_id');
                     const selFilter = document.getElementById('upd_parent_filter');
                     const selAssignFilter = document.getElementById('assign_parent_filter');
+                    const selDelFilter = document.getElementById('del_parent_filter');
 
                     const html = '<option value="" disabled selected>Select Parent</option>' +
                         data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
@@ -356,6 +364,7 @@
                     if (sel) sel.innerHTML = html;
                     if (selFilter) selFilter.innerHTML = html;
                     if (selAssignFilter) selAssignFilter.innerHTML = html;
+                    if (selDelFilter) selDelFilter.innerHTML = html;
                 });
         }
 
@@ -364,13 +373,9 @@
                 .then(res => res.json())
                 .then(data => {
                     ALL_STUDENTS = data;
+                    // We now filter for delete too, so initial load just waits for filter
                     const selDel = document.getElementById('del_student_id');
-                    // We don't populate upd_student_id initially anymore, waiting for filter
-
-                    if (selDel) {
-                        selDel.innerHTML = '<option value="" disabled selected>Select Student to Remove</option>' +
-                            data.map(s => `<option value="${s.id}">${s.name} (${s.code})</option>`).join('');
-                    }
+                    if (selDel) selDel.innerHTML = '<option value="" disabled selected>Select Parent First</option>';
                 });
         }
 
@@ -380,6 +385,15 @@
             const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
 
             selUpd.innerHTML = '<option value="" disabled selected>Select Student</option>' +
+                filtered.map(s => `<option value="${s.id}">${s.name} (${s.code})</option>`).join('');
+        }
+
+        function filterStudentsForDelete() {
+            const pid = document.getElementById('del_parent_filter').value;
+            const selDel = document.getElementById('del_student_id');
+            const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
+
+            selDel.innerHTML = '<option value="" disabled selected>Select Student</option>' +
                 filtered.map(s => `<option value="${s.id}">${s.name} (${s.code})</option>`).join('');
         }
 
