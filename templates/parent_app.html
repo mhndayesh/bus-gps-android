@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Track My Child</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100%;
+            z-index: 1;
+        }
+
+        /* Floating Info Card */
+        .info-box {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .status-dot {
+            height: 12px;
+            width: 12px;
+            background: #ccc;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .active {
+            background: #27ae60;
+            box-shadow: 0 0 5px #27ae60;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="map"></div>
+
+    <div class="info-box">
+        <div>
+            <h3 style="margin:0;">🚌 Bus 101</h3>
+            <div id="status-text" style="color:gray; font-size:14px; margin-top:5px;">
+                <span class="status-dot" id="dot"></span> Waiting for signal...
+            </div>
+        </div>
+        <div style="text-align:right;">
+            <strong id="speed">0</strong> <small>km/h</small>
+        </div>
+    </div>
+
+    <script>
+        // 1. Initialize Map
+        var map = L.map('map').setView([21.5433, 39.1728], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        // 2. Custom Bus Icon
+        var busIcon = L.divIcon({
+            className: 'custom-icon',
+            html: '<div style="background:#f1c40f; border:2px solid black; border-radius:50%; width:40px; height:40px; text-align:center; line-height:40px; font-size:20px;">🚌</div>',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+
+        var busMarker = null;
+        var socket = io();
+
+        // 3. LISTEN FOR UPDATES
+        socket.on('update_map', function (data) {
+            console.log("Bus Update Received:", data);
+
+            // Update Text
+            document.getElementById('speed').innerText = data.speed;
+            document.getElementById('status-text').innerHTML = '<span class="status-dot active"></span> Live Tracking';
+
+            // Update Map Marker
+            if (busMarker) {
+                busMarker.setLatLng([data.lat, data.lng]);
+            } else {
+                busMarker = L.marker([data.lat, data.lng], { icon: busIcon }).addTo(map);
+                map.setView([data.lat, data.lng], 16); // Zoom to bus on first find
+            }
+        });
+    </script>
+</body>
+
+</html>

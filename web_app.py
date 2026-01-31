@@ -159,6 +159,20 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 # --- MQTT LISTENER (Background Task) ---
 # This runs separately so it doesn't block the website
+# --- SOCKET EVENTS (The Bridge) ---
+
+@socketio.on('driver_gps_update')
+def handle_driver_gps(data):
+    # 1. Receive Data from Driver Phone
+    print(f"📍 Bus {data.get('bus_id')} moved to {data.get('lat')}, {data.get('lng')}")
+    
+    # 2. Broadcast Data to Parent Phones
+    socketio.emit('update_map', data)
+
+@socketio.on('manual_attendance')
+def handle_attendance(data):
+    print(f"📝 Attendance: Student {data['student_id']} is {data['status']}")
+    # You can save to DB here or notify parents
 def mqtt_listener():
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     
@@ -197,6 +211,14 @@ def mqtt_listener():
         print(f"MQTT Connection Error: {e}")
 
 # --- WEB ROUTES ---
+@app.route('/driver')
+def driver_ui():
+    return render_template('driver_app.html')
+
+@app.route('/parent')
+def parent_ui():
+    return render_template('parent_app.html')
+
 @app.route('/')
 def index():
     return render_template('index.html')

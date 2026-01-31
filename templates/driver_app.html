@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Driver Console</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            background: #222;
+            color: white;
+        }
+
+        .header {
+            padding: 15px;
+            background: #333;
+            text-align: center;
+            border-bottom: 2px solid #444;
+        }
+
+        .status-box {
+            padding: 20px;
+            text-align: center;
+            background: #000;
+            margin-bottom: 10px;
+        }
+
+        /* Big Buttons for Driver Safety */
+        .big-btn {
+            width: 90%;
+            padding: 20px;
+            font-size: 20px;
+            border: none;
+            border-radius: 10px;
+            margin: 10px auto;
+            display: block;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-start {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-stop {
+            background: #c0392b;
+            color: white;
+            display: none;
+        }
+
+        /* Attendance List Styles */
+        .student-list {
+            padding: 10px;
+        }
+
+        .student-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #333;
+            padding: 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+        }
+
+        .toggle-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-board {
+            background: #2980b9;
+            color: white;
+        }
+
+        .btn-drop {
+            background: #f39c12;
+            color: black;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h2>🚌 Bus <span id="bus-id-display">101</span></h2>
+    </div>
+
+    <div class="status-box">
+        <div id="gps-status" style="color: #f39c12;">GPS: Waiting...</div>
+        <div id="speed-display" style="font-size: 2em;">0 km/h</div>
+    </div>
+
+    <button class="big-btn btn-start" onclick="startTrip()">🟢 START TRIP</button>
+    <button class="big-btn btn-stop" onclick="stopTrip()">🔴 END TRIP</button>
+
+    <div class="student-list" id="student-container">
+        <div class="student-row">
+            <span>Ahmed</span>
+            <button class="toggle-btn btn-board" onclick="toggleStudent(this, 'S1')">Board Bus</button>
+        </div>
+        <div class="student-row">
+            <span>Sara</span>
+            <button class="toggle-btn btn-board" onclick="toggleStudent(this, 'S2')">Board Bus</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let watchId = null;
+        const busId = "101";
+
+        // --- GPS LOGIC ---
+        function startTrip() {
+            if (!navigator.geolocation) return alert("GPS not supported on this device");
+
+            // Toggle Buttons
+            document.querySelector('.btn-start').style.display = 'none';
+            document.querySelector('.btn-stop').style.display = 'block';
+
+            // Start Broadcasting Position
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    const data = {
+                        bus_id: busId,
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        speed: Math.round(position.coords.speed * 3.6) || 0 // Convert m/s to km/h
+                    };
+
+                    // Update Driver UI
+                    document.getElementById('gps-status').innerText = "GPS: 🟢 Broadcasting";
+                    document.getElementById('gps-status').style.color = "#27ae60";
+                    document.getElementById('speed-display').innerText = data.speed + " km/h";
+
+                    // Send to Server
+                    socket.emit('driver_gps_update', data);
+                },
+                (error) => alert("GPS Error: " + error.message),
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        }
+
+        function stopTrip() {
+            navigator.geolocation.clearWatch(watchId);
+            document.querySelector('.btn-start').style.display = 'block';
+            document.querySelector('.btn-stop').style.display = 'none';
+            document.getElementById('gps-status').innerText = "GPS: 🔴 Stopped";
+        }
+
+        // --- ATTENDANCE LOGIC ---
+        function toggleStudent(btn, studentId) {
+            const isBoarding = btn.innerText === "Board Bus";
+
+            if (isBoarding) {
+                btn.innerText = "Drop Off";
+                btn.className = "toggle-btn btn-drop";
+                socket.emit('manual_attendance', { student_id: studentId, status: "BOARDED", bus_id: busId });
+            } else {
+                btn.innerText = "Board Bus";
+                btn.className = "toggle-btn btn-board";
+                socket.emit('manual_attendance', { student_id: studentId, status: "DROPPED", bus_id: busId });
+            }
+        }
+    </script>
+</body>
+
+</html>
