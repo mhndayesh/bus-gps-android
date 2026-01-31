@@ -641,8 +641,8 @@ def get_buses():
         if session['user_role'] == 'SCHOOL_ADMIN':
             buses = [{"id": str(r[0]), "plate": r[1]} for r in rows]
         else:
-            # For Super Admin, maybe useful to know which school owns it
-            buses = [{"id": str(r[0]), "plate": r[1] + f" (School {r[2]})"} for r in rows]
+            # For Super Admin, include school_id for filtering
+            buses = [{"id": str(r[0]), "plate": r[1] + f" (School {r[2]})", "school_id": r[2]} for r in rows]
 
         cur.close()
         conn.close()
