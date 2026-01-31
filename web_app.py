@@ -519,25 +519,47 @@ def assign_bus():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # 1. Get Student Name & Location
-        cur.execute("SELECT name, home_location FROM students WHERE id = %s", (student_id,))
-        student = cur.fetchone()
-        
-        if not student:
-            return "Student not found", 404
+        # Cloud Compatibility Check
+        import os
+        if os.environ.get('RENDER'):
+             # Cloud Mode: No PostGIS, No Location
+             cur.execute("SELECT name FROM students WHERE id = %s", (student_id,))
+             student = cur.fetchone()
+             if not student:
+                 return "Student not found", 404
+             
+             student_name = student[0]
+             # In cloud we skip location check/storage for stops
+             
+             # Create Stop (No location)
+             # Also assuming route_stops has bus_id column if we ran the updated script
+             # Or stick to original logic: (stop_name, assigned_student_id)
+             # Let's insert bus_id too if available from request
+             cur.execute("""
+                INSERT INTO route_stops (stop_name, assigned_student_id, bus_id)
+                VALUES (%s, %s, %s)
+             """, (f"{student_name}'s Home", student_id, bus_id))
+             
+        else:
+            # Local Mode: Original Logic
+            # 1. Get Student Name & Location
+            cur.execute("SELECT name, home_location FROM students WHERE id = %s", (student_id,))
+            student = cur.fetchone()
             
-        student_name = student[0]
-        location = student[1] # This is a geometry object
-        
-        if not location:
-            return "Student has no home location set", 400
+            if not student:
+                return "Student not found", 404
+                
+            student_name = student[0]
+            location = student[1] # This is a geometry object
+            
+            if not location:
+                return "Student has no home location set", 400
 
-        # 2. Create Stop in route_stops
-        # Note: 'location' in variable is Python object, we need to handle it carefully or just use SQL subquery
-        cur.execute("""
-            INSERT INTO route_stops (stop_name, assigned_student_id, location)
-            SELECT %s, id, home_location FROM students WHERE id = %s
-        """, (f"{student_name}'s Home", student_id))
+            # 2. Create Stop in route_stops
+            cur.execute("""
+                INSERT INTO route_stops (stop_name, assigned_student_id, location)
+                SELECT %s, id, home_location FROM students WHERE id = %s
+            """, (f"{student_name}'s Home", student_id))
         
         conn.commit()
         cur.close()
