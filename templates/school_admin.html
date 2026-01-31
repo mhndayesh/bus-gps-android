@@ -286,7 +286,7 @@
                 .then(data => {
                     if (data.status === 'success') {
                         showResult('res_student', "✅ Student Added! UUID: " + data.id);
-                        // document.getElementById('assign_student_id').value = data.id; // Removed: using dropdown
+                        loadStudents(); // Refresh global list so they appear in other dropdowns
                     }
                     else showResult('res_student', "❌ Error");
                 });
