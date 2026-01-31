@@ -1047,36 +1047,7 @@ def get_camera_url(bus_id):
         "status": "live"
     })
 
-# --- PARENT ROUTES ---
 
-@app.route('/parent/login', methods=['GET', 'POST'])
-def parent_login():
-    """Parent Login Portal - Only for PARENT"""
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT id, name, role, school_id FROM users WHERE name = %s AND password_hash = %s", (username, password))
-        user = cur.fetchone()
-        cur.close()
-        conn.close()
-        
-        if user:
-            role = user[2]
-            if role != 'PARENT':
-                return "❌ Access Denied: This portal is for Parents only.", 403
-            
-            session['user_id'] = user[0]
-            session['user_name'] = user[1]
-            session['user_role'] = role
-            session['school_id'] = user[3]
-            return redirect(url_for('parent_dashboard'))
-        else:
-            return "❌ Invalid Login", 401
-    
-    return render_template('parent_login.html')
 
 @app.route('/api/my_children/<parent_id>')
 def get_my_children(parent_id):
