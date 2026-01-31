@@ -372,6 +372,40 @@ def get_my_kids():
         traceback.print_exc()
         return json.dumps({"status": "error", "message": str(e)}), 500
 
+# --- DEBUG: Check Parent Session ---
+@app.route('/api/debug/parent_session')
+@role_required(['PARENT'])
+def debug_parent_session():
+    """Debug endpoint to see parent session and their linked children"""
+    try:
+        parent_id = session.get('user_id')
+        parent_name = session.get('user_name')
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get all students linked to this parent
+        cur.execute("SELECT id, name, parent_id FROM students WHERE parent_id = %s", (parent_id,))
+        linked_students = cur.fetchall()
+        
+        # Get all parents in system to compare
+        cur.execute("SELECT id, name FROM users WHERE role = 'PARENT' LIMIT 10")
+        all_parents = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        return json.dumps({
+            "your_session": {
+                "user_id": parent_id,
+                "user_name": parent_name
+            },
+            "linked_students": [{"id": str(s[0]), "name": s[1], "parent_id": str(s[2])} for s in linked_students],
+            "sample_parents": [{"id": str(p[0]), "name": p[1]} for p in all_parents]
+        }, indent=2), 200
+    except Exception as e:
+        return json.dumps({"error": str(e)}), 500
+
 @app.route('/admin')
 @role_required(['SUPER_ADMIN', 'SCHOOL_ADMIN'])
 def admin():
