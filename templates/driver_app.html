@@ -111,6 +111,38 @@
         let watchId = null;
         const busId = "{{ bus_id }}";  // Injected from Server
 
+        // --- LOAD MANIFEST ---
+        function loadManifest() {
+            fetch('/api/driver/manifest')
+                .then(res => res.json())
+                .then(students => {
+                    const container = document.getElementById('student-container');
+                    if (students.length === 0) {
+                        container.innerHTML = '<p style="text-align:center;color:#aaa;">No students assigned to this route.</p>';
+                        return;
+                    }
+
+                    container.innerHTML = "";
+                    students.forEach(s => {
+                        const isBoarded = s.status === 'BOARDED';
+                        const btnClass = isBoarded ? "btn-drop" : "btn-board";
+                        const btnText = isBoarded ? "Drop Off" : "Board Bus";
+
+                        const html = `
+                        <div class="student-row">
+                            <span>${s.name} (${s.id})</span>
+                            <button class="toggle-btn ${btnClass}" onclick="toggleStudent(this, '${s.id}')">
+                                ${btnText}
+                            </button>
+                        </div>`;
+                        container.innerHTML += html;
+                    });
+                });
+        }
+
+        // Initial Load
+        loadManifest();
+
         // --- GPS LOGIC ---
         function startTrip() {
             if (!navigator.geolocation) return alert("GPS not supported on this device");
@@ -153,6 +185,7 @@
         function toggleStudent(btn, studentId) {
             const isBoarding = btn.innerText === "Board Bus";
 
+            // Optimistic UI Update
             if (isBoarding) {
                 btn.innerText = "Drop Off";
                 btn.className = "toggle-btn btn-drop";
