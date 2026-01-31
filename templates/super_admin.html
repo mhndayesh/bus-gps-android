@@ -235,6 +235,12 @@
         <!-- REGISTER STUDENT -->
         <div class="section section-white">
             <h2>2. Register Student</h2>
+
+            <label class="note">Select School: *</label>
+            <select id="student_school_id">
+                <option value="" disabled selected>Choose School...</option>
+            </select>
+
             <input type="text" id="s_name" placeholder="Student Name">
 
             <label class="note">Parent:</label>
@@ -665,13 +671,17 @@
         }
 
         function addStudent() {
+            const schoolId = document.getElementById('student_school_id').value;
+            if (!schoolId) { alert("Please select a school first!"); return; }
+
             const data = {
                 name: document.getElementById('s_name').value,
                 parent_id: document.getElementById('p_id').value,
                 nfc_id: document.getElementById('nfc_id').value,
                 lat: document.getElementById('lat').value,
                 lng: document.getElementById('lng').value,
-                address_text: document.getElementById('address_text').value
+                address_text: document.getElementById('address_text').value,
+                school_id: schoolId
             };
             fetch('/api/add_student', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -681,9 +691,8 @@
                 .then(data => {
                     if (data.status === 'success') {
                         showResult('res_student', "✅ Student Added! UUID: " + data.id);
-                        // document.getElementById('assign_student_id').value = data.id; // Removed: using dropdown now
                         loadStudents(); // Refresh lists
-                    } else showResult('res_student', "❌ Error");
+                    } else showResult('res_student', "❌ Error: " + (data.message || ''));
                 });
         }
 
@@ -704,6 +713,10 @@
                     // Populate Parent School Dropdown (if exists)
                     const parSchool = document.getElementById('parent_school_id');
                     if (parSchool) parSchool.innerHTML = html;
+
+                    // Populate Student School Dropdown
+                    const stuSchool = document.getElementById('student_school_id');
+                    if (stuSchool) stuSchool.innerHTML = html;
 
                     // Populate Assign Filter Dropdown
                     const filterSchool = document.getElementById('assign_filter_school');

@@ -432,18 +432,18 @@ def add_student():
     if session['user_role'] == 'SCHOOL_ADMIN':
         school_target = session['school_id']
     else:
-        # SUPER_ADMIN: Must match the Parent's School ID
-        # Since the UI selects a Parent, we should fetch that Parent's School ID.
-        p_id = data.get('parent_id')
-        if not p_id:
-             return "Parent Required", 400
-             
-        cur.execute("SELECT school_id FROM users WHERE id = %s", (p_id,))
-        row = cur.fetchone()
-        if row:
-            school_target = row[0] 
-        else:
-            return "Parent not found", 400
+        # SUPER_ADMIN: Use school_id from request, or fallback to parent's school
+        school_target = data.get('school_id')
+        if not school_target:
+            # Fallback: Get from parent
+            p_id = data.get('parent_id')
+            if p_id:
+                cur.execute("SELECT school_id FROM users WHERE id = %s", (p_id,))
+                row = cur.fetchone()
+                if row:
+                    school_target = row[0]
+            if not school_target:
+                return json.dumps({"status": "error", "message": "School required"}), 400
 
     # VALIDATION: Check if parent_id is a valid UUID
     import uuid
