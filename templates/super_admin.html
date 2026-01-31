@@ -725,18 +725,24 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ school_id: sid, username: u, password: p })
             })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        showResult('res_driver', '✅ Created!');
-                        loadDrivers();
-                        // Clear inputs
-                        document.getElementById('driver_user').value = '';
-                        document.getElementById('driver_school_id').value = '';
-                    } else showResult('res_driver', '❌ Error: ' + (data.message || 'Unknown'));
+                .then(async res => {
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            showResult('res_driver', '✅ Created!');
+                            loadDrivers();
+                            document.getElementById('driver_user').value = '';
+                            document.getElementById('driver_school_id').value = '';
+                        } else {
+                            showResult('res_driver', '❌ Error: ' + data.message);
+                        }
+                    } else {
+                        const text = await res.text();
+                        showResult('res_driver', '❌ Server Error: ' + text);
+                    }
                 })
                 .catch(err => {
-                    showResult('res_driver', '❌ Network Error: ' + err);
+                    showResult('res_driver', '❌ Network/JS Error: ' + err);
                 });
         }
 
