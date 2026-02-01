@@ -107,6 +107,16 @@
             animation: pulse 1.5s infinite;
         }
 
+        .btn-flip {
+            background: #3498db;
+            color: white;
+            display: none;
+        }
+
+        .btn-flip.visible {
+            display: block;
+        }
+
         @keyframes pulse {
 
             0%,
@@ -277,6 +287,11 @@
         📹 بدء البث المباشر
     </button>
 
+    <!-- Camera Flip Button -->
+    <button class="big-btn btn-flip" id="flip-btn" onclick="flipCamera()">
+        🔄 تبديل الكاميرا (أمامية/خلفية)
+    </button>
+
     <!-- Camera Preview -->
     <div class="camera-container" id="camera-container">
         <video id="camera-preview" autoplay playsinline muted></video>
@@ -303,6 +318,7 @@
         let cameraStream = null;
         let frameInterval = null;
         let isStreaming = false;
+        let useFrontCamera = false; // false = back camera, true = front camera
         const FRAME_RATE = 10; // 10 FPS (100ms interval) - smooth streaming
         const FRAME_QUALITY = 0.6; // JPEG quality (0.6 = 60%)
 
@@ -392,10 +408,11 @@
             const video = document.getElementById('camera-preview');
 
             try {
-                // Request camera access - prefer back camera for bus view
+                // Request camera access based on current setting
+                const facingMode = useFrontCamera ? 'user' : 'environment';
                 cameraStream = await navigator.mediaDevices.getUserMedia({
                     video: {
-                        facingMode: 'environment', // Back camera
+                        facingMode: facingMode,
                         width: { ideal: 640 },
                         height: { ideal: 480 }
                     },
@@ -410,6 +427,9 @@
                 btn.classList.add('streaming');
                 btn.innerHTML = '🔴 إيقاف البث';
                 isStreaming = true;
+
+                // Show flip button
+                document.getElementById('flip-btn').classList.add('visible');
 
                 // Notify server that streaming started
                 socket.emit('camera_stream_start', { bus_id: busId });
@@ -448,6 +468,9 @@
             btn.innerHTML = '📹 بدء البث المباشر';
             isStreaming = false;
 
+            // Hide flip button
+            document.getElementById('flip-btn').classList.remove('visible');
+
             // Notify server that streaming stopped
             socket.emit('camera_stream_stop', { bus_id: busId });
         }
@@ -478,6 +501,57 @@
                 });
 
             }, 1000 / FRAME_RATE);
+        }
+
+        // --- CAMERA FLIP LOGIC ---
+        async function flipCamera() {
+            if (!isStreaming) return;
+
+            // Toggle camera direction
+            useFrontCamera = !useFrontCamera;
+
+            // Stop current stream
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+
+            // Stop frame capture temporarily
+            if (frameInterval) {
+                clearInterval(frameInterval);
+                frameInterval = null;
+            }
+
+            const video = document.getElementById('camera-preview');
+
+            try {
+                // Get new camera
+                const facingMode = useFrontCamera ? 'user' : 'environment';
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: facingMode,
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    },
+                    audio: false
+                });
+
+                video.srcObject = cameraStream;
+                await video.play();
+
+                // Update flip button text
+                const flipBtn = document.getElementById('flip-btn');
+                flipBtn.innerHTML = useFrontCamera ? '🔄 الكاميرا الخلفية' : '🔄 الكاميرا الأمامية';
+
+                // Restart frame capture
+                startFrameCapture();
+
+            } catch (error) {
+                console.error('Flip camera error:', error);
+                alert('خطأ في تبديل الكاميرا: ' + error.message);
+                // Try to restart with original camera
+                useFrontCamera = !useFrontCamera;
+                await startCamera();
+            }
         }
 
         // --- ATTENDANCE LOGIC ---
