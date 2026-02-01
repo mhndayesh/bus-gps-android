@@ -249,6 +249,7 @@
         <button class="tab-btn" onclick="showTab('students')">👨‍🎓 الطلاب<br><small>Students</small></button>
         <button class="tab-btn" onclick="showTab('buses')">🚌 الحافلات<br><small>Buses</small></button>
         <button class="tab-btn" onclick="showTab('drivers')">🚗 السائقين<br><small>Drivers</small></button>
+        <button class="tab-btn" onclick="showTab('livestream')">📹 البث المباشر<br><small>Live Stream</small></button>
     </div>
 
     <!-- SCHOOLS TAB -->
@@ -505,6 +506,59 @@
         </div>
     </div>
 
+    <!-- LIVESTREAM TAB -->
+    <div id="tab-livestream" class="tab-content">
+        <div class="content-grid">
+            <div class="card gold-accent">
+                <h2>📹 مشاهدة البث المباشر</h2>
+                <p>View Live Stream</p>
+
+                <label>عرض حسب / View by:</label>
+                <select id="stream_mode" onchange="toggleStreamMode()">
+                    <option value="bus">🚌 حسب الحافلة / By Bus</option>
+                    <option value="driver">🚗 حسب السائق / By Driver</option>
+                </select>
+
+                <div id="bus-select-group">
+                    <label>اختر الحافلة / Select Bus:</label>
+                    <select id="stream_bus_id">
+                        <option value="" disabled selected>جاري التحميل...</option>
+                    </select>
+                </div>
+
+                <div id="driver-select-group" style="display:none;">
+                    <label>اختر السائق / Select Driver:</label>
+                    <select id="stream_driver_id" onchange="onDriverSelect()">
+                        <option value="" disabled selected>جاري التحميل...</option>
+                    </select>
+                </div>
+
+                <button class="btn-primary" onclick="openLiveStream()">📺 فتح البث / Open Stream</button>
+                <button class="btn-danger" onclick="closeLiveStream()" style="display:none;" id="close-stream-btn">✕
+                    إغلاق / Close</button>
+            </div>
+
+            <!-- Live Stream Viewer -->
+            <div class="card" id="stream-viewer" style="display:none;">
+                <div style="position:relative;">
+                    <div id="stream-status"
+                        style="background:#e74c3c; color:white; padding:8px 15px; border-radius:20px; display:inline-block; margin-bottom:15px;">
+                        <span
+                            style="display:inline-block; width:10px; height:10px; background:white; border-radius:50%; animation:blink 1s infinite;"></span>
+                        <span>بث مباشر - LIVE</span>
+                    </div>
+                    <img id="live-stream-img" style="width:100%; border-radius:12px; background:#000; min-height:300px;"
+                        alt="Live Stream">
+                    <div id="waiting-msg" style="text-align:center; padding:50px; color:#666;">
+                        <h3>⏳ في انتظار البث...</h3>
+                        <p>Waiting for driver to start streaming</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
         // Tab Navigation
         function showTab(tabName) {
@@ -902,6 +956,111 @@
         loadStudents();
         loadBuses();
         loadDrivers();
+        loadStreamBuses();
+        loadStreamDrivers();
+
+        // --- LIVESTREAM ---
+        const socket = io();
+        let currentStreamBusId = null;
+
+        function loadStreamBuses() {
+            fetch('/api/get_buses')
+                .then(res => res.json())
+                .then(buses => {
+                    const sel = document.getElementById('stream_bus_id');
+                    sel.innerHTML = '<option value="" disabled selected>اختر الحافلة...</option>';
+                    buses.forEach(b => {
+                        sel.innerHTML += `<option value="${b.id}">${b.plate_number} (ID: ${b.id})</option>`;
+                    });
+                });
+        }
+
+        function loadStreamDrivers() {
+            fetch('/api/get_drivers')
+                .then(res => res.json())
+                .then(drivers => {
+                    const sel = document.getElementById('stream_driver_id');
+                    sel.innerHTML = '<option value="" disabled selected>اختر السائق...</option>';
+                    drivers.forEach(d => {
+                        const busInfo = d.bus_id ? ` - 🚌 ${d.bus_id}` : ' - لا يوجد باص';
+                        sel.innerHTML += `<option value="${d.id}" data-bus="${d.bus_id || ''}">${d.name}${busInfo}</option>`;
+                    });
+                });
+        }
+
+        function toggleStreamMode() {
+            const mode = document.getElementById('stream_mode').value;
+            document.getElementById('bus-select-group').style.display = mode === 'bus' ? 'block' : 'none';
+            document.getElementById('driver-select-group').style.display = mode === 'driver' ? 'block' : 'none';
+        }
+
+        function onDriverSelect() {
+            const sel = document.getElementById('stream_driver_id');
+            const opt = sel.options[sel.selectedIndex];
+            const busId = opt.getAttribute('data-bus');
+            if (busId) {
+                document.getElementById('stream_bus_id').value = busId;
+            }
+        }
+
+        function openLiveStream() {
+            const mode = document.getElementById('stream_mode').value;
+            let busId;
+
+            if (mode === 'bus') {
+                busId = document.getElementById('stream_bus_id').value;
+            } else {
+                const sel = document.getElementById('stream_driver_id');
+                const opt = sel.options[sel.selectedIndex];
+                busId = opt.getAttribute('data-bus');
+            }
+
+            if (!busId) {
+                alert('يرجى اختيار الحافلة أو السائق');
+                return;
+            }
+
+            currentStreamBusId = busId;
+            document.getElementById('stream-viewer').style.display = 'block';
+            document.getElementById('close-stream-btn').style.display = 'inline-block';
+            document.getElementById('waiting-msg').style.display = 'block';
+            document.getElementById('live-stream-img').style.display = 'none';
+            document.getElementById('stream-status').style.display = 'none';
+
+            socket.emit('join_bus_stream', { bus_id: busId });
+        }
+
+        function closeLiveStream() {
+            currentStreamBusId = null;
+            document.getElementById('stream-viewer').style.display = 'none';
+            document.getElementById('close-stream-btn').style.display = 'none';
+            document.getElementById('live-stream-img').src = '';
+        }
+
+        // Handle incoming camera frames
+        socket.on('bus_camera_frame', function (data) {
+            if (currentStreamBusId && data.bus_id == currentStreamBusId) {
+                const img = document.getElementById('live-stream-img');
+                img.src = data.frame;
+                img.style.display = 'block';
+                document.getElementById('stream-status').style.display = 'inline-block';
+                document.getElementById('waiting-msg').style.display = 'none';
+            }
+        });
+
+        // Handle stream status updates
+        socket.on('bus_stream_status', function (data) {
+            if (currentStreamBusId && data.bus_id == currentStreamBusId) {
+                if (data.streaming) {
+                    document.getElementById('stream-status').style.display = 'inline-block';
+                    document.getElementById('waiting-msg').style.display = 'none';
+                } else {
+                    document.getElementById('stream-status').style.display = 'none';
+                    document.getElementById('waiting-msg').style.display = 'block';
+                    document.getElementById('live-stream-img').style.display = 'none';
+                }
+            }
+        });
     </script>
 </body>
 
