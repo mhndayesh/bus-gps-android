@@ -1,80 +1,220 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 
 <head>
-    <title>School Admin Dashboard</title>
+    <title>آمن مدرستي - إدارة المدرسة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: sans-serif;
-            padding: 20px;
-            background-color: #f4f4f9;
+        :root {
+            --sage-green: #9FB8AD;
+            --sage-dark: #7A9A8D;
+            --gold: #F5C518;
+            --gold-dark: #D4A914;
+            --black: #1A1A1A;
+            --cream: #F5F5F0;
+            --white: #FFFFFF;
         }
 
-        .section {
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            margin: 0;
+            background: linear-gradient(135deg, var(--sage-green) 0%, var(--sage-dark) 100%);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--black);
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--cream);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.4em;
+            color: var(--gold);
+        }
+
+        .header .subtitle {
+            font-size: 0.85em;
+            color: var(--sage-green);
+        }
+
+        .logout-btn {
+            background: #c0392b;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            background: var(--cream);
+            display: flex;
+            gap: 5px;
+            padding: 15px 20px;
+            overflow-x: auto;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-btn {
+            padding: 12px 25px;
+            border: none;
+            background: var(--white);
+            color: var(--black);
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            border: 2px solid transparent;
+        }
+
+        .tab-btn:hover {
+            background: var(--sage-green);
+        }
+
+        .tab-btn.active {
+            background: var(--gold);
+            color: var(--black);
+            border-color: var(--gold-dark);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
             padding: 20px;
-            border-radius: 8px;
-            background: white;
-            max-width: 600px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--cream);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border-right: 5px solid var(--sage-dark);
+        }
+
+        .card.gold-accent {
+            border-right-color: var(--gold);
+        }
+
+        .card h2 {
+            margin: 0 0 15px 0;
+            color: var(--black);
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card p {
+            color: var(--sage-dark);
+            font-size: 0.9em;
+            margin-bottom: 15px;
         }
 
         input,
         select {
             width: 100%;
-            margin-bottom: 10px;
-            padding: 8px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 2px solid var(--sage-green);
+            border-radius: 10px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 1em;
+            background: var(--white);
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: var(--black);
+            font-weight: 500;
         }
 
         button {
-            background: #007bff;
-            color: white;
-            padding: 10px;
-            border: none;
             width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
             cursor: pointer;
-            border-radius: 4px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 1em;
             font-weight: bold;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
         }
 
         button:hover {
-            background: #0056b3;
+            transform: translateY(-2px);
         }
 
-        h2 {
-            margin-top: 0;
-            color: #333;
+        .btn-primary {
+            background: var(--gold);
+            color: var(--black);
         }
 
-        .note {
-            font-size: 0.85em;
-            color: #666;
-            margin-bottom: 5px;
-            display: block;
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #c0392b;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--sage-dark);
+            color: white;
         }
 
         .result-box {
             margin-top: 10px;
-            padding: 10px;
-            background: #eef;
-            border-left: 4px solid #007bff;
+            padding: 12px;
+            background: rgba(245, 197, 24, 0.1);
+            border-right: 4px solid var(--gold);
+            border-radius: 8px;
             display: none;
-            word-break: break-all;
         }
 
-        .header {
-            background: #333;
-            color: white;
-            padding: 15px;
-            border-radius: 5px;
+        .row {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .row>* {
+            flex: 1;
         }
     </style>
 </head>
@@ -82,226 +222,211 @@
 <body>
 
     <div class="header">
-        <span>🏫 <b>School Admin Panel</b> (Alpha 1.1) | User: {{ user }}</span>
-        <a href="/logout"
-            style="background:red; color:white; text-decoration:none; padding:5px 15px; border-radius:3px; font-size:0.9em;">Logout</a>
-    </div>
-
-    <!-- STEP 1: CREATE PARENT -->
-    <div class="section">
-        <h2>1. Create Parent</h2>
-        <input type="text" id="parent_name" placeholder="Parent Name (e.g. Mrs. Bouvier)">
-        <button onclick="createParent()">Create Parent Account</button>
-        <div id="res_parent" class="result-box"></div>
-    </div>
-
-    <!-- STEP 2: REGISTER STUDENT -->
-    <div class="section">
-        <h2>2. Register Student</h2>
-        <input type="text" id="s_name" placeholder="Student Name (e.g. Ling)">
-
-        <label class="note">Parent:</label>
-        <select id="p_id">
-            <option value="" disabled selected>Loading parents...</option>
-        </select>
-
-        <label class="note">NFC Tag ID:</label>
-        <input type="text" id="nfc_id" placeholder="NFC Tag (e.g. TAG_LING)">
-
-        <label class="note">Home Location (Lat, Lng):</label>
-        <div style="display:flex; gap:10px;">
-            <input type="text" id="lat" placeholder="21.543">
-            <input type="text" id="lng" placeholder="39.172">
+        <div>
+            <h1>🏫 لوحة إدارة المدرسة</h1>
+            <span class="subtitle">مرحباً {{ user }} | School Admin</span>
         </div>
-        <input type="text" id="address_text" placeholder="Location Note (e.g. Building A)">
-
-        <button onclick="addStudent()">Register Student</button>
-        <div id="res_student" class="result-box"></div>
+        <a href="/logout" class="logout-btn">خروج</a>
     </div>
 
-    <!-- STEP 2.5: REMOVE STUDENT -->
-    <!-- STEP 2.5: REMOVE STUDENT -->
-    <div class="section">
-        <h2>Remove Student</h2>
-        <label class="note">Filter by Parent:</label>
-        <select id="del_parent_filter" onchange="filterStudentsForDelete()">
-            <option value="" disabled selected>Loading parents...</option>
-        </select>
-
-        <label class="note">Select Student:</label>
-        <select id="del_student_id">
-            <option value="" disabled selected>Select Parent First</option>
-        </select>
-        <button onclick="deleteStudent()" style="background:#c0392b;">Remove Student</button>
-        <div id="res_del_student" class="result-box"></div>
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="showTab('parents')">👨‍👩‍👧 أولياء
+            الأمور<br><small>Parents</small></button>
+        <button class="tab-btn" onclick="showTab('students')">👨‍🎓 الطلاب<br><small>Students</small></button>
+        <button class="tab-btn" onclick="showTab('drivers')">🚗 السائقين<br><small>Drivers</small></button>
     </div>
 
-    <!-- STEP 2.7: UPDATE LOCATION -->
-    <div class="section">
-        <h2>Update Location</h2>
-        <label class="note">Filter by Parent:</label>
-        <select id="upd_parent_filter" onchange="filterStudentsByParent()">
-            <option value="" disabled selected>Loading parents...</option>
-        </select>
+    <!-- PARENTS TAB -->
+    <div id="tab-parents" class="tab-content active">
+        <div class="content-grid">
+            <div class="card gold-accent">
+                <h2>👨‍👩‍👧 إنشاء حساب ولي أمر</h2>
+                <p>Create Parent Account</p>
 
-        <label class="note">Select Student:</label>
-        <select id="upd_student_id">
-            <option value="" disabled selected>Select Parent First</option>
-        </select>
+                <label>اسم ولي الأمر / Parent Name:</label>
+                <input type="text" id="parent_name" placeholder="مثال: أحمد محمد">
 
-        <div style="display:flex; gap:10px; margin-bottom:10px;">
-            <input type="text" id="upd_lat" placeholder="New Lat">
-            <input type="text" id="upd_lng" placeholder="New Lng">
+                <button class="btn-primary" onclick="createParent()">+ إنشاء الحساب</button>
+                <div id="res_parent" class="result-box"></div>
+            </div>
         </div>
-        <input type="text" id="upd_address_text" placeholder="Location Note (e.g. Building A, near Store)">
-        <button onclick="updateLocation()" style="background:#8e44ad;">Update Location</button>
-        <div id="res_upd_loc" class="result-box"></div>
     </div>
 
-    <!-- STEP 3: ASSIGN BUS -->
-    <div class="section">
-        <h2>3. Assign Bus (Create Stop)</h2>
-        <label class="note">Filter by Parent:</label>
-        <select id="assign_parent_filter" onchange="filterStudentsForAssignment()">
-            <option value="" disabled selected>Loading parents...</option>
-        </select>
+    <!-- STUDENTS TAB -->
+    <div id="tab-students" class="tab-content">
+        <div class="content-grid">
+            <div class="card gold-accent">
+                <h2>👨‍🎓 تسجيل طالب جديد</h2>
+                <p>Register New Student</p>
 
-        <label class="note">Select Student:</label>
-        <select id="assign_student_id">
-            <option value="" disabled selected>Select Parent First</option>
-        </select>
+                <label>اسم الطالب / Student Name:</label>
+                <input type="text" id="s_name" placeholder="اسم الطالب">
 
-        <label class="note">Select Bus:</label>
-        <select id="bus_id">
-            <option value="" disabled selected>Loading buses...</option>
-        </select>
+                <label>ولي الأمر / Parent:</label>
+                <select id="p_id">
+                    <option value="" disabled selected>اختر ولي الأمر...</option>
+                </select>
 
-        <button onclick="assignBus()" style="background:orange; color:black; margin-top:10px;">Assign & Create
-            Stop</button>
-        <div id="res_bus" class="result-box"></div>
+                <label>NFC Tag:</label>
+                <input type="text" id="nfc_id" placeholder="TAG_ID">
+
+                <label>الموقع (خط العرض/الطول):</label>
+                <div class="row">
+                    <input type="text" id="lat" placeholder="Lat">
+                    <input type="text" id="lng" placeholder="Lng">
+                </div>
+
+                <input type="text" id="address_text" placeholder="ملاحظة الموقع">
+
+                <button class="btn-primary" onclick="addStudent()">+ تسجيل الطالب</button>
+                <div id="res_student" class="result-box"></div>
+            </div>
+
+            <div class="card">
+                <h2>📍 تحديث موقع الطالب</h2>
+                <p>Update Student Location</p>
+
+                <label>اختر ولي الأمر:</label>
+                <select id="upd_parent_filter" onchange="filterStudentsByParent()">
+                    <option value="" disabled selected>اختر ولي الأمر...</option>
+                </select>
+
+                <label>اختر الطالب:</label>
+                <select id="upd_student_id">
+                    <option value="" disabled selected>اختر ولي الأمر أولاً</option>
+                </select>
+
+                <div class="row">
+                    <input type="text" id="upd_lat" placeholder="Lat جديد">
+                    <input type="text" id="upd_lng" placeholder="Lng جديد">
+                </div>
+                <input type="text" id="upd_address_text" placeholder="ملاحظة الموقع">
+
+                <button class="btn-secondary" onclick="updateLocation()">تحديث الموقع</button>
+                <div id="res_upd_loc" class="result-box"></div>
+            </div>
+
+            <div class="card">
+                <h2>🗑️ حذف طالب</h2>
+                <p>Remove Student</p>
+
+                <label>اختر ولي الأمر:</label>
+                <select id="del_parent_filter" onchange="filterStudentsForDelete()">
+                    <option value="" disabled selected>اختر ولي الأمر...</option>
+                </select>
+
+                <label>اختر الطالب:</label>
+                <select id="del_student_id">
+                    <option value="" disabled selected>اختر ولي الأمر أولاً</option>
+                </select>
+
+                <button class="btn-danger" onclick="deleteStudent()">حذف الطالب</button>
+                <div id="res_del_student" class="result-box"></div>
+            </div>
+
+            <div class="card">
+                <h2>🚌 تعيين باص للطالب</h2>
+                <p>Assign Bus to Student</p>
+
+                <label>اختر ولي الأمر:</label>
+                <select id="assign_parent_filter" onchange="filterStudentsForAssignment()">
+                    <option value="" disabled selected>اختر ولي الأمر...</option>
+                </select>
+
+                <label>اختر الطالب:</label>
+                <select id="assign_student_id">
+                    <option value="" disabled selected>اختر ولي الأمر أولاً</option>
+                </select>
+
+                <label>اختر الباص:</label>
+                <select id="bus_id">
+                    <option value="" disabled selected>جاري التحميل...</option>
+                </select>
+
+                <button class="btn-primary" onclick="assignBus()">تعيين الباص</button>
+                <div id="res_bus" class="result-box"></div>
+            </div>
+        </div>
     </div>
 
-    <!-- STEP 4: DRIVER MANAGEMENT -->
-    <div class="section" style="border-color: #27ae60;">
-        <h2 style="color:#27ae60;">4. Manage Drivers</h2>
+    <!-- DRIVERS TAB -->
+    <div id="tab-drivers" class="tab-content">
+        <div class="content-grid">
+            <div class="card gold-accent">
+                <h2>🚗 إنشاء حساب سائق</h2>
+                <p>Create Driver Account</p>
 
-        <h3>Create Driver Account</h3>
-        <input type="text" id="driver_user" placeholder="Driver Username (e.g. driver_bob)">
-        <input type="text" id="driver_pass" placeholder="Password">
-        <button onclick="createDriver()" style="background:#27ae60;">Create Driver</button>
-        <div id="res_driver" class="result-box"></div>
+                <label>اسم المستخدم / Username:</label>
+                <input type="text" id="driver_user" placeholder="اسم المستخدم">
 
-        <hr style="margin:20px 0; border:0; border-top:1px solid #ccc;">
+                <label>كلمة المرور / Password:</label>
+                <input type="password" id="driver_pass" placeholder="كلمة المرور">
 
-        <h3>Assign Driver to Bus</h3>
-        <label class="note">Select Driver:</label>
-        <select id="assign_driver_id">
-            <option value="" disabled selected>Loading drivers...</option>
-        </select>
+                <button class="btn-primary" onclick="createDriver()">+ إنشاء حساب السائق</button>
+                <div id="res_driver" class="result-box"></div>
+            </div>
 
-        <label class="note">Select Bus:</label>
-        <select id="assign_driver_bus_id">
-            <option value="" disabled selected>Loading buses...</option>
-        </select>
+            <div class="card">
+                <h2>🔗 تعيين سائق للباص</h2>
+                <p>Assign Driver to Bus</p>
 
-        <button onclick="assignDriverToBus()" style="background:#16a085; margin-top:10px;">Assign Driver</button>
-        <div id="res_assign_driver" class="result-box"></div>
+                <label>اختر السائق:</label>
+                <select id="assign_driver_id">
+                    <option value="" disabled selected>جاري التحميل...</option>
+                </select>
+
+                <label>اختر الباص:</label>
+                <select id="assign_driver_bus_id">
+                    <option value="" disabled selected>جاري التحميل...</option>
+                </select>
+
+                <button class="btn-success" onclick="assignDriverToBus()">تعيين السائق</button>
+                <div id="res_assign_driver" class="result-box"></div>
+            </div>
+        </div>
     </div>
 
     <script>
+        // Tab Navigation
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById('tab-' + tabName).classList.add('active');
+            event.target.closest('.tab-btn').classList.add('active');
+        }
+
         function showResult(elementId, msg) {
             const el = document.getElementById(elementId);
             el.style.display = 'block';
             el.innerText = msg;
         }
 
+        // --- PARENTS ---
         function createParent() {
             const name = document.getElementById('parent_name').value;
+            if (!name) { alert("يرجى إدخال الاسم"); return; }
+
             fetch('/api/create_parent', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name })
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
             })
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        showResult('res_parent', '✅ Created! UUID: ' + data.id);
-                        loadParents(); // Refresh dropdown
+                        showResult('res_parent', '✅ تم الإنشاء! UUID: ' + data.id);
+                        loadParents();
                         setTimeout(() => {
-                            document.getElementById('p_id').value = data.id; // Auto-select
+                            document.getElementById('p_id').value = data.id;
                         }, 500);
-                    } else {
-                        showResult('res_parent', '❌ Error');
-                    }
+                    } else showResult('res_parent', '❌ خطأ');
                 });
         }
 
-        function updateLocation() {
-            const sid = document.getElementById('upd_student_id').value;
-            const lat = document.getElementById('upd_lat').value;
-            const lng = document.getElementById('upd_lng').value;
-
-            if (!sid || !lat || !lng) { alert("Missing Data"); return; }
-
-            fetch('/api/update_student_location', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ student_id: sid, lat: lat, lng: lng })
-            })
-                .then(res => {
-                    if (res.status === 200) showResult('res_upd_loc', "✅ Location Updated");
-                    else res.text().then(t => showResult('res_upd_loc', "❌ " + t));
-                });
-        }
-
-        function deleteStudent() {
-            const sid = document.getElementById('del_student_id').value;
-            if (!sid) { alert("Select a student!"); return; }
-            if (!confirm("⚠️ Remove this student?")) return;
-
-            fetch('/api/delete_student', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ student_id: sid })
-            })
-                .then(res => {
-                    if (res.status === 200) {
-                        showResult('res_del_student', "✅ Student Removed");
-                        loadStudents(); // Refresh list
-                    }
-                    else res.text().then(t => showResult('res_del_student', "❌ " + t));
-                });
-        }
-
-        function loadStudents() {
-            fetch('/api/get_students')
-                .then(res => res.json())
-                .then(data => {
-                    const selDel = document.getElementById('del_student_id');
-                    const selUpd = document.getElementById('upd_student_id');
-
-                    if (selDel) selDel.innerHTML = '<option value="" disabled selected>Select Student to Remove</option>';
-                    if (selUpd) selUpd.innerHTML = '<option value="" disabled selected>Select Student to Update</option>';
-
-                    data.forEach(s => {
-                        const text = `${s.name} (${s.code})`;
-
-                        // Add to Delete Dropdown
-                        if (selDel) {
-                            const opt1 = document.createElement('option');
-                            opt1.value = s.id;
-                            opt1.innerText = text;
-                            selDel.appendChild(opt1);
-                        }
-
-                        // Add to Update Dropdown
-                        if (selUpd) {
-                            const opt2 = document.createElement('option');
-                            opt2.value = s.id;
-                            opt2.innerText = text;
-                            selUpd.appendChild(opt2);
-                        }
-                    });
-                });
-        }
+        // --- STUDENTS ---
+        let ALL_STUDENTS = [];
+        let ALL_PARENTS = [];
 
         function addStudent() {
             const data = {
@@ -309,7 +434,8 @@
                 parent_id: document.getElementById('p_id').value,
                 nfc_id: document.getElementById('nfc_id').value,
                 lat: document.getElementById('lat').value,
-                lng: document.getElementById('lng').value
+                lng: document.getElementById('lng').value,
+                address_text: document.getElementById('address_text').value
             };
 
             fetch('/api/add_student', {
@@ -319,10 +445,90 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        showResult('res_student', "✅ Student Added! UUID: " + data.id);
-                        loadStudents(); // Refresh global list so they appear in other dropdowns
+                        showResult('res_student', "✅ تم التسجيل! ID: " + data.id);
+                        loadStudents();
+                    } else showResult('res_student', "❌ خطأ");
+                });
+        }
+
+        function loadStudents() {
+            fetch('/api/get_students')
+                .then(res => res.json())
+                .then(data => { ALL_STUDENTS = data; });
+        }
+
+        function loadParents() {
+            fetch('/api/get_parents')
+                .then(res => res.json())
+                .then(data => {
+                    ALL_PARENTS = data;
+                    const html = '<option value="" disabled selected>اختر ولي الأمر</option>' +
+                        data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+                    ['p_id', 'upd_parent_filter', 'del_parent_filter', 'assign_parent_filter'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.innerHTML = html;
+                    });
+                });
+        }
+
+        function filterStudentsByParent() {
+            const pid = document.getElementById('upd_parent_filter').value;
+            const sel = document.getElementById('upd_student_id');
+            const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
+            sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
+                filtered.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        }
+
+        function filterStudentsForDelete() {
+            const pid = document.getElementById('del_parent_filter').value;
+            const sel = document.getElementById('del_student_id');
+            const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
+            sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
+                filtered.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        }
+
+        function filterStudentsForAssignment() {
+            const pid = document.getElementById('assign_parent_filter').value;
+            const sel = document.getElementById('assign_student_id');
+            const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
+            sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
+                filtered.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        }
+
+        function updateLocation() {
+            const sid = document.getElementById('upd_student_id').value;
+            const lat = document.getElementById('upd_lat').value;
+            const lng = document.getElementById('upd_lng').value;
+            const addr = document.getElementById('upd_address_text').value;
+
+            if (!sid || !lat || !lng) { alert("يرجى ملء البيانات"); return; }
+
+            fetch('/api/update_student_location', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ student_id: sid, lat, lng, address_text: addr })
+            })
+                .then(res => {
+                    if (res.status === 200) showResult('res_upd_loc', "✅ تم التحديث");
+                    else res.text().then(t => showResult('res_upd_loc', "❌ " + t));
+                });
+        }
+
+        function deleteStudent() {
+            const sid = document.getElementById('del_student_id').value;
+            if (!sid) { alert("اختر طالباً"); return; }
+            if (!confirm("⚠️ هل أنت متأكد من حذف هذا الطالب؟")) return;
+
+            fetch('/api/delete_student', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ student_id: sid })
+            })
+                .then(res => {
+                    if (res.status === 200) {
+                        showResult('res_del_student', "✅ تم الحذف");
+                        loadStudents();
                     }
-                    else showResult('res_student', "❌ Error");
+                    else res.text().then(t => showResult('res_del_student', "❌ " + t));
                 });
         }
 
@@ -330,32 +536,40 @@
             const sid = document.getElementById('assign_student_id').value;
             const bid = document.getElementById('bus_id').value;
 
-            if (!sid || sid === "Select Parent First") { alert("Select a student!"); return; }
-            if (!bid) { alert("Select a bus!"); return; }
+            if (!sid) { alert("اختر طالباً"); return; }
+            if (!bid) { alert("اختر باصاً"); return; }
 
             fetch('/api/assign_bus', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ student_id: sid, bus_id: bid })
             })
                 .then(res => {
-                    if (res.status === 200) showResult('res_bus', "✅ Bus Assigned (Stop Created)");
+                    if (res.status === 200) showResult('res_bus', "✅ تم التعيين");
                     else res.text().then(t => showResult('res_bus', "❌ " + t));
                 });
         }
 
-        function filterStudentsForAssignment() {
-            const pid = document.getElementById('assign_parent_filter').value;
-            const selAssign = document.getElementById('assign_student_id');
-            const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
+        // --- BUSES ---
+        function loadBuses() {
+            fetch('/api/get_buses')
+                .then(res => res.json())
+                .then(data => {
+                    const html = '<option value="" disabled selected>اختر الباص</option>' +
+                        data.map(b => `<option value="${b.id}">${b.plate}</option>`).join('');
 
-            selAssign.innerHTML = '<option value="" disabled selected>Select Student</option>' +
-                filtered.map(s => `<option value="${s.id}">${s.name} (${s.code})</option>`).join('');
+                    ['bus_id', 'assign_driver_bus_id'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.innerHTML = html;
+                    });
+                });
         }
 
-        // --- DRIVER OPS ---
+        // --- DRIVERS ---
         function createDriver() {
             const u = document.getElementById('driver_user').value;
             const p = document.getElementById('driver_pass').value;
+
+            if (!u || !p) { alert("أدخل بيانات الدخول"); return; }
 
             fetch('/api/create_driver', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -364,9 +578,11 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        showResult('res_driver', '✅ Driver Created!');
-                        loadDrivers(); // Refresh list
-                    } else showResult('res_driver', '❌ Error');
+                        showResult('res_driver', '✅ تم الإنشاء!');
+                        loadDrivers();
+                        document.getElementById('driver_user').value = '';
+                        document.getElementById('driver_pass').value = '';
+                    } else showResult('res_driver', '❌ خطأ');
                 });
         }
 
@@ -375,7 +591,7 @@
                 .then(res => res.json())
                 .then(data => {
                     const sel = document.getElementById('assign_driver_id');
-                    sel.innerHTML = '<option value="" disabled selected>Select Driver</option>' +
+                    sel.innerHTML = '<option value="" disabled selected>اختر السائق</option>' +
                         data.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
                 });
         }
@@ -389,83 +605,12 @@
                 body: JSON.stringify({ driver_id: did, bus_id: bid })
             })
                 .then(res => {
-                    if (res.status === 200) showResult('res_assign_driver', "✅ Driver Assigned!");
+                    if (res.status === 200) showResult('res_assign_driver', "✅ تم التعيين!");
                     else res.text().then(t => showResult('res_assign_driver', "❌ " + t));
                 });
         }
 
-        // Load Buses on Page Load
-        function loadBuses() {
-            fetch('/api/get_buses')
-                .then(res => res.json())
-                .then(data => {
-                    const select = document.getElementById('bus_id');
-                    const selectDriver = document.getElementById('assign_driver_bus_id');
-
-                    const opts = '<option value="" disabled selected>Select a Bus</option>' +
-                        data.map(bus => `<option value="${bus.id}">Plate: ${bus.plate} (ID: ${bus.id.substring(0, 4)}...)</option>`).join('');
-
-                    select.innerHTML = opts;
-                    if (selectDriver) selectDriver.innerHTML = opts;
-                })
-                .catch(err => {
-                    console.error("Error loading buses", err);
-                });
-        }
-
-        let ALL_STUDENTS = [];
-        let ALL_PARENTS = [];
-
-        function loadParents() {
-            fetch('/api/get_parents')
-                .then(res => res.json())
-                .then(data => {
-                    ALL_PARENTS = data;
-                    const sel = document.getElementById('p_id');
-                    const selFilter = document.getElementById('upd_parent_filter');
-                    const selAssignFilter = document.getElementById('assign_parent_filter');
-                    const selDelFilter = document.getElementById('del_parent_filter');
-
-                    const html = '<option value="" disabled selected>Select Parent</option>' +
-                        data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-
-                    if (sel) sel.innerHTML = html;
-                    if (selFilter) selFilter.innerHTML = html;
-                    if (selAssignFilter) selAssignFilter.innerHTML = html;
-                    if (selDelFilter) selDelFilter.innerHTML = html;
-                });
-        }
-
-        function loadStudents() {
-            fetch('/api/get_students')
-                .then(res => res.json())
-                .then(data => {
-                    ALL_STUDENTS = data;
-                    // We now filter for delete too, so initial load just waits for filter
-                    const selDel = document.getElementById('del_student_id');
-                    if (selDel) selDel.innerHTML = '<option value="" disabled selected>Select Parent First</option>';
-                });
-        }
-
-        function filterStudentsByParent() {
-            const pid = document.getElementById('upd_parent_filter').value;
-            const selUpd = document.getElementById('upd_student_id');
-            const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
-
-            selUpd.innerHTML = '<option value="" disabled selected>Select Student</option>' +
-                filtered.map(s => `<option value="${s.id}">${s.name} (${s.code})</option>`).join('');
-        }
-
-        function filterStudentsForDelete() {
-            const pid = document.getElementById('del_parent_filter').value;
-            const selDel = document.getElementById('del_student_id');
-            const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
-
-            selDel.innerHTML = '<option value="" disabled selected>Select Student</option>' +
-                filtered.map(s => `<option value="${s.id}">${s.name} (${s.code})</option>`).join('');
-        }
-
-        // Init
+        // Initialize
         loadBuses();
         loadParents();
         loadStudents();
