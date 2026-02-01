@@ -2,107 +2,154 @@
 <html>
 
 <head>
-    <title>Super Admin Command Center</title>
+    <title>آمن مدرستي - Admin Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --sage-green: #9FB8AD;
+            --sage-dark: #7A9A8D;
+            --gold: #F5C518;
+            --gold-dark: #D4A914;
+            --black: #1A1A1A;
+            --cream: #F5F5F0;
+            --white: #FFFFFF;
+        }
+
         body {
-            font-family: sans-serif;
+            font-family: 'Tajawal', sans-serif;
             padding: 20px;
-            background-color: #2c3e50;
-            color: #ecf0f1;
+            background: linear-gradient(135deg, var(--sage-green) 0%, var(--sage-dark) 100%);
+            color: var(--black);
+            min-height: 100vh;
         }
 
         .section {
             margin-bottom: 20px;
-            border: 1px solid #34495e;
+            border: 2px solid var(--sage-dark);
             padding: 20px;
-            border-radius: 8px;
-            background: #34495e;
+            border-radius: 15px;
+            background: var(--cream);
             max-width: 600px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
 
         .section-white {
-            background: #ecf0f1;
-            color: #2c3e50;
-            border-color: #bdc3c7;
+            background: var(--white);
+            border-color: var(--gold);
         }
 
         .section-white h2 {
-            color: #2c3e50;
-            border-bottom-color: #bdc3c7;
+            color: var(--black);
+            border-bottom-color: var(--gold);
         }
 
         .section-white .note {
-            color: #7f8c8d;
+            color: var(--sage-dark);
         }
 
         input,
         select {
             width: 100%;
             margin-bottom: 10px;
-            padding: 10px;
+            padding: 12px;
             box-sizing: border-box;
-            border: none;
-            border-radius: 4px;
+            border: 2px solid var(--sage-green);
+            border-radius: 10px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
         }
 
-        input[type="text"] {
-            background: #fff;
-            color: #333;
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            background: var(--white);
+            color: var(--black);
+        }
+
+        select {
+            background: var(--white);
+            color: var(--black);
         }
 
         button {
-            padding: 12px;
+            padding: 14px;
             border: none;
             width: 100%;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 12px;
             font-weight: bold;
             font-size: 1.1em;
             text-transform: uppercase;
             margin-bottom: 5px;
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
         }
 
         h2 {
             margin-top: 0;
-            color: #ecf0f1;
-            border-bottom: 1px solid #7f8c8d;
+            color: var(--black);
+            border-bottom: 2px solid var(--sage-green);
             padding-bottom: 10px;
+        }
+
+        h3 {
+            color: var(--black);
         }
 
         .result-box {
             margin-top: 10px;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.2);
-            border-left: 4px solid #e74c3c;
+            padding: 12px;
+            background: rgba(159, 184, 173, 0.2);
+            border-left: 4px solid var(--gold);
             display: none;
             margin-bottom: 10px;
-            color: #ecf0f1;
+            color: var(--black);
+            border-radius: 8px;
         }
 
         .section-white .result-box {
-            color: #2c3e50;
-            border-left-color: #3498db;
-            background: rgba(52, 152, 219, 0.1);
+            color: var(--black);
+            border-left-color: var(--gold);
+            background: rgba(245, 197, 24, 0.1);
         }
 
         .header {
-            background: #1a252f;
-            padding: 20px;
-            border-radius: 5px;
+            background: var(--black);
+            padding: 20px 25px;
+            border-radius: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
+            color: var(--cream);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .header span {
+            color: var(--cream);
+        }
+
+        .header b {
+            color: var(--gold);
         }
 
         .btn-add {
-            background: #27ae60;
-            color: white;
+            background: var(--gold);
+            color: var(--black);
         }
 
         .btn-add:hover {
-            background: #2ecc71;
+            background: var(--gold-dark);
         }
 
         .btn-delete {
@@ -115,18 +162,33 @@
         }
 
         .btn-admin {
-            background: #3498db;
-            color: white;
+            background: var(--sage-dark);
+            color: var(--white);
         }
 
         .btn-admin:hover {
-            background: #2980b9;
+            background: var(--black);
         }
 
         .note {
             font-size: 0.85em;
             display: block;
             margin-bottom: 5px;
+            color: var(--sage-dark);
+        }
+
+        a.logout-btn {
+            background: #c0392b;
+            color: white;
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        a.logout-btn:hover {
+            background: #e74c3c;
         }
     </style>
 </head>
@@ -134,9 +196,8 @@
 <body>
 
     <div class="header">
-        <span>🛡️ <b>OMNI-COMMAND CENTER</b> (Alpha 1.1) | Commander: {{ user }}</span>
-        <a href="/logout"
-            style="background:#e74c3c; color:white; text-decoration:none; padding:10px 20px; border-radius:3px;">LOGOUT</a>
+        <span>🛡️ <b>آمن مدرستي</b> Command Center | Welcome: {{ user }}</span>
+        <a href="/logout" class="logout-btn">LOGOUT</a>
     </div>
 
     <div style="display:flex; flex-wrap:wrap; gap:20px;">

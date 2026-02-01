@@ -2,16 +2,28 @@
 <html>
 
 <head>
-    <title>School Bus Command Center</title>
+    <title>آمن مدرستي - School Bus Tracker</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
+        :root {
+            --sage-green: #9FB8AD;
+            --sage-dark: #7A9A8D;
+            --gold: #F5C518;
+            --gold-dark: #D4A914;
+            --black: #1A1A1A;
+            --cream: #F5F5F0;
+            --white: #FFFFFF;
+        }
+
         body {
             margin: 0;
-            font-family: sans-serif;
+            font-family: 'Tajawal', sans-serif;
+            background: var(--sage-green);
         }
 
         #map {
@@ -27,7 +39,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(26, 26, 26, 0.9);
             z-index: 9999;
             justify-content: center;
             align-items: center;
@@ -37,42 +49,121 @@
         video {
             width: 80%;
             max-width: 800px;
-            background: black;
-            border: 2px solid white;
+            background: var(--black);
+            border: 3px solid var(--gold);
+            border-radius: 12px;
         }
 
         .close-btn {
-            background: red;
-            color: white;
-            padding: 10px 20px;
+            background: var(--gold);
+            color: var(--black);
+            padding: 12px 30px;
             border: none;
-            margin-top: 10px;
+            margin-top: 15px;
             cursor: pointer;
             font-size: 16px;
+            font-weight: bold;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: var(--gold-dark);
+            transform: scale(1.05);
         }
 
         /* The Button inside the Map Popup */
         .watch-btn {
-            background: #007bff;
-            color: white;
+            background: var(--gold);
+            color: var(--black);
             border: none;
-            padding: 5px 10px;
+            padding: 8px 15px;
             cursor: pointer;
-            border-radius: 3px;
+            border-radius: 20px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .watch-btn:hover {
+            background: var(--gold-dark);
         }
 
         #status-panel {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: white;
-            padding: 15px;
+            top: 15px;
+            right: 15px;
+            background: var(--cream);
+            padding: 20px;
             z-index: 1000;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-            width: 250px;
-            border: 2px solid #007bff;
-            /* Debug Border */
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            width: 280px;
+            border: 3px solid var(--sage-dark);
+        }
+
+        #status-panel h3 {
+            margin: 0 0 15px 0;
+            color: var(--black);
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #bus-list {
+            background: var(--white);
+            padding: 12px;
+            border-radius: 10px;
+            color: var(--black);
+            font-size: 0.95em;
+        }
+
+        .nav-link {
+            display: block;
+            text-align: center;
+            padding: 12px;
+            text-decoration: none;
+            border-radius: 12px;
+            margin-top: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-admin {
+            background: var(--sage-green);
+            color: var(--black);
+        }
+
+        .nav-parent {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        .nav-driver {
+            background: var(--black);
+            color: var(--cream);
+        }
+
+        /* Logo styling */
+        .logo-container {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .logo-container img {
+            width: 80px;
+            height: auto;
+        }
+
+        .app-title {
+            font-size: 1.1em;
+            color: var(--sage-dark);
+            margin: 5px 0;
         }
     </style>
 </head>
@@ -80,26 +171,24 @@
 <body>
 
     <div id="video-modal">
-        <h2 style="color:white;">Live Feed: Bus <span id="modal-bus-id">--</span></h2>
+        <h2 style="color: var(--gold);">🎥 Live Feed: Bus <span id="modal-bus-id">--</span></h2>
         <video id="video-player" controls autoplay></video>
-        <button class="close-btn" onclick="closeCamera()">CLOSE FEED</button>
+        <button class="close-btn" onclick="closeCamera()">✕ CLOSE FEED</button>
     </div>
 
     <div id="status-panel">
-        <h3>🚌 Live Fleet</h3>
+        <div class="logo-container">
+            <div style="font-size: 2.5em;">🚌</div>
+            <div class="app-title">آمن مدرستي</div>
+        </div>
+
+        <h3>📍 Live Fleet</h3>
         <div id="bus-list">Waiting for signal...</div>
-        <hr>
-        <a href="/admin"
-            style="display:block; text-align:center; background:#eee; padding:5px; text-decoration:none; border-radius:4px; margin-top:10px;">⚙️
-            Admin Panel</a>
+        <hr style="border: none; border-top: 2px solid var(--sage-green); margin: 15px 0;">
 
-        <a href="/parent/login"
-            style="display:block; text-align:center; background:#ffecb3; padding:5px; text-decoration:none; border-radius:4px; margin-top:5px; color:#d35400;">👨‍👩‍👧‍👦
-            Parent Login</a>
-
-        <a href="/driver/login"
-            style="display:block; text-align:center; background:#d4edda; padding:5px; text-decoration:none; border-radius:4px; margin-top:5px; color:#155724;">🚌
-            Driver Login</a>
+        <a href="/admin" class="nav-link nav-admin">⚙️ Admin Panel</a>
+        <a href="/parent/login" class="nav-link nav-parent">👨‍👩‍👧‍👦 Parent Login</a>
+        <a href="/driver/login" class="nav-link nav-driver">🚌 Driver Login</a>
     </div>
 
     <div id="map"></div>

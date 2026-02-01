@@ -2,62 +2,110 @@
 <html>
 
 <head>
-    <title>Parent Portal</title>
+    <title>آمن مدرستي - Parent Portal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
+        :root {
+            --sage-green: #9FB8AD;
+            --sage-dark: #7A9A8D;
+            --gold: #F5C518;
+            --gold-dark: #D4A914;
+            --black: #1A1A1A;
+            --cream: #F5F5F0;
+            --white: #FFFFFF;
+        }
+
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Tajawal', sans-serif;
             margin: 0;
-            background: #f0f2f5;
+            background: var(--sage-green);
         }
 
         /* Mobile Header */
         .header {
-            background: #2c3e50;
-            color: white;
-            padding: 15px;
-            text-align: center;
+            background: var(--black);
+            color: var(--cream);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h3 {
+            margin: 0;
+            color: var(--gold);
+        }
+
+        .header a {
+            color: var(--cream);
+            text-decoration: none;
+            background: #c0392b;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 0.85em;
         }
 
         /* Child Cards */
         .card-container {
-            padding: 10px;
+            padding: 15px;
             display: flex;
-            gap: 10px;
+            gap: 15px;
             overflow-x: auto;
         }
 
         .child-card {
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            min-width: 200px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            border-left: 5px solid #ddd;
+            background: var(--cream);
+            padding: 20px;
+            border-radius: 15px;
+            min-width: 220px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border-left: 5px solid var(--sage-dark);
+        }
+
+        .child-card h3 {
+            margin: 0 0 10px 0;
+            color: var(--black);
         }
 
         .status-on {
-            border-left-color: #27ae60;
+            border-left-color: var(--gold);
+            background: linear-gradient(135deg, var(--cream) 0%, rgba(245, 197, 24, 0.1) 100%);
         }
 
-        /* Green for On Bus */
         .status-off {
-            border-left-color: #95a5a6;
+            border-left-color: var(--sage-dark);
         }
 
-        /* Grey for Off */
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .status-badge.on {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        .status-badge.off {
+            background: var(--sage-dark);
+            color: var(--white);
+        }
 
         /* The Map */
         #map {
             height: 60vh;
             width: 100%;
-            border-top: 1px solid #ccc;
+            border-top: 3px solid var(--gold);
         }
 
         /* Video Overlay */
@@ -68,23 +116,52 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: black;
+            background: rgba(26, 26, 26, 0.95);
             z-index: 9999;
             flex-direction: column;
             justify-content: center;
+            align-items: center;
         }
 
         video {
-            width: 100%;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 12px;
+            border: 3px solid var(--gold);
         }
 
         .btn-close {
-            padding: 15px;
-            background: red;
-            color: white;
+            padding: 15px 40px;
+            background: var(--gold);
+            color: var(--black);
             border: none;
             font-size: 16px;
-            width: 100%;
+            font-weight: bold;
+            margin-top: 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        .btn-close:hover {
+            background: var(--gold-dark);
+        }
+
+        .btn-watch {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 15px;
+            background: var(--gold);
+            color: var(--black);
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+
+        .btn-watch:hover {
+            background: var(--gold-dark);
         }
     </style>
 </head>
@@ -92,19 +169,19 @@
 <body>
 
     <div class="header">
-        <h3 style="margin:0;">🚸 My Kids - Welcome {{ user }}</h3>
-        <a href="/logout" style="color:white; font-size:12px;">Logout</a>
+        <h3>🚸 آمن مدرستي - Welcome {{ user }}</h3>
+        <a href="/logout">Logout</a>
     </div>
 
     <div class="card-container" id="kids-list">
-        <div style="padding:20px;">Loading children...</div>
+        <div style="padding:20px; color: var(--black);">Loading children...</div>
     </div>
 
     <div id="map"></div>
 
     <div id="video-modal">
         <video id="video-player" controls autoplay></video>
-        <button class="btn-close" onclick="closeCam()">CLOSE CAMERA</button>
+        <button class="btn-close" onclick="closeCam()">✕ CLOSE CAMERA</button>
     </div>
 
     <script>
@@ -124,17 +201,21 @@
                     trackedBusIds = []; // Reset tracking list
 
                     if (children.length === 0) {
-                        html = '<p style="padding:20px;">No children registered yet.</p>';
+                        html = '<div class="child-card"><p>No children registered yet.</p></div>';
                     }
 
                     children.forEach(child => {
                         var statusClass = child.on_bus ? "status-on" : "status-off";
+                        var badgeClass = child.on_bus ? "on" : "off";
                         var statusText = child.on_bus ? `🚌 ON BUS` : "🏫 AT SCHOOL / HOME";
+                        var watchBtn = child.on_bus && child.bus_id ?
+                            `<button class="btn-watch" onclick="openCam('${child.bus_id}')">🎥 Watch Live</button>` : '';
 
                         html += `
                     <div class="child-card ${statusClass}">
                         <h3>${child.name}</h3>
-                        <div>${statusText}</div>
+                        <span class="status-badge ${badgeClass}">${statusText}</span>
+                        ${watchBtn}
                     </div>`;
 
                         if (child.on_bus && child.bus_id) trackedBusIds.push(child.bus_id.toString());
@@ -143,7 +224,7 @@
                     document.getElementById('kids-list').innerHTML = html;
                 })
                 .catch(err => {
-                    document.getElementById('kids-list').innerHTML = '<p style="color:red;">Error loading data</p>';
+                    document.getElementById('kids-list').innerHTML = '<div class="child-card"><p style="color:#c0392b;">Error loading data</p></div>';
                     console.error(err);
                 });
         }
@@ -151,7 +232,6 @@
         // Load on startup
         loadMyChildren();
 
-        // --- C. Real-Time Map (Filtered) ---
         // --- C. Real-Time Map (Filtered) ---
         socket.on('update_map', function (data) {
             // SECURITY FILTER: Only show bus if my child is on it
@@ -175,11 +255,7 @@
 
         // --- NEW: Live Attendance Updates ---
         socket.on('student_status_update', function (data) {
-            // data = { student_id, status, bus_id }
             console.log("🔔 Student Update:", data);
-
-            // Reload children to refresh status text and "Watch Live" button
-            // This is safer than DOM manipulation because it handles all state logic (bus_id, plate, etc)
             loadMyChildren();
         });
 
@@ -205,9 +281,9 @@
             document.getElementById('video-player').pause();
         }
 
-        // Poll for child status updates every 10 seconds (e.g., did they get off?)
+        // Poll for child status updates every 10 seconds
         setInterval(() => {
-            if (myParentId) loadMyChildren();
+            loadMyChildren();
         }, 10000);
 
     </script>

@@ -2,67 +2,147 @@
 <html>
 
 <head>
-    <title>Login - School Bus System</title>
+    <title>آمن مدرستي - Admin Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --sage-green: #9FB8AD;
+            --sage-dark: #7A9A8D;
+            --gold: #F5C518;
+            --gold-dark: #D4A914;
+            --black: #1A1A1A;
+            --cream: #F5F5F0;
+            --white: #FFFFFF;
+        }
+
         body {
-            font-family: sans-serif;
+            font-family: 'Tajawal', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            background: #eee;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--sage-green) 0%, var(--sage-dark) 100%);
+            margin: 0;
         }
 
         .login-box {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 300px;
+            background: var(--cream);
+            padding: 40px;
+            border-radius: 25px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+            width: 320px;
+            border: 3px solid var(--sage-dark);
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .logo-section .icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .logo-section h1 {
+            margin: 0;
+            font-size: 1.5em;
+            color: var(--black);
+        }
+
+        .logo-section p {
+            color: var(--sage-dark);
+            margin: 5px 0 0 0;
+            font-size: 0.9em;
         }
 
         input {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 14px;
+            margin-bottom: 15px;
+            border: 2px solid var(--sage-green);
+            border-radius: 12px;
             box-sizing: border-box;
+            font-size: 1em;
+            font-family: 'Tajawal', sans-serif;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--gold);
         }
 
         button {
             width: 100%;
-            padding: 10px;
-            background: #007bff;
-            color: white;
+            padding: 14px;
+            background: var(--sage-dark);
+            color: var(--white);
             border: none;
-            border-radius: 4px;
+            border-radius: 12px;
             cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.3s ease;
         }
 
         button:hover {
-            background: #0056b3;
+            background: var(--black);
+            transform: translateY(-2px);
         }
 
         h2 {
             text-align: center;
             margin-top: 0;
+            color: var(--black);
+        }
+
+        .hint {
+            font-size: 0.8em;
+            color: var(--sage-dark);
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            background: var(--white);
+            border-radius: 10px;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: var(--sage-dark);
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .back-link:hover {
+            color: var(--black);
         }
     </style>
 </head>
 
 <body>
     <div class="login-box">
-        <h2>🔐 Staff Login</h2>
+        <div class="logo-section">
+            <div class="icon">⚙️</div>
+            <h1>Admin Portal</h1>
+            <p>بوابة المشرفين</p>
+        </div>
+
         <form method="POST" action="/login">
-            <input type="text" name="username" placeholder="Username (e.g. The Boss)" required>
+            <input type="text" name="username" placeholder="Username" required>
             <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Sign In</button>
+            <button type="submit">🔐 Sign In</button>
         </form>
-        <p style="font-size:0.8em; color:#666; text-align:center; margin-top:20px;">
+
+        <div class="hint">
             Default Super Admin:<br>
-            User: <b>The Boss</b> / Pass: <b>admin123</b>
-        </p>
+            User: <b>admin</b> / Pass: <b>admin</b>
+        </div>
+
+        <a href="/" class="back-link">← Back to Home</a>
     </div>
 </body>
 

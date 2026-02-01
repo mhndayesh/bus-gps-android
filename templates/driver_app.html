@@ -2,29 +2,62 @@
 <html>
 
 <head>
-    <title>Driver Console</title>
+    <title>آمن مدرستي - Driver Console</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --sage-green: #9FB8AD;
+            --sage-dark: #7A9A8D;
+            --gold: #F5C518;
+            --gold-dark: #D4A914;
+            --black: #1A1A1A;
+            --cream: #F5F5F0;
+            --white: #FFFFFF;
+        }
+
         body {
-            font-family: sans-serif;
+            font-family: 'Tajawal', sans-serif;
             margin: 0;
-            background: #222;
-            color: white;
+            background: var(--black);
+            color: var(--cream);
         }
 
         .header {
-            padding: 15px;
-            background: #333;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--black) 0%, #2d2d2d 100%);
             text-align: center;
-            border-bottom: 2px solid #444;
+            border-bottom: 3px solid var(--gold);
+        }
+
+        .header h2 {
+            margin: 0;
+            color: var(--gold);
+        }
+
+        .header small {
+            color: var(--sage-green);
         }
 
         .status-box {
-            padding: 20px;
+            padding: 25px;
             text-align: center;
-            background: #000;
-            margin-bottom: 10px;
+            background: rgba(159, 184, 173, 0.1);
+            margin: 15px;
+            border-radius: 15px;
+            border: 2px solid var(--sage-dark);
+        }
+
+        #gps-status {
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+        #speed-display {
+            font-size: 2.5em;
+            color: var(--cream);
+            font-weight: bold;
         }
 
         /* Big Buttons for Driver Safety */
@@ -33,16 +66,22 @@
             padding: 20px;
             font-size: 20px;
             border: none;
-            border-radius: 10px;
+            border-radius: 15px;
             margin: 10px auto;
             display: block;
             cursor: pointer;
             font-weight: bold;
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .big-btn:hover {
+            transform: scale(1.02);
         }
 
         .btn-start {
-            background: #27ae60;
-            color: white;
+            background: var(--gold);
+            color: var(--black);
         }
 
         .btn-stop {
@@ -53,35 +92,64 @@
 
         /* Attendance List Styles */
         .student-list {
-            padding: 10px;
+            padding: 15px;
         }
 
         .student-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #333;
-            padding: 15px;
-            margin-bottom: 8px;
-            border-radius: 8px;
+            background: var(--cream);
+            color: var(--black);
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .student-row span {
+            font-weight: 500;
         }
 
         .toggle-btn {
-            padding: 10px 20px;
+            padding: 12px 20px;
             border: none;
-            border-radius: 5px;
+            border-radius: 25px;
             cursor: pointer;
             font-weight: bold;
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.3s ease;
         }
 
         .btn-board {
-            background: #2980b9;
-            color: white;
+            background: var(--sage-dark);
+            color: var(--white);
+        }
+
+        .btn-board:hover {
+            background: var(--black);
         }
 
         .btn-drop {
-            background: #f39c12;
-            color: black;
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        .btn-drop:hover {
+            background: var(--gold-dark);
+        }
+
+        .logout-link {
+            display: block;
+            text-align: center;
+            padding: 15px;
+            color: var(--sage-green);
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .logout-link:hover {
+            color: #c0392b;
         }
     </style>
 </head>
@@ -89,22 +157,23 @@
 <body>
 
     <div class="header">
-        <h2>🚌 Bus <span id="bus-id-display">{{ plate_number }}</span></h2>
-        <small style="color:#ccc;">(System ID: {{ bus_id }})</small>
+        <h2>🚌 Bus {{ plate_number }}</h2>
+        <small>(System ID: {{ bus_id }})</small>
     </div>
 
     <div class="status-box">
-        <div id="gps-status" style="color: #f39c12;">GPS: Waiting...</div>
-        <div id="speed-display" style="font-size: 2em;">0 km/h</div>
+        <div id="gps-status">GPS: Waiting...</div>
+        <div id="speed-display">0 km/h</div>
     </div>
 
     <button class="big-btn btn-start" onclick="startTrip()">🟢 START TRIP</button>
     <button class="big-btn btn-stop" onclick="stopTrip()">🔴 END TRIP</button>
 
     <div class="student-list" id="student-container">
-        <!-- We will populate this later dynamically -->
-        <p style="color:#aaa; text-align:center;">Students will appear here...</p>
+        <p style="color: var(--sage-green); text-align:center;">Students will appear here...</p>
     </div>
+
+    <a href="/logout" class="logout-link">← Logout</a>
 
     <script>
         const socket = io();
@@ -118,7 +187,7 @@
                 .then(students => {
                     const container = document.getElementById('student-container');
                     if (students.length === 0) {
-                        container.innerHTML = '<p style="text-align:center;color:#aaa;">No students assigned to this route.</p>';
+                        container.innerHTML = '<p style="text-align:center;color:var(--sage-green);">No students assigned to this route.</p>';
                         return;
                     }
 
@@ -179,11 +248,12 @@
             document.querySelector('.btn-start').style.display = 'block';
             document.querySelector('.btn-stop').style.display = 'none';
             document.getElementById('gps-status').innerText = "GPS: 🔴 Stopped";
+            document.getElementById('gps-status').style.color = "#c0392b";
         }
 
         // --- ATTENDANCE LOGIC ---
         function toggleStudent(btn, studentId) {
-            const isBoarding = btn.innerText === "Board Bus";
+            const isBoarding = btn.innerText.trim() === "Board Bus";
 
             // Optimistic UI Update
             if (isBoarding) {
