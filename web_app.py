@@ -249,6 +249,49 @@ def handle_attendance(data):
         
     except Exception as e:
         print(f"❌ Attendance Error: {e}")
+
+# --- CAMERA STREAMING EVENTS ---
+# Track which buses are currently streaming
+active_streams = {}
+
+@socketio.on('camera_stream_start')
+def handle_camera_start(data):
+    bus_id = data.get('bus_id')
+    active_streams[bus_id] = True
+    print(f"📹 Camera stream STARTED for bus {bus_id}")
+    # Notify all clients that this bus is now streaming
+    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': True})
+
+@socketio.on('camera_stream_stop')
+def handle_camera_stop(data):
+    bus_id = data.get('bus_id')
+    if bus_id in active_streams:
+        del active_streams[bus_id]
+    print(f"📹 Camera stream STOPPED for bus {bus_id}")
+    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': False})
+
+@socketio.on('camera_frame')
+def handle_camera_frame(data):
+    bus_id = data.get('bus_id')
+    frame = data.get('frame')  # Base64 JPEG
+    timestamp = data.get('timestamp')
+    
+    # Broadcast frame to all connected clients watching this bus
+    socketio.emit('bus_camera_frame', {
+        'bus_id': bus_id,
+        'frame': frame,
+        'timestamp': timestamp
+    })
+
+@socketio.on('join_bus_stream')
+def handle_join_stream(data):
+    """Parent joins a specific bus's stream room"""
+    bus_id = data.get('bus_id')
+    print(f"👁️ Parent joined stream for bus {bus_id}")
+    # Check if bus is currently streaming
+    is_streaming = bus_id in active_streams
+    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': is_streaming})
+
 def mqtt_listener():
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     

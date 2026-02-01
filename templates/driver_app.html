@@ -41,7 +41,7 @@
         }
 
         .status-box {
-            padding: 25px;
+            padding: 20px;
             text-align: center;
             background: rgba(159, 184, 173, 0.1);
             margin: 15px;
@@ -70,11 +70,11 @@
         /* Big Buttons for Driver Safety */
         .big-btn {
             width: 90%;
-            padding: 22px;
-            font-size: 20px;
+            padding: 20px;
+            font-size: 18px;
             border: none;
             border-radius: 15px;
-            margin: 10px auto;
+            margin: 8px auto;
             display: block;
             cursor: pointer;
             font-weight: bold;
@@ -94,6 +94,88 @@
         .btn-stop {
             background: #c0392b;
             color: white;
+            display: none;
+        }
+
+        .btn-camera {
+            background: #9b59b6;
+            color: white;
+        }
+
+        .btn-camera.streaming {
+            background: #e74c3c;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        /* Camera Preview */
+        .camera-container {
+            display: none;
+            margin: 15px;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 3px solid var(--gold);
+            position: relative;
+        }
+
+        .camera-container.active {
+            display: block;
+        }
+
+        #camera-preview {
+            width: 100%;
+            height: auto;
+            display: block;
+            background: #000;
+        }
+
+        .camera-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        #canvas-capture {
             display: none;
         }
 
@@ -190,6 +272,21 @@
     <button class="big-btn btn-start" onclick="startTrip()">🟢 بدء الرحلة</button>
     <button class="big-btn btn-stop" onclick="stopTrip()">🔴 إنهاء الرحلة</button>
 
+    <!-- Camera Streaming Button -->
+    <button class="big-btn btn-camera" id="camera-btn" onclick="toggleCamera()">
+        📹 بدء البث المباشر
+    </button>
+
+    <!-- Camera Preview -->
+    <div class="camera-container" id="camera-container">
+        <video id="camera-preview" autoplay playsinline muted></video>
+        <canvas id="canvas-capture"></canvas>
+        <div class="camera-status">
+            <span class="live-dot"></span>
+            <span>LIVE</span>
+        </div>
+    </div>
+
     <div class="student-list" id="student-container">
         <h3 class="section-title">📋 قائمة الطلاب</h3>
         <p class="no-students">سيظهر الطلاب هنا...</p>
@@ -201,6 +298,13 @@
         const socket = io();
         let watchId = null;
         const busId = "{{ bus_id }}";
+
+        // Camera variables
+        let cameraStream = null;
+        let frameInterval = null;
+        let isStreaming = false;
+        const FRAME_RATE = 10; // 10 FPS (100ms interval) - smooth streaming
+        const FRAME_QUALITY = 0.6; // JPEG quality (0.6 = 60%)
 
         // --- LOAD MANIFEST ---
         function loadManifest() {
@@ -266,6 +370,114 @@
             document.querySelector('.btn-stop').style.display = 'none';
             document.getElementById('gps-status').innerText = "GPS: 🔴 متوقف";
             document.getElementById('gps-status').style.color = "#c0392b";
+
+            // Also stop camera if streaming
+            if (isStreaming) {
+                stopCamera();
+            }
+        }
+
+        // --- CAMERA STREAMING LOGIC ---
+        async function toggleCamera() {
+            if (isStreaming) {
+                stopCamera();
+            } else {
+                await startCamera();
+            }
+        }
+
+        async function startCamera() {
+            const btn = document.getElementById('camera-btn');
+            const container = document.getElementById('camera-container');
+            const video = document.getElementById('camera-preview');
+
+            try {
+                // Request camera access - prefer back camera for bus view
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment', // Back camera
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    },
+                    audio: false
+                });
+
+                video.srcObject = cameraStream;
+                await video.play();
+
+                // Update UI
+                container.classList.add('active');
+                btn.classList.add('streaming');
+                btn.innerHTML = '🔴 إيقاف البث';
+                isStreaming = true;
+
+                // Notify server that streaming started
+                socket.emit('camera_stream_start', { bus_id: busId });
+
+                // Start capturing and sending frames
+                startFrameCapture();
+
+            } catch (error) {
+                console.error('Camera error:', error);
+                alert('خطأ في تشغيل الكاميرا: ' + error.message);
+            }
+        }
+
+        function stopCamera() {
+            const btn = document.getElementById('camera-btn');
+            const container = document.getElementById('camera-container');
+            const video = document.getElementById('camera-preview');
+
+            // Stop frame capture
+            if (frameInterval) {
+                clearInterval(frameInterval);
+                frameInterval = null;
+            }
+
+            // Stop camera stream
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+
+            video.srcObject = null;
+
+            // Update UI
+            container.classList.remove('active');
+            btn.classList.remove('streaming');
+            btn.innerHTML = '📹 بدء البث المباشر';
+            isStreaming = false;
+
+            // Notify server that streaming stopped
+            socket.emit('camera_stream_stop', { bus_id: busId });
+        }
+
+        function startFrameCapture() {
+            const video = document.getElementById('camera-preview');
+            const canvas = document.getElementById('canvas-capture');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size to match video
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+
+            // Capture frames at specified rate
+            frameInterval = setInterval(() => {
+                if (!isStreaming || !video.videoWidth) return;
+
+                // Draw video frame to canvas
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Convert to JPEG and send
+                const frameData = canvas.toDataURL('image/jpeg', FRAME_QUALITY);
+
+                socket.emit('camera_frame', {
+                    bus_id: busId,
+                    frame: frameData,
+                    timestamp: Date.now()
+                });
+
+            }, 1000 / FRAME_RATE);
         }
 
         // --- ATTENDANCE LOGIC ---
@@ -282,6 +494,13 @@
                 socket.emit('manual_attendance', { student_id: studentId, status: "DROPPED", bus_id: busId });
             }
         }
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            if (isStreaming) {
+                stopCamera();
+            }
+        });
     </script>
 </body>
 

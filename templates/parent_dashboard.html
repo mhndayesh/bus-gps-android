@@ -129,6 +129,14 @@
             align-items: center;
         }
 
+        #live-stream-img {
+            width: 90%;
+            max-width: 800px;
+            border-radius: 12px;
+            border: 3px solid var(--gold);
+            background: #000;
+        }
+
         video {
             width: 90%;
             max-width: 800px;
@@ -176,6 +184,52 @@
             padding: 30px;
             color: var(--black);
         }
+
+        /* Live Stream Status */
+        .stream-status {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stream-status .live-dot {
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .waiting-stream {
+            color: var(--cream);
+            text-align: center;
+            padding: 50px;
+        }
+
+        .waiting-stream p {
+            margin: 10px 0;
+        }
     </style>
 </head>
 
@@ -196,7 +250,24 @@
     <div id="map"></div>
 
     <div id="video-modal">
-        <video id="video-player" controls autoplay></video>
+        <div class="stream-status" id="stream-status" style="display:none;">
+            <span class="live-dot"></span>
+            <span>بث مباشر - LIVE</span>
+        </div>
+
+        <!-- Live Stream Image (for WebSocket frames) -->
+        <img id="live-stream-img" style="display:none;" alt="Live Stream">
+
+        <!-- HLS Video Player (fallback for IP cameras) -->
+        <video id="video-player" style="display:none;" controls autoplay></video>
+
+        <!-- Waiting Message -->
+        <div id="waiting-msg" class="waiting-stream" style="display:none;">
+            <h2>⏳ في انتظار البث...</h2>
+            <p>Waiting for driver to start streaming</p>
+            <p style="color:var(--sage-green); font-size:0.9em;">سيبدأ البث تلقائياً عندما يشغله السائق</p>
+        </div>
+
         <button class="btn-close" onclick="closeCam()">✕ إغلاق الكاميرا</button>
     </div>
 
@@ -207,6 +278,7 @@
         var socket = io();
         var trackedBusIds = [];
         var busMarkers = {};
+        var currentStreamBusId = null;
 
         // --- Load Children Data on Page Load ---
         function loadMyChildren() {
@@ -273,26 +345,79 @@
             loadMyChildren();
         });
 
-        // --- Camera Logic ---
+        // --- CAMERA STREAMING LOGIC ---
+
+        // Handle incoming camera frames
+        socket.on('bus_camera_frame', function (data) {
+            if (currentStreamBusId && data.bus_id === currentStreamBusId) {
+                const img = document.getElementById('live-stream-img');
+                img.src = data.frame;
+                img.style.display = 'block';
+
+                // Show live indicator
+                document.getElementById('stream-status').style.display = 'flex';
+                document.getElementById('waiting-msg').style.display = 'none';
+                document.getElementById('video-player').style.display = 'none';
+            }
+        });
+
+        // Handle stream status updates
+        socket.on('bus_stream_status', function (data) {
+            if (currentStreamBusId && data.bus_id === currentStreamBusId) {
+                if (data.streaming) {
+                    document.getElementById('stream-status').style.display = 'flex';
+                    document.getElementById('waiting-msg').style.display = 'none';
+                } else {
+                    document.getElementById('stream-status').style.display = 'none';
+                    document.getElementById('waiting-msg').style.display = 'block';
+                    document.getElementById('live-stream-img').style.display = 'none';
+                }
+            }
+        });
+
         function openCam(busId) {
+            currentStreamBusId = busId;
+            document.getElementById('video-modal').style.display = 'flex';
+
+            // Show waiting message initially
+            document.getElementById('waiting-msg').style.display = 'block';
+            document.getElementById('live-stream-img').style.display = 'none';
+            document.getElementById('video-player').style.display = 'none';
+            document.getElementById('stream-status').style.display = 'none';
+
+            // Join the bus stream
+            socket.emit('join_bus_stream', { bus_id: busId });
+
+            // Also try to fetch HLS stream as fallback (for IP cameras)
             fetch(`/get_camera/${busId}`)
                 .then(res => res.json())
                 .then(data => {
-                    document.getElementById('video-modal').style.display = 'flex';
-                    var video = document.getElementById('video-player');
-                    if (Hls.isSupported()) {
-                        var hls = new Hls();
-                        hls.loadSource(data.stream_url);
-                        hls.attachMedia(video);
-                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                        video.src = data.stream_url;
+                    if (data.stream_url && data.stream_url !== 'none') {
+                        // Use HLS stream if available
+                        var video = document.getElementById('video-player');
+                        if (Hls.isSupported()) {
+                            var hls = new Hls();
+                            hls.loadSource(data.stream_url);
+                            hls.attachMedia(video);
+                            video.style.display = 'block';
+                            document.getElementById('waiting-msg').style.display = 'none';
+                        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                            video.src = data.stream_url;
+                            video.style.display = 'block';
+                            document.getElementById('waiting-msg').style.display = 'none';
+                        }
                     }
+                })
+                .catch(err => {
+                    console.log('No HLS stream, waiting for live frames');
                 });
         }
 
         function closeCam() {
+            currentStreamBusId = null;
             document.getElementById('video-modal').style.display = 'none';
             document.getElementById('video-player').pause();
+            document.getElementById('live-stream-img').src = '';
         }
 
         // Poll for updates every 10 seconds
