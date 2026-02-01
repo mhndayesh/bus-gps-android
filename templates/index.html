@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 
 <head>
     <title>آمن مدرستي - School Bus Tracker</title>
@@ -65,6 +65,7 @@
             font-weight: bold;
             border-radius: 25px;
             transition: all 0.3s ease;
+            font-family: 'Tajawal', sans-serif;
         }
 
         .close-btn:hover {
@@ -97,8 +98,9 @@
             z-index: 1000;
             border-radius: 20px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-            width: 280px;
+            width: 300px;
             border: 3px solid var(--sage-dark);
+            text-align: right;
         }
 
         #status-panel h3 {
@@ -107,6 +109,7 @@
             font-size: 1.3em;
             display: flex;
             align-items: center;
+            justify-content: flex-end;
             gap: 8px;
         }
 
@@ -161,9 +164,30 @@
         }
 
         .app-title {
-            font-size: 1.1em;
-            color: var(--sage-dark);
+            font-size: 1.3em;
+            color: var(--black);
             margin: 5px 0;
+            font-weight: bold;
+        }
+
+        .app-subtitle {
+            font-size: 0.9em;
+            color: var(--sage-dark);
+        }
+
+        .bilingual {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .ar {
+            font-size: 1em;
+        }
+
+        .en {
+            font-size: 0.8em;
+            color: var(--sage-dark);
         }
     </style>
 </head>
@@ -171,24 +195,40 @@
 <body>
 
     <div id="video-modal">
-        <h2 style="color: var(--gold);">🎥 Live Feed: Bus <span id="modal-bus-id">--</span></h2>
+        <h2 style="color: var(--gold);">🎥 بث مباشر: الباص <span id="modal-bus-id">--</span></h2>
         <video id="video-player" controls autoplay></video>
-        <button class="close-btn" onclick="closeCamera()">✕ CLOSE FEED</button>
+        <button class="close-btn" onclick="closeCamera()">✕ إغلاق البث</button>
     </div>
 
     <div id="status-panel">
         <div class="logo-container">
             <div style="font-size: 2.5em;">🚌</div>
             <div class="app-title">آمن مدرستي</div>
+            <div class="app-subtitle">Safe School Transport</div>
         </div>
 
-        <h3>📍 Live Fleet</h3>
-        <div id="bus-list">Waiting for signal...</div>
+        <h3>الأسطول المباشر 📍</h3>
+        <div id="bus-list">في انتظار الإشارة...</div>
         <hr style="border: none; border-top: 2px solid var(--sage-green); margin: 15px 0;">
 
-        <a href="/admin" class="nav-link nav-admin">⚙️ Admin Panel</a>
-        <a href="/parent/login" class="nav-link nav-parent">👨‍👩‍👧‍👦 Parent Login</a>
-        <a href="/driver/login" class="nav-link nav-driver">🚌 Driver Login</a>
+        <a href="/admin" class="nav-link nav-admin">
+            <span class="bilingual">
+                <span class="ar">⚙️ لوحة التحكم</span>
+                <span class="en">Admin Panel</span>
+            </span>
+        </a>
+        <a href="/parent/login" class="nav-link nav-parent">
+            <span class="bilingual">
+                <span class="ar">👨‍👩‍👧‍👦 دخول ولي الأمر</span>
+                <span class="en">Parent Login</span>
+            </span>
+        </a>
+        <a href="/driver/login" class="nav-link nav-driver">
+            <span class="bilingual">
+                <span class="ar">🚌 دخول السائق</span>
+                <span class="en">Driver Login</span>
+            </span>
+        </a>
     </div>
 
     <div id="map"></div>
@@ -203,15 +243,12 @@
         function openCamera(busId) {
             console.log("Requesting camera for Bus " + busId);
 
-            // 1. Call our Python Backend
             fetch(`/get_camera/${busId}`)
                 .then(response => response.json())
                 .then(data => {
-                    // 2. Show the Modal
                     document.getElementById('video-modal').style.display = 'flex';
                     document.getElementById('modal-bus-id').innerText = busId;
 
-                    // 3. Play the Stream (using HLS.js)
                     var video = document.getElementById('video-player');
                     var streamUrl = data.stream_url;
 
@@ -223,7 +260,7 @@
                             video.play();
                         });
                     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                        video.src = streamUrl; // For Safari
+                        video.src = streamUrl;
                         video.addEventListener('loadedmetadata', function () {
                             video.play();
                         });
@@ -236,7 +273,7 @@
             document.getElementById('video-modal').style.display = 'none';
             var video = document.getElementById('video-player');
             video.pause();
-            video.src = ""; // Stop buffering
+            video.src = "";
         }
 
         // --- B. The Map Updates ---
@@ -246,15 +283,13 @@
             var lng = data.lng;
             var speed = data.speed;
 
-            // Update List Panel
-            var listHtml = `<b>Bus ${busId}</b><br>Speed: ${speed} km/h`;
+            var listHtml = `<b>الباص ${busId}</b><br>السرعة: ${speed} كم/س`;
             document.getElementById('bus-list').innerHTML = listHtml;
 
-            // Create the Popup HTML with the "Watch" button
             var popupContent = `
-                <b>Bus ${busId}</b><br>
-                Speed: ${speed} km/h<br><br>
-                <button class="watch-btn" onclick="openCamera('${busId}')">🎥 WATCH LIVE</button>
+                <b>الباص ${busId}</b><br>
+                السرعة: ${speed} كم/س<br><br>
+                <button class="watch-btn" onclick="openCamera('${busId}')">🎥 مشاهدة مباشرة</button>
             `;
 
             if (busMarkers[busId]) {

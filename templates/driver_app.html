@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 
 <head>
-    <title>آمن مدرستي - Driver Console</title>
+    <title>آمن مدرستي - لوحة السائق</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
@@ -52,18 +52,25 @@
         #gps-status {
             color: var(--gold);
             font-weight: bold;
+            font-size: 1.1em;
         }
 
         #speed-display {
             font-size: 2.5em;
             color: var(--cream);
             font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .speed-label {
+            font-size: 0.9em;
+            color: var(--sage-green);
         }
 
         /* Big Buttons for Driver Safety */
         .big-btn {
             width: 90%;
-            padding: 20px;
+            padding: 22px;
             font-size: 20px;
             border: none;
             border-radius: 15px;
@@ -93,6 +100,13 @@
         /* Attendance List Styles */
         .student-list {
             padding: 15px;
+        }
+
+        .section-title {
+            color: var(--gold);
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1.2em;
         }
 
         .student-row {
@@ -151,34 +165,42 @@
         .logout-link:hover {
             color: #c0392b;
         }
+
+        .no-students {
+            text-align: center;
+            color: var(--sage-green);
+            padding: 20px;
+        }
     </style>
 </head>
 
 <body>
 
     <div class="header">
-        <h2>🚌 Bus {{ plate_number }}</h2>
-        <small>(System ID: {{ bus_id }})</small>
+        <h2>🚌 الحافلة {{ plate_number }}</h2>
+        <small>(رقم النظام: {{ bus_id }})</small>
     </div>
 
     <div class="status-box">
-        <div id="gps-status">GPS: Waiting...</div>
-        <div id="speed-display">0 km/h</div>
+        <div id="gps-status">GPS: في الانتظار...</div>
+        <div id="speed-display">0</div>
+        <div class="speed-label">كم/ساعة</div>
     </div>
 
-    <button class="big-btn btn-start" onclick="startTrip()">🟢 START TRIP</button>
-    <button class="big-btn btn-stop" onclick="stopTrip()">🔴 END TRIP</button>
+    <button class="big-btn btn-start" onclick="startTrip()">🟢 بدء الرحلة</button>
+    <button class="big-btn btn-stop" onclick="stopTrip()">🔴 إنهاء الرحلة</button>
 
     <div class="student-list" id="student-container">
-        <p style="color: var(--sage-green); text-align:center;">Students will appear here...</p>
+        <h3 class="section-title">📋 قائمة الطلاب</h3>
+        <p class="no-students">سيظهر الطلاب هنا...</p>
     </div>
 
-    <a href="/logout" class="logout-link">← Logout</a>
+    <a href="/logout" class="logout-link">← تسجيل الخروج</a>
 
     <script>
         const socket = io();
         let watchId = null;
-        const busId = "{{ bus_id }}";  // Injected from Server
+        const busId = "{{ bus_id }}";
 
         // --- LOAD MANIFEST ---
         function loadManifest() {
@@ -187,58 +209,53 @@
                 .then(students => {
                     const container = document.getElementById('student-container');
                     if (students.length === 0) {
-                        container.innerHTML = '<p style="text-align:center;color:var(--sage-green);">No students assigned to this route.</p>';
+                        container.innerHTML = '<h3 class="section-title">📋 قائمة الطلاب</h3><p class="no-students">لا يوجد طلاب مسجلين في هذه الرحلة</p>';
                         return;
                     }
 
-                    container.innerHTML = "";
+                    let html = '<h3 class="section-title">📋 قائمة الطلاب</h3>';
                     students.forEach(s => {
                         const isBoarded = s.status === 'BOARDED';
                         const btnClass = isBoarded ? "btn-drop" : "btn-board";
-                        const btnText = isBoarded ? "Drop Off" : "Board Bus";
+                        const btnText = isBoarded ? "إنزال" : "صعود";
 
-                        const html = `
+                        html += `
                         <div class="student-row">
-                            <span>${s.name} (${s.id})</span>
+                            <span>${s.name}</span>
                             <button class="toggle-btn ${btnClass}" onclick="toggleStudent(this, '${s.id}')">
                                 ${btnText}
                             </button>
                         </div>`;
-                        container.innerHTML += html;
                     });
+                    container.innerHTML = html;
                 });
         }
 
-        // Initial Load
         loadManifest();
 
         // --- GPS LOGIC ---
         function startTrip() {
-            if (!navigator.geolocation) return alert("GPS not supported on this device");
+            if (!navigator.geolocation) return alert("GPS غير مدعوم على هذا الجهاز");
 
-            // Toggle Buttons
             document.querySelector('.btn-start').style.display = 'none';
             document.querySelector('.btn-stop').style.display = 'block';
 
-            // Start Broadcasting Position
             watchId = navigator.geolocation.watchPosition(
                 (position) => {
                     const data = {
                         bus_id: busId,
                         lat: position.coords.latitude,
                         lng: position.coords.longitude,
-                        speed: Math.round(position.coords.speed * 3.6) || 0 // Convert m/s to km/h
+                        speed: Math.round(position.coords.speed * 3.6) || 0
                     };
 
-                    // Update Driver UI
-                    document.getElementById('gps-status').innerText = "GPS: 🟢 Broadcasting";
+                    document.getElementById('gps-status').innerText = "GPS: 🟢 يبث الآن";
                     document.getElementById('gps-status').style.color = "#27ae60";
-                    document.getElementById('speed-display').innerText = data.speed + " km/h";
+                    document.getElementById('speed-display').innerText = data.speed;
 
-                    // Send to Server
                     socket.emit('driver_gps_update', data);
                 },
-                (error) => alert("GPS Error: " + error.message),
+                (error) => alert("خطأ GPS: " + error.message),
                 { enableHighAccuracy: true, timeout: 5000 }
             );
         }
@@ -247,21 +264,20 @@
             navigator.geolocation.clearWatch(watchId);
             document.querySelector('.btn-start').style.display = 'block';
             document.querySelector('.btn-stop').style.display = 'none';
-            document.getElementById('gps-status').innerText = "GPS: 🔴 Stopped";
+            document.getElementById('gps-status').innerText = "GPS: 🔴 متوقف";
             document.getElementById('gps-status').style.color = "#c0392b";
         }
 
         // --- ATTENDANCE LOGIC ---
         function toggleStudent(btn, studentId) {
-            const isBoarding = btn.innerText.trim() === "Board Bus";
+            const isBoarding = btn.innerText.trim() === "صعود";
 
-            // Optimistic UI Update
             if (isBoarding) {
-                btn.innerText = "Drop Off";
+                btn.innerText = "إنزال";
                 btn.className = "toggle-btn btn-drop";
                 socket.emit('manual_attendance', { student_id: studentId, status: "BOARDED", bus_id: busId });
             } else {
-                btn.innerText = "Board Bus";
+                btn.innerText = "صعود";
                 btn.className = "toggle-btn btn-board";
                 socket.emit('manual_attendance', { student_id: studentId, status: "DROPPED", bus_id: busId });
             }
