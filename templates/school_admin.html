@@ -216,6 +216,64 @@
         .row>* {
             flex: 1;
         }
+
+        /* Stats Dashboard */
+        .stats-dashboard {
+            display: flex;
+            gap: 15px;
+            padding: 20px;
+            background: var(--black);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stat-card {
+            background: #2d2d2d;
+            padding: 25px 35px;
+            border-radius: 15px;
+            text-align: center;
+            min-width: 150px;
+            border: 2px solid var(--sage-dark);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: 800;
+            color: var(--gold);
+        }
+
+        .stat-label {
+            color: var(--sage-light);
+            font-size: 0.95em;
+            margin-top: 5px;
+        }
+
+        .stat-label small {
+            color: #888;
+        }
+
+        .stat-card.active-card .stat-number {
+            color: #3498db;
+        }
+
+        .stat-card.present-card .stat-number {
+            color: #27ae60;
+        }
+
+        .stat-card.absent-card .stat-number {
+            color: #e74c3c;
+        }
     </style>
 </head>
 
@@ -235,6 +293,35 @@
             الأمور<br><small>Parents</small></button>
         <button class="tab-btn" onclick="showTab('students')">👨‍🎓 الطلاب<br><small>Students</small></button>
         <button class="tab-btn" onclick="showTab('drivers')">🚗 السائقين<br><small>Drivers</small></button>
+    </div>
+
+    <!-- Dashboard Stats Cards -->
+    <div class="stats-dashboard">
+        <div class="stat-card">
+            <div class="stat-icon">🚌</div>
+            <div class="stat-number" id="stat-total-buses">--</div>
+            <div class="stat-label">إجمالي الحافلات<br><small>Total Buses</small></div>
+        </div>
+        <div class="stat-card active-card">
+            <div class="stat-icon">📍</div>
+            <div class="stat-number" id="stat-active-buses">--</div>
+            <div class="stat-label">حافلة نشطة<br><small>Active Now</small></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">👨‍🎓</div>
+            <div class="stat-number" id="stat-total-students">--</div>
+            <div class="stat-label">طالب مسجل<br><small>Total Students</small></div>
+        </div>
+        <div class="stat-card present-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-number" id="stat-present">--</div>
+            <div class="stat-label">حاضر<br><small>Present</small></div>
+        </div>
+        <div class="stat-card absent-card">
+            <div class="stat-icon">❌</div>
+            <div class="stat-number" id="stat-absent">--</div>
+            <div class="stat-label">غائب<br><small>Absent</small></div>
+        </div>
     </div>
 
     <!-- PARENTS TAB -->
@@ -610,11 +697,31 @@
                 });
         }
 
+        // --- DASHBOARD STATISTICS ---
+        function loadDashboardStats() {
+            fetch('/api/dashboard/stats')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('stat-total-buses').textContent = data.total_buses || 0;
+                    document.getElementById('stat-active-buses').textContent = data.active_buses || 0;
+                    document.getElementById('stat-total-students').textContent = data.total_students || 0;
+                    document.getElementById('stat-present').textContent = data.present_students || 0;
+                    document.getElementById('stat-absent').textContent = data.absent_students || 0;
+                })
+                .catch(err => {
+                    console.error('Failed to load stats:', err);
+                });
+        }
+
         // Initialize
         loadBuses();
         loadParents();
         loadStudents();
         loadDrivers();
+        loadDashboardStats();
+
+        // Refresh stats every 30 seconds
+        setInterval(loadDashboardStats, 30000);
     </script>
 </body>
 

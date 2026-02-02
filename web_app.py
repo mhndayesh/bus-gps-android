@@ -218,6 +218,66 @@ def tour_school():
 def tour_investor():
     return render_template('investor-tour.html')
 
+# --- DASHBOARD STATISTICS API ---
+@app.route('/api/dashboard/stats')
+@role_required(['SUPER_ADMIN', 'SCHOOL_ADMIN'])
+def dashboard_stats():
+    """Return dashboard statistics based on user role"""
+    role = session.get('user_role')
+    school_id = session.get('school_id')  # For SCHOOL_ADMIN
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        if role == 'SUPER_ADMIN':
+            # Super Admin sees all schools
+            cur.execute("SELECT COUNT(*) FROM buses")
+            total_buses = cur.fetchone()[0]
+            
+            cur.execute("SELECT COUNT(*) FROM students")
+            total_students = cur.fetchone()[0]
+            
+            cur.execute("SELECT COUNT(DISTINCT student_id) FROM bus_manifest")
+            present_students = cur.fetchone()[0]
+            
+        else:  # SCHOOL_ADMIN
+            # School Admin sees only their school
+            cur.execute("SELECT COUNT(*) FROM buses WHERE school_id = %s", (school_id,))
+            total_buses = cur.fetchone()[0]
+            
+            cur.execute("SELECT COUNT(*) FROM students WHERE school_id = %s", (school_id,))
+            total_students = cur.fetchone()[0]
+            
+            cur.execute("""
+                SELECT COUNT(DISTINCT bm.student_id) 
+                FROM bus_manifest bm
+                JOIN students s ON bm.student_id::text = s.id::text
+                WHERE s.school_id = %s
+            """, (school_id,))
+            present_students = cur.fetchone()[0]
+        
+        # Calculate absent and active buses
+        absent_students = total_students - present_students
+        active_buses = len(active_streams)  # From global active_streams dict
+        
+        cur.close()
+        conn.close()
+        
+        return json.dumps({
+            "total_buses": total_buses,
+            "active_buses": active_buses,
+            "total_students": total_students,
+            "present_students": present_students,
+            "absent_students": absent_students
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Dashboard stats error: {e}")
+        import traceback
+        traceback.print_exc()
+        return json.dumps({"error": str(e)}), 500
+
 # --- MQTT LISTENER (Background Task) ---
 # This runs separately so it doesn't block the website
 # --- SOCKET EVENTS (The Bridge) ---
