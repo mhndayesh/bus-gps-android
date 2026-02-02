@@ -263,6 +263,94 @@
             color: var(--sage-green);
             padding: 20px;
         }
+
+        /* Attendance Alert Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--cream);
+            color: var(--black);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            border: 3px solid var(--gold);
+        }
+
+        .modal-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #c0392b;
+            margin-bottom: 10px;
+        }
+
+        .modal-message {
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            color: var(--black);
+        }
+
+        .missing-list {
+            background: rgba(192, 57, 43, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: right;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .missing-student {
+            padding: 8px;
+            border-bottom: 1px solid rgba(192, 57, 43, 0.2);
+            color: #c0392b;
+            font-weight: 500;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .modal-btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn-start {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        .modal-btn-recheck {
+            background: var(--sage-dark);
+            color: white;
+        }
     </style>
 </head>
 
@@ -305,6 +393,24 @@
     <div class="student-list" id="student-container">
         <h3 class="section-title">📋 قائمة الطلاب</h3>
         <p class="no-students">سيظهر الطلاب هنا...</p>
+    </div>
+
+    <!-- Attendance Warning Modal -->
+    <div class="modal-overlay" id="attendance-modal">
+        <div class="modal-content">
+            <div class="modal-icon">⚠️</div>
+            <div class="modal-title">تنبيه: طلاب غير موجودين!</div>
+            <div class="modal-message">الطلاب التالية أسماؤهم لم يصعدوا بعد:</div>
+            <div class="missing-list" id="missing-students-list"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-recheck" onclick="recheckAttendance()">
+                    🔄 إعادة الفحص
+                </button>
+                <button class="modal-btn modal-btn-start" onclick="forceStartTrip()">
+                    ▶️ بدء الرحلة على أي حال
+                </button>
+            </div>
+        </div>
     </div>
 
     <a href="/logout" class="logout-link">← تسجيل الخروج</a>
@@ -357,6 +463,45 @@
         function startTrip() {
             if (!navigator.geolocation) return alert("GPS غير مدعوم على هذا الجهاز");
 
+            // First check if all students are on board
+            fetch('/api/driver/manifest')
+                .then(res => res.json())
+                .then(students => {
+                    const missingStudents = students.filter(s => s.status !== 'BOARDED');
+
+                    if (missingStudents.length > 0) {
+                        // Show warning modal
+                        const listDiv = document.getElementById('missing-students-list');
+                        listDiv.innerHTML = missingStudents.map(s =>
+                            `<div class="missing-student">❌ ${s.name}</div>`
+                        ).join('');
+
+                        document.getElementById('attendance-modal').style.display = 'flex';
+                    } else {
+                        // All students boarded, start trip directly
+                        actuallyStartTrip();
+                    }
+                })
+                .catch(err => {
+                    console.error('Error checking attendance:', err);
+                    // On error, just start trip
+                    actuallyStartTrip();
+                });
+        }
+
+        function recheckAttendance() {
+            // Reload manifest and close modal
+            document.getElementById('attendance-modal').style.display = 'none';
+            loadManifest();
+        }
+
+        function forceStartTrip() {
+            // Close modal and start trip anyway
+            document.getElementById('attendance-modal').style.display = 'none';
+            actuallyStartTrip();
+        }
+
+        function actuallyStartTrip() {
             document.querySelector('.btn-start').style.display = 'none';
             document.querySelector('.btn-stop').style.display = 'block';
 
