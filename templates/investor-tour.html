@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>آمن مدرستي - فرصة استثمارية | Investment Opportunity</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --sage-green: #9FB8AD;
+            --sage-dark: #7A9A8D;
+            --sage-light: #c5d6cd;
+            --gold: #F5C518;
+            --gold-dark: #D4A914;
+            --gold-light: #ffe066;
+            --black: #1A1A1A;
+            --cream: #F5F5F0;
+            --white: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--black);
+            color: var(--cream);
+            overflow-x: hidden;
+        }
+
+        /* Hero Section - Premium Feel */
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(180deg, var(--black) 0%, #0d0d0d 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(245, 197, 24, 0.15) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
+            animation: glow-pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes glow-pulse {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 0.8;
+            }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 1000px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 10px 30px;
+            background: rgba(245, 197, 24, 0.1);
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            border-radius: 50px;
+            font-size: 1em;
+            font-weight: 600;
+            margin-bottom: 30px;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(245, 197, 24, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 40px rgba(245, 197, 24, 0.6);
+            }
+        }
+
+        .hero h1 {
+            font-size: 4em;
+            font-weight: 800;
+            color: var(--white);
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .hero h1 span {
+            color: var(--gold);
+        }
+
+        .hero h2 {
+            font-size: 1.8em;
+            font-weight: 400;
+            color: var(--sage-light);
+            margin-bottom: 40px;
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            margin-bottom: 50px;
+            flex-wrap: wrap;
+        }
+
+        .hero-stat {
+            text-align: center;
+        }
+
+        .hero-stat .number {
+            font-size: 3.5em;
+            font-weight: 800;
+            color: var(--gold);
+            display: block;
+        }
+
+        .hero-stat .label {
+            font-size: 1.1em;
+            color: var(--sage-light);
+        }
+
+        .cta-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 20px 50px;
+            background: var(--gold);
+            color: var(--black);
+            text-decoration: none;
+            font-size: 1.2em;
+            font-weight: 700;
+            border-radius: 10px;
+            transition: all 0.4s ease;
+            border: 3px solid var(--gold);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(245, 197, 24, 0.3);
+        }
+
+        .cta-button.outline {
+            background: transparent;
+            color: var(--gold);
+        }
+
+        .cta-button.outline:hover {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        /* Problem Section */
+        .problem {
+            padding: 100px 20px;
+            background: var(--cream);
+            color: var(--black);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-header h2 {
+            font-size: 2.8em;
+            margin-bottom: 15px;
+        }
+
+        .section-header p {
+            font-size: 1.3em;
+            color: #666;
+        }
+
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .problem-card {
+            background: var(--white);
+            padding: 40px 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            border-top: 5px solid #e74c3c;
+        }
+
+        .problem-card .icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .problem-card h3 {
+            font-size: 1.4em;
+            margin-bottom: 15px;
+        }
+
+        .problem-card p {
+            color: #666;
+            line-height: 1.7;
+        }
+
+        /* Solution Section */
+        .solution {
+            padding: 100px 20px;
+            background: linear-gradient(135deg, var(--sage-green) 0%, var(--sage-dark) 100%);
+            color: var(--white);
+        }
+
+        .solution .section-header p {
+            color: var(--cream);
+        }
+
+        .solution-points {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .solution-item {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .solution-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-10px);
+        }
+
+        .solution-item .check {
+            font-size: 2.5em;
+            color: var(--gold);
+        }
+
+        .solution-item h3 {
+            font-size: 1.4em;
+            margin-bottom: 5px;
+        }
+
+        .solution-item p {
+            opacity: 0.9;
+        }
+
+        /* Market Section */
+        .market {
+            padding: 100px 20px;
+            background: var(--black);
+        }
+
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            max-width: 1200px;
+            margin: 50px auto 0;
+        }
+
+        .market-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            padding: 50px 40px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid var(--sage-dark);
+            transition: all 0.4s ease;
+        }
+
+        .market-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-10px);
+        }
+
+        .market-card .big-number {
+            font-size: 4em;
+            font-weight: 800;
+            color: var(--gold);
+            margin-bottom: 15px;
+        }
+
+        .market-card h3 {
+            font-size: 1.5em;
+            color: var(--cream);
+            margin-bottom: 15px;
+        }
+
+        .market-card p {
+            color: var(--sage-light);
+        }
+
+        /* Business Model */
+        .business {
+            padding: 100px 20px;
+            background: var(--cream);
+            color: var(--black);
+        }
+
+        .revenue-streams {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            max-width: 1200px;
+            margin: 50px auto 0;
+        }
+
+        .stream-card {
+            background: var(--white);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            min-width: 280px;
+            flex: 1;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stream-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--sage-green), var(--gold));
+        }
+
+        .stream-card .icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .stream-card h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: var(--sage-dark);
+        }
+
+        .stream-card .amount {
+            font-size: 2em;
+            font-weight: 800;
+            color: var(--black);
+            margin-bottom: 10px;
+        }
+
+        .stream-card p {
+            color: #666;
+        }
+
+        /* Team Section */
+        .team {
+            padding: 100px 20px;
+            background: var(--black);
+            color: var(--cream);
+        }
+
+        .team-note {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+            font-size: 1.3em;
+            line-height: 1.8;
+            color: var(--sage-light);
+        }
+
+        /* Investment Section */
+        .investment {
+            padding: 100px 20px;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+            color: var(--black);
+            text-align: center;
+        }
+
+        .investment h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .investment-amount {
+            font-size: 4em;
+            font-weight: 800;
+            margin: 30px 0;
+        }
+
+        .investment-details {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            flex-wrap: wrap;
+            margin: 40px 0;
+        }
+
+        .investment-detail {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 30px 50px;
+            border-radius: 15px;
+        }
+
+        .investment-detail .value {
+            font-size: 2em;
+            font-weight: 800;
+        }
+
+        .investment-detail .label {
+            opacity: 0.8;
+        }
+
+        .investment .cta-button {
+            background: var(--black);
+            color: var(--gold);
+            margin-top: 30px;
+        }
+
+        /* Contact Section */
+        .contact {
+            padding: 80px 20px;
+            background: var(--black);
+            text-align: center;
+        }
+
+        .contact h2 {
+            font-size: 2em;
+            color: var(--cream);
+            margin-bottom: 30px;
+        }
+
+        .contact-info {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            flex-wrap: wrap;
+        }
+
+        .contact-item {
+            color: var(--sage-light);
+            font-size: 1.2em;
+        }
+
+        .contact-item span {
+            color: var(--gold);
+        }
+
+        /* Footer */
+        footer {
+            padding: 30px 20px;
+            background: #0d0d0d;
+            color: var(--sage-dark);
+            text-align: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5em;
+            }
+
+            .hero h2 {
+                font-size: 1.3em;
+            }
+
+            .hero-stat .number {
+                font-size: 2.5em;
+            }
+
+            .hero-stats {
+                gap: 30px;
+            }
+
+            .investment-amount {
+                font-size: 2.5em;
+            }
+
+            .market-card .big-number {
+                font-size: 3em;
+            }
+
+            .solution-item {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="badge">📈 فرصة استثمارية | Investment Opportunity</div>
+            <h1>سوق ضخم.<br><span>حل مبتكر.</span></h1>
+            <h2>Massive Market. Innovative Solution.</h2>
+
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <span class="number">11M+</span>
+                    <span class="label">طالب في السعودية</span>
+                </div>
+                <div class="hero-stat">
+                    <span class="number">60K+</span>
+                    <span class="label">مدرسة</span>
+                </div>
+                <div class="hero-stat">
+                    <span class="number">$2B</span>
+                    <span class="label">حجم السوق</span>
+                </div>
+            </div>
+
+            <div class="cta-group">
+                <a href="#investment" class="cta-button">عرض الاستثمار</a>
+                <a href="#market" class="cta-button outline">تفاصيل السوق</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="problem">
+        <div class="section-header">
+            <h2>المشكلة التي نحلها</h2>
+            <p>تحديات حقيقية تواجه ملايين الأسر يومياً</p>
+        </div>
+
+        <div class="problem-grid">
+            <div class="problem-card">
+                <div class="icon">😰</div>
+                <h3>قلق أولياء الأمور</h3>
+                <p>لا يعرفون أين أطفالهم أثناء الرحلة. عشرات الاتصالات للمدرسة يومياً.</p>
+            </div>
+
+            <div class="problem-card">
+                <div class="icon">💸</div>
+                <h3>هدر موارد المدارس</h3>
+                <p>إدارة يدوية مكلفة. لا بيانات لتحسين المسارات. استهلاك وقود زائد.</p>
+            </div>
+
+            <div class="problem-card">
+                <div class="icon">⚠️</div>
+                <h3>مخاطر السلامة</h3>
+                <p>حوادث نسيان طلاب. عدم معرفة الغياب فوراً. صعوبة التواصل.</p>
+            </div>
+
+            <div class="problem-card">
+                <div class="icon">📋</div>
+                <h3>غياب الأنظمة</h3>
+                <p>معظم المدارس تستخدم الورق. لا أتمتة. لا تقارير.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution Section -->
+    <section class="solution">
+        <div class="section-header">
+            <h2>الحل: آمن مدرستي</h2>
+            <p>منصة متكاملة لإدارة النقل المدرسي الذكي</p>
+        </div>
+
+        <div class="solution-points">
+            <div class="solution-item">
+                <span class="check">✓</span>
+                <div>
+                    <h3>تتبع GPS لحظي</h3>
+                    <p>يعرف الآباء موقع الحافلة بالضبط في كل لحظة</p>
+                </div>
+            </div>
+
+            <div class="solution-item">
+                <span class="check">✓</span>
+                <div>
+                    <h3>بث فيديو مباشر</h3>
+                    <p>كاميرا من هاتف السائق تُبث للإدارة مباشرة</p>
+                </div>
+            </div>
+
+            <div class="solution-item">
+                <span class="check">✓</span>
+                <div>
+                    <h3>تسجيل صعود/نزول ذكي</h3>
+                    <p>NFC + تأكيد يدوي لضمان سلامة كل طالب</p>
+                </div>
+            </div>
+
+            <div class="solution-item">
+                <span class="check">✓</span>
+                <div>
+                    <h3>لوحة تحكم احترافية</h3>
+                    <p>للمدارس والمشرفين - تقارير وإحصائيات متقدمة</p>
+                </div>
+            </div>
+
+            <div class="solution-item">
+                <span class="check">✓</span>
+                <div>
+                    <h3>تطبيقات متعددة</h3>
+                    <p>تطبيق ولي الأمر + تطبيق السائق + لوحة الإدارة</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Market Section -->
+    <section class="market" id="market">
+        <div class="section-header">
+            <h2 style="color: var(--gold);">فرصة السوق</h2>
+            <p style="color: var(--sage-light);">أرقام حقيقية من السوق السعودي</p>
+        </div>
+
+        <div class="market-grid">
+            <div class="market-card">
+                <div class="big-number">11M</div>
+                <h3>طالب وطالبة</h3>
+                <p>في التعليم العام والخاص</p>
+            </div>
+
+            <div class="market-card">
+                <div class="big-number">60K</div>
+                <h3>مدرسة</h3>
+                <p>حكومية وخاصة</p>
+            </div>
+
+            <div class="market-card">
+                <div class="big-number">$2B</div>
+                <h3>حجم السوق</h3>
+                <p>خدمات النقل المدرسي سنوياً</p>
+            </div>
+
+            <div class="market-card">
+                <div class="big-number">25%</div>
+                <h3>نمو سنوي</h3>
+                <p>في حلول EdTech بالمنطقة</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Business Model -->
+    <section class="business">
+        <div class="section-header">
+            <h2>نموذج الأعمال</h2>
+            <p>مصادر إيرادات متعددة ومستدامة</p>
+        </div>
+
+        <div class="revenue-streams">
+            <div class="stream-card">
+                <div class="icon">📊</div>
+                <h3>اشتراك شهري</h3>
+                <div class="amount">499-1999 ر.س</div>
+                <p>حسب حجم المدرسة</p>
+            </div>
+
+            <div class="stream-card">
+                <div class="icon">📱</div>
+                <h3>رسوم لكل طالب</h3>
+                <div class="amount">10 ر.س</div>
+                <p>شهرياً لكل طالب إضافي</p>
+            </div>
+
+            <div class="stream-card">
+                <div class="icon">🔧</div>
+                <h3>خدمات إضافية</h3>
+                <div class="amount">متغير</div>
+                <p>تكامل، تخصيص، تدريب</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section class="team">
+        <div class="section-header">
+            <h2 style="color: var(--gold);">لماذا نحن؟</h2>
+        </div>
+        <p class="team-note">
+            فريق تقني متمرس بخبرة في SaaS والتعليم.
+            منتج جاهز ويعمل الآن. نموذج قابل للتوسع إقليمياً.
+            نبحث عن شريك استراتيجي للتوسع.
+        </p>
+    </section>
+
+    <!-- Investment Section -->
+    <section class="investment" id="investment">
+        <h2>فرصة الاستثمار</h2>
+        <p>نبحث عن جولة تأسيسية</p>
+
+        <div class="investment-amount">500,000 ر.س</div>
+
+        <div class="investment-details">
+            <div class="investment-detail">
+                <div class="value">15%</div>
+                <div class="label">حصة مقابل الاستثمار</div>
+            </div>
+            <div class="investment-detail">
+                <div class="value">18 شهر</div>
+                <div class="label">للوصول لنقطة التعادل</div>
+            </div>
+            <div class="investment-detail">
+                <div class="value">100+</div>
+                <div class="label">مدرسة مستهدفة السنة الأولى</div>
+            </div>
+        </div>
+
+        <a href="#contact" class="cta-button">تواصل معنا الآن</a>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact" id="contact">
+        <h2>تواصل معنا</h2>
+        <div class="contact-info">
+            <div class="contact-item">📧 <span>invest@aminmadrasti.sa</span></div>
+            <div class="contact-item">📞 <span>+966 50 XXX XXXX</span></div>
+            <div class="contact-item">🌐 <span>aminmadrasti.sa</span></div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2026 آمن مدرستي - وثيقة سرية للمستثمرين</p>
+    </footer>
+
+</body>
+
+</html>

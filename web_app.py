@@ -201,6 +201,23 @@ def force_migrate():
     except Exception as e:
         return f"❌ Migration Failed: {e}", 500
 
+# --- TOUR PAGES (Public Landing Pages) ---
+@app.route('/tour')
+def tour_select():
+    return render_template('tour-select.html')
+
+@app.route('/tour/parent')
+def tour_parent():
+    return render_template('parent-tour.html')
+
+@app.route('/tour/school')
+def tour_school():
+    return render_template('school-tour.html')
+
+@app.route('/tour/investor')
+def tour_investor():
+    return render_template('investor-tour.html')
+
 # --- MQTT LISTENER (Background Task) ---
 # This runs separately so it doesn't block the website
 # --- SOCKET EVENTS (The Bridge) ---

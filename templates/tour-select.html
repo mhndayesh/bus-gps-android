@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>آمن مدرستي - اكتشف المزيد | Learn More</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sage-green: #9FB8AD;
+            --sage-dark: #7A9A8D;
+            --gold: #F5C518;
+            --gold-dark: #D4A914;
+            --black: #1A1A1A;
+            --cream: #F5F5F0;
+            --white: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--sage-green) 0%, var(--sage-dark) 50%, var(--black) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 1000px;
+        }
+
+        .logo {
+            font-size: 4em;
+            margin-bottom: 20px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: var(--gold);
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 1.3em;
+            color: var(--cream);
+            margin-bottom: 50px;
+            font-weight: 400;
+        }
+
+        .question {
+            font-size: 1.8em;
+            color: var(--white);
+            margin-bottom: 40px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        .card {
+            background: var(--cream);
+            padding: 50px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            color: var(--black);
+            transition: all 0.4s ease;
+            border: 4px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, var(--sage-green), var(--gold));
+        }
+
+        .card:hover {
+            transform: translateY(-15px) scale(1.02);
+            border-color: var(--gold);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            font-size: 1.6em;
+            color: var(--black);
+            margin-bottom: 10px;
+        }
+
+        .card p {
+            font-size: 1.1em;
+            color: var(--sage-dark);
+            margin-bottom: 20px;
+        }
+
+        .card-cta {
+            display: inline-block;
+            padding: 12px 30px;
+            background: var(--gold);
+            color: var(--black);
+            border-radius: 25px;
+            font-weight: 700;
+        }
+
+        .card:hover .card-cta {
+            background: var(--black);
+            color: var(--gold);
+        }
+
+        .back-link {
+            margin-top: 50px;
+            display: inline-block;
+            color: var(--cream);
+            text-decoration: none;
+            font-size: 1.1em;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+
+        .back-link:hover {
+            opacity: 1;
+            color: var(--gold);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .question {
+                font-size: 1.3em;
+            }
+
+            .card {
+                padding: 40px 25px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">🚌</div>
+        <h1>آمن مدرستي</h1>
+        <h2>Safe School Transport</h2>
+
+        <div class="question">أنت...</div>
+
+        <div class="cards">
+            <a href="/tour/parent" class="card">
+                <div class="card-icon">👨‍👩‍👧‍👦</div>
+                <h3>ولي أمر</h3>
+                <p>Parent</p>
+                <span class="card-cta">اكتشف المزايا ←</span>
+            </a>
+
+            <a href="/tour/school" class="card">
+                <div class="card-icon">🏫</div>
+                <h3>مدير / مشرف مدرسة</h3>
+                <p>School Manager</p>
+                <span class="card-cta">اكتشف الحل ←</span>
+            </a>
+
+            <a href="/tour/investor" class="card">
+                <div class="card-icon">💼</div>
+                <h3>مستثمر / رجل أعمال</h3>
+                <p>Investor / Business</p>
+                <span class="card-cta">فرصة الاستثمار ←</span>
+            </a>
+        </div>
+
+        <a href="/" class="back-link">← العودة للصفحة الرئيسية</a>
+    </div>
+</body>
+
+</html>

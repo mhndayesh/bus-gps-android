@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>آمن مدرستي - لأولياء الأمور | Safe School Transport for Parents</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --sage-green: #9FB8AD;
+            --sage-dark: #7A9A8D;
+            --sage-light: #c5d6cd;
+            --gold: #F5C518;
+            --gold-dark: #D4A914;
+            --gold-light: #ffe066;
+            --black: #1A1A1A;
+            --cream: #F5F5F0;
+            --white: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--cream);
+            color: var(--black);
+            overflow-x: hidden;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--sage-green) 0%, var(--sage-dark) 50%, var(--black) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(245, 197, 24, 0.1) 0%, transparent 50%);
+            animation: pulse-bg 8s ease-in-out infinite;
+        }
+
+        @keyframes pulse-bg {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+        }
+
+        .hero-icon {
+            font-size: 5em;
+            margin-bottom: 20px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+
+        .hero h1 {
+            font-size: 3.5em;
+            font-weight: 800;
+            color: var(--gold);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero h2 {
+            font-size: 1.8em;
+            font-weight: 400;
+            color: var(--cream);
+            margin-bottom: 30px;
+        }
+
+        .hero p {
+            font-size: 1.3em;
+            color: var(--sage-light);
+            max-width: 700px;
+            line-height: 1.8;
+            margin-bottom: 40px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 20px 50px;
+            background: var(--gold);
+            color: var(--black);
+            text-decoration: none;
+            font-size: 1.3em;
+            font-weight: 700;
+            border-radius: 50px;
+            transition: all 0.4s ease;
+            box-shadow: 0 10px 40px rgba(245, 197, 24, 0.4);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 20px 60px rgba(245, 197, 24, 0.5);
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--cream);
+            font-size: 2em;
+            animation: scroll-bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes scroll-bounce {
+
+            0%,
+            100% {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+
+            50% {
+                transform: translateX(-50%) translateY(10px);
+                opacity: 0.5;
+            }
+        }
+
+        /* Features Section */
+        .features {
+            padding: 100px 20px;
+            background: var(--white);
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-title h2 {
+            font-size: 2.8em;
+            color: var(--black);
+            margin-bottom: 15px;
+        }
+
+        .section-title p {
+            font-size: 1.2em;
+            color: var(--sage-dark);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: var(--cream);
+            padding: 50px 40px;
+            border-radius: 25px;
+            text-align: center;
+            transition: all 0.4s ease;
+            border: 3px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--sage-green), var(--gold));
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--gold);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            font-size: 4em;
+            margin-bottom: 25px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.6em;
+            color: var(--black);
+            margin-bottom: 15px;
+        }
+
+        .feature-card p {
+            font-size: 1.1em;
+            color: #666;
+            line-height: 1.7;
+        }
+
+        /* Stats Section */
+        .stats {
+            padding: 80px 20px;
+            background: linear-gradient(135deg, var(--black) 0%, #2d2d2d 100%);
+            color: var(--cream);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .stat-item {
+            padding: 30px;
+        }
+
+        .stat-number {
+            font-size: 4em;
+            font-weight: 800;
+            color: var(--gold);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 1.2em;
+            color: var(--sage-light);
+        }
+
+        /* Testimonial Section */
+        .testimonial {
+            padding: 100px 20px;
+            background: var(--sage-light);
+            text-align: center;
+        }
+
+        .testimonial-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .testimonial-quote {
+            font-size: 2em;
+            font-style: italic;
+            color: var(--black);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .testimonial-author {
+            font-size: 1.3em;
+            color: var(--sage-dark);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 100px 20px;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5em;
+            color: var(--black);
+            margin-bottom: 20px;
+        }
+
+        .cta-section p {
+            font-size: 1.3em;
+            color: var(--black);
+            margin-bottom: 40px;
+            opacity: 0.8;
+        }
+
+        .cta-section .cta-button {
+            background: var(--black);
+            color: var(--gold);
+        }
+
+        .cta-section .cta-button:hover {
+            background: var(--white);
+            color: var(--black);
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 20px;
+            background: var(--black);
+            color: var(--cream);
+            text-align: center;
+        }
+
+        footer p {
+            opacity: 0.7;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5em;
+            }
+
+            .hero h2 {
+                font-size: 1.3em;
+            }
+
+            .hero-icon {
+                font-size: 4em;
+            }
+
+            .section-title h2 {
+                font-size: 2em;
+            }
+
+            .stat-number {
+                font-size: 3em;
+            }
+
+            .testimonial-quote {
+                font-size: 1.4em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-icon">👨‍👩‍👧‍👦</div>
+            <h1>راحة بالك... أولادك بأمان</h1>
+            <h2>Your Peace of Mind, Their Safety</h2>
+            <p>
+                تتبع حافلة طفلك لحظة بلحظة من هاتفك. اعرف متى يصعد، متى ينزل، وأين هو الآن. لا مزيد من القلق!
+            </p>
+            <a href="#features" class="cta-button">اكتشف المزيد ←</a>
+        </div>
+        <div class="scroll-indicator">⬇</div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="section-title">
+            <h2>لماذا آمن مدرستي؟</h2>
+            <p>مميزات صممت خصيصاً لراحة بالك</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📍</div>
+                <h3>تتبع لحظي</h3>
+                <p>شاهد موقع الحافلة مباشرة على الخريطة. تعرف بالضبط أين طفلك في كل لحظة.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🔔</div>
+                <h3>إشعارات فورية</h3>
+                <p>استلم إشعار عند صعود طفلك للحافلة وعند نزوله. لا تفوت أي لحظة.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📹</div>
+                <h3>بث مباشر</h3>
+                <p>شاهد البث المباشر من داخل الحافلة. اطمئن على طفلك في أي وقت.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🛡️</div>
+                <h3>أمان متكامل</h3>
+                <p>نظام NFC للتحقق من صعود ونزول الطلاب. لا مجال للخطأ.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>تطبيق سهل</h3>
+                <p>واجهة بسيطة وسهلة الاستخدام. لا تحتاج خبرة تقنية.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">💬</div>
+                <h3>تواصل مباشر</h3>
+                <p>تواصل مع السائق والمدرسة بضغطة زر واحدة.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-number">100%</span>
+                <span class="stat-label">راحة بال</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">24/7</span>
+                <span class="stat-label">متابعة مستمرة</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">0</span>
+                <span class="stat-label">حوادث ضياع</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">∞</span>
+                <span class="stat-label">اطمئنان</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonial -->
+    <section class="testimonial">
+        <div class="testimonial-content">
+            <div class="testimonial-quote">
+                "منذ استخدمنا آمن مدرستي، لم أعد أقلق على أطفالي أبداً. أستطيع متابعتهم في كل لحظة من يومهم الدراسي."
+            </div>
+            <div class="testimonial-author">— أم محمد، ولية أمر</div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <h2>انضم لآلاف الأسر المطمئنة</h2>
+        <p>ابدأ اليوم واستمتع براحة البال</p>
+        <a href="#" class="cta-button">سجل الآن مجاناً</a>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2026 آمن مدرستي - جميع الحقوق محفوظة</p>
+    </footer>
+
+</body>
+
+</html>

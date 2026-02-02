@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>آمن مدرستي - للمدارس | Smart School Transport Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --sage-green: #9FB8AD;
+            --sage-dark: #7A9A8D;
+            --sage-light: #c5d6cd;
+            --gold: #F5C518;
+            --gold-dark: #D4A914;
+            --gold-light: #ffe066;
+            --black: #1A1A1A;
+            --cream: #F5F5F0;
+            --white: #FFFFFF;
+            --blue: #3498db;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--cream);
+            color: var(--black);
+            overflow-x: hidden;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--black) 0%, #2d2d2d 50%, var(--sage-dark) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="%239FB8AD" stroke-width="0.5" opacity="0.1"/></svg>');
+            background-size: 100px;
+            animation: float-pattern 20s linear infinite;
+        }
+
+        @keyframes float-pattern {
+            0% {
+                transform: translateX(0) translateY(0);
+            }
+
+            100% {
+                transform: translateX(-100px) translateY(-100px);
+            }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 1000px;
+        }
+
+        .hero-icon {
+            font-size: 5em;
+            margin-bottom: 20px;
+            animation: scale-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes scale-pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .hero h1 {
+            font-size: 3.2em;
+            font-weight: 800;
+            color: var(--gold);
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .hero h2 {
+            font-size: 1.6em;
+            font-weight: 400;
+            color: var(--sage-light);
+            margin-bottom: 30px;
+        }
+
+        .hero p {
+            font-size: 1.2em;
+            color: var(--cream);
+            max-width: 800px;
+            line-height: 1.8;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 20px 50px;
+            background: var(--gold);
+            color: var(--black);
+            text-decoration: none;
+            font-size: 1.3em;
+            font-weight: 700;
+            border-radius: 50px;
+            transition: all 0.4s ease;
+            box-shadow: 0 10px 40px rgba(245, 197, 24, 0.4);
+            margin: 0 10px;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 20px 60px rgba(245, 197, 24, 0.5);
+        }
+
+        .cta-button.secondary {
+            background: transparent;
+            border: 3px solid var(--sage-light);
+            color: var(--sage-light);
+        }
+
+        .cta-button.secondary:hover {
+            background: var(--sage-light);
+            color: var(--black);
+        }
+
+        /* Benefits Section */
+        .benefits {
+            padding: 100px 20px;
+            background: var(--white);
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 70px;
+        }
+
+        .section-title h2 {
+            font-size: 2.8em;
+            color: var(--black);
+            margin-bottom: 15px;
+        }
+
+        .section-title .highlight {
+            color: var(--gold-dark);
+        }
+
+        .section-title p {
+            font-size: 1.2em;
+            color: var(--sage-dark);
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 50px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .benefit-card {
+            display: flex;
+            gap: 25px;
+            align-items: flex-start;
+            padding: 30px;
+            background: var(--cream);
+            border-radius: 20px;
+            transition: all 0.4s ease;
+        }
+
+        .benefit-card:hover {
+            transform: translateX(-10px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+        }
+
+        .benefit-icon {
+            font-size: 3em;
+            background: linear-gradient(135deg, var(--sage-green), var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .benefit-content h3 {
+            font-size: 1.5em;
+            color: var(--black);
+            margin-bottom: 10px;
+        }
+
+        .benefit-content p {
+            font-size: 1.05em;
+            color: #666;
+            line-height: 1.7;
+        }
+
+        /* Dashboard Preview */
+        .dashboard-preview {
+            padding: 100px 20px;
+            background: linear-gradient(135deg, var(--sage-green) 0%, var(--sage-dark) 100%);
+            text-align: center;
+        }
+
+        .dashboard-preview h2 {
+            font-size: 2.5em;
+            color: var(--white);
+            margin-bottom: 20px;
+        }
+
+        .dashboard-preview p {
+            font-size: 1.2em;
+            color: var(--cream);
+            margin-bottom: 50px;
+        }
+
+        .dashboard-mockup {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--black);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.3);
+        }
+
+        .dashboard-mockup .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .dashboard-mockup .tab {
+            padding: 12px 25px;
+            background: var(--sage-dark);
+            color: var(--white);
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .dashboard-mockup .tab.active {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        .dashboard-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .dash-card {
+            background: #2d2d2d;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .dash-card .number {
+            font-size: 2.5em;
+            font-weight: 800;
+            color: var(--gold);
+        }
+
+        .dash-card .label {
+            color: var(--sage-light);
+            margin-top: 10px;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 100px 20px;
+            background: var(--black);
+            color: var(--cream);
+        }
+
+        .features-flex {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 50px auto 0;
+        }
+
+        .feature-tag {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px 35px;
+            background: #2d2d2d;
+            border-radius: 50px;
+            border: 2px solid var(--sage-dark);
+            transition: all 0.3s ease;
+        }
+
+        .feature-tag:hover {
+            border-color: var(--gold);
+            transform: scale(1.05);
+        }
+
+        .feature-tag span {
+            font-size: 1.1em;
+        }
+
+        /* Pricing Teaser */
+        .pricing {
+            padding: 100px 20px;
+            background: var(--cream);
+            text-align: center;
+        }
+
+        .pricing-cards {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+            max-width: 1000px;
+            margin: 50px auto 0;
+        }
+
+        .price-card {
+            background: var(--white);
+            padding: 50px 40px;
+            border-radius: 25px;
+            min-width: 300px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+            transition: all 0.4s ease;
+            border: 3px solid transparent;
+        }
+
+        .price-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .price-card.featured {
+            border-color: var(--gold);
+            transform: scale(1.05);
+        }
+
+        .price-card h3 {
+            font-size: 1.6em;
+            color: var(--sage-dark);
+            margin-bottom: 20px;
+        }
+
+        .price-amount {
+            font-size: 3em;
+            font-weight: 800;
+            color: var(--black);
+        }
+
+        .price-amount small {
+            font-size: 0.4em;
+            color: #999;
+        }
+
+        .price-features {
+            list-style: none;
+            padding: 30px 0;
+            text-align: right;
+        }
+
+        .price-features li {
+            padding: 10px 0;
+            color: #666;
+            border-bottom: 1px solid #eee;
+        }
+
+        .price-features li::before {
+            content: '✓ ';
+            color: var(--sage-dark);
+            font-weight: bold;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 100px 20px;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5em;
+            color: var(--black);
+            margin-bottom: 20px;
+        }
+
+        .cta-section p {
+            font-size: 1.3em;
+            color: var(--black);
+            margin-bottom: 40px;
+            opacity: 0.8;
+        }
+
+        .cta-section .cta-button {
+            background: var(--black);
+            color: var(--gold);
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 20px;
+            background: var(--black);
+            color: var(--cream);
+            text-align: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.2em;
+            }
+
+            .hero h2 {
+                font-size: 1.2em;
+            }
+
+            .benefit-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .price-card.featured {
+                transform: none;
+            }
+
+            .cta-button {
+                display: block;
+                margin: 10px auto;
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-icon">🏫</div>
+            <h1>أدر أسطولك بذكاء</h1>
+            <h2>Smart Fleet Management for Modern Schools</h2>
+            <p>
+                نظام متكامل لإدارة حافلات المدرسة. تتبع كل حافلة، كل سائق، كل طالب.
+                قلل التكاليف، زِد الكفاءة، وأرضِ أولياء الأمور.
+            </p>
+            <div>
+                <a href="#benefits" class="cta-button">اكتشف الحل ←</a>
+                <a href="#pricing" class="cta-button secondary">الأسعار</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="benefits" id="benefits">
+        <div class="section-title">
+            <h2>لماذا تختار <span class="highlight">آمن مدرستي</span>؟</h2>
+            <p>حلول ذكية لتحديات النقل المدرسي</p>
+        </div>
+
+        <div class="benefits-grid">
+            <div class="benefit-card">
+                <div class="benefit-icon">📊</div>
+                <div class="benefit-content">
+                    <h3>لوحة تحكم شاملة</h3>
+                    <p>تابع جميع الحافلات والسائقين والطلاب من شاشة واحدة. بيانات لحظية وتقارير تفصيلية.</p>
+                </div>
+            </div>
+
+            <div class="benefit-card">
+                <div class="benefit-icon">💰</div>
+                <div class="benefit-content">
+                    <h3>خفض التكاليف</h3>
+                    <p>وفر حتى 30% من تكاليف التشغيل عبر تحسين المسارات ومراقبة استهلاك الوقود.</p>
+                </div>
+            </div>
+
+            <div class="benefit-card">
+                <div class="benefit-icon">👨‍👩‍👧</div>
+                <div class="benefit-content">
+                    <h3>رضا أولياء الأمور</h3>
+                    <p>تطبيق مخصص لأولياء الأمور يعزز ثقتهم بالمدرسة ويقلل الاستفسارات.</p>
+                </div>
+            </div>
+
+            <div class="benefit-card">
+                <div class="benefit-icon">⚡</div>
+                <div class="benefit-content">
+                    <h3>سهولة الاستخدام</h3>
+                    <p>واجهة عربية بسيطة. لا تحتاج تدريب معقد. ابدأ في دقائق.</p>
+                </div>
+            </div>
+
+            <div class="benefit-card">
+                <div class="benefit-icon">🔒</div>
+                <div class="benefit-content">
+                    <h3>أمان البيانات</h3>
+                    <p>تشفير كامل وحماية متقدمة. بياناتك وبيانات الطلاب في أمان تام.</p>
+                </div>
+            </div>
+
+            <div class="benefit-card">
+                <div class="benefit-icon">📞</div>
+                <div class="benefit-content">
+                    <h3>دعم فني متميز</h3>
+                    <p>فريق دعم متاح على مدار الساعة. نحن معك في كل خطوة.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Preview -->
+    <section class="dashboard-preview">
+        <h2>لوحة تحكم احترافية</h2>
+        <p>كل ما تحتاجه في مكان واحد</p>
+
+        <div class="dashboard-mockup">
+            <div class="tabs">
+                <span class="tab active">🏫 المدارس</span>
+                <span class="tab">👨‍👩‍👧 أولياء الأمور</span>
+                <span class="tab">👨‍🎓 الطلاب</span>
+                <span class="tab">🚌 الحافلات</span>
+                <span class="tab">🚗 السائقين</span>
+                <span class="tab">📹 البث المباشر</span>
+            </div>
+
+            <div class="dashboard-content">
+                <div class="dash-card">
+                    <div class="number">15</div>
+                    <div class="label">حافلة نشطة</div>
+                </div>
+                <div class="dash-card">
+                    <div class="number">450</div>
+                    <div class="label">طالب مسجل</div>
+                </div>
+                <div class="dash-card">
+                    <div class="number">98%</div>
+                    <div class="label">معدل الحضور</div>
+                </div>
+                <div class="dash-card">
+                    <div class="number">0</div>
+                    <div class="label">حوادث هذا الشهر</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Tags -->
+    <section class="features">
+        <div class="section-title">
+            <h2 style="color: var(--gold);">مميزات متقدمة</h2>
+        </div>
+
+        <div class="features-flex">
+            <div class="feature-tag">📍 تتبع GPS لحظي</div>
+            <div class="feature-tag">📹 بث مباشر</div>
+            <div class="feature-tag">🏷️ تسجيل NFC</div>
+            <div class="feature-tag">🔔 إشعارات فورية</div>
+            <div class="feature-tag">📊 تقارير تفصيلية</div>
+            <div class="feature-tag">👥 إدارة المستخدمين</div>
+            <div class="feature-tag">🗺️ تحسين المسارات</div>
+            <div class="feature-tag">📱 تطبيق ولي الأمر</div>
+            <div class="feature-tag">🚗 تطبيق السائق</div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing" id="pricing">
+        <div class="section-title">
+            <h2>خطط مرنة تناسب حجم مدرستك</h2>
+            <p>ابدأ مجاناً وتوسع حسب احتياجك</p>
+        </div>
+
+        <div class="pricing-cards">
+            <div class="price-card">
+                <h3>المدارس الصغيرة</h3>
+                <div class="price-amount">مجاني<small>/شهرياً</small></div>
+                <ul class="price-features">
+                    <li>حتى 3 حافلات</li>
+                    <li>حتى 50 طالب</li>
+                    <li>تتبع GPS أساسي</li>
+                    <li>تطبيق ولي الأمر</li>
+                </ul>
+                <a href="#" class="cta-button" style="width:100%;">ابدأ الآن</a>
+            </div>
+
+            <div class="price-card featured">
+                <h3>المدارس المتوسطة</h3>
+                <div class="price-amount">499<small>ر.س/شهرياً</small></div>
+                <ul class="price-features">
+                    <li>حتى 15 حافلة</li>
+                    <li>حتى 500 طالب</li>
+                    <li>بث مباشر</li>
+                    <li>تقارير متقدمة</li>
+                    <li>دعم أولوية</li>
+                </ul>
+                <a href="#" class="cta-button" style="width:100%;">الأكثر شعبية ⭐</a>
+            </div>
+
+            <div class="price-card">
+                <h3>المدارس الكبيرة</h3>
+                <div class="price-amount">تواصل معنا</div>
+                <ul class="price-features">
+                    <li>عدد غير محدود</li>
+                    <li>تكامل API</li>
+                    <li>تخصيص كامل</li>
+                    <li>مدير حساب مخصص</li>
+                    <li>SLA مضمون</li>
+                </ul>
+                <a href="#" class="cta-button" style="width:100%;">تواصل معنا</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <h2>جاهز لتحويل إدارة النقل المدرسي؟</h2>
+        <p>احجز عرضاً تجريبياً مجانياً اليوم</p>
+        <a href="#" class="cta-button">احجز موعدك الآن</a>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2026 آمن مدرستي - جميع الحقوق محفوظة</p>
+    </footer>
+
+</body>
+
+</html>
