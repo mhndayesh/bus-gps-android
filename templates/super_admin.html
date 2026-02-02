@@ -149,6 +149,30 @@
             color: #e74c3c;
         }
 
+        .stat-filter {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .stat-filter select {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 2px solid var(--gold);
+            background: #2d2d2d;
+            color: var(--cream);
+            font-family: 'Tajawal', sans-serif;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        .stat-filter select:hover {
+            border-color: var(--gold-dark);
+        }
+
         /* Tab Content */
         .tab-content {
             display: none;
@@ -312,6 +336,14 @@
 
     <!-- Dashboard Stats Cards -->
     <div class="stats-dashboard">
+        <!-- School Filter -->
+        <div class="stat-filter">
+            <label style="color: var(--sage-light); margin-left: 10px;">🏫 فلترة حسب المدرسة:</label>
+            <select id="stats-school-filter" onchange="loadDashboardStats()">
+                <option value="all">جميع المدارس (All Schools)</option>
+            </select>
+        </div>
+
         <div class="stat-card">
             <div class="stat-icon">🚌</div>
             <div class="stat-number" id="stat-total-buses">--</div>
@@ -1151,7 +1183,9 @@
 
         // --- DASHBOARD STATISTICS ---
         function loadDashboardStats() {
-            fetch('/api/dashboard/stats')
+            const filter = document.getElementById('stats-school-filter');
+            const schoolId = filter ? filter.value : 'all';
+            fetch('/api/dashboard/stats?school_id=' + schoolId)
                 .then(r => r.json())
                 .then(data => {
                     document.getElementById('stat-total-buses').textContent = data.total_buses || 0;
@@ -1165,7 +1199,26 @@
                 });
         }
 
+        // Load schools for filter dropdown
+        function loadSchoolsForFilter() {
+            fetch('/api/schools')
+                .then(r => r.json())
+                .then(schools => {
+                    const select = document.getElementById('stats-school-filter');
+                    if (select) {
+                        schools.forEach(s => {
+                            const opt = document.createElement('option');
+                            opt.value = s.id;
+                            opt.textContent = s.name;
+                            select.appendChild(opt);
+                        });
+                    }
+                })
+                .catch(err => console.error('Failed to load schools for filter:', err));
+        }
+
         // Load stats on page load
+        loadSchoolsForFilter();
         loadDashboardStats();
 
         // Refresh stats every 30 seconds

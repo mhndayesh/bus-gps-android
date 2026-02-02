@@ -226,20 +226,39 @@ def dashboard_stats():
     role = session.get('user_role')
     school_id = session.get('school_id')  # For SCHOOL_ADMIN
     
+    # Super Admin can filter by school using query param
+    filter_school_id = request.args.get('school_id')
+    
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         
         if role == 'SUPER_ADMIN':
-            # Super Admin sees all schools
-            cur.execute("SELECT COUNT(*) FROM buses")
-            total_buses = cur.fetchone()[0]
-            
-            cur.execute("SELECT COUNT(*) FROM students")
-            total_students = cur.fetchone()[0]
-            
-            cur.execute("SELECT COUNT(DISTINCT student_id) FROM bus_manifest")
-            present_students = cur.fetchone()[0]
+            if filter_school_id and filter_school_id != 'all':
+                # Filter by specific school
+                cur.execute("SELECT COUNT(*) FROM buses WHERE school_id = %s", (filter_school_id,))
+                total_buses = cur.fetchone()[0]
+                
+                cur.execute("SELECT COUNT(*) FROM students WHERE school_id = %s", (filter_school_id,))
+                total_students = cur.fetchone()[0]
+                
+                cur.execute("""
+                    SELECT COUNT(DISTINCT bm.student_id) 
+                    FROM bus_manifest bm
+                    JOIN students s ON bm.student_id::text = s.id::text
+                    WHERE s.school_id = %s
+                """, (filter_school_id,))
+                present_students = cur.fetchone()[0]
+            else:
+                # All schools
+                cur.execute("SELECT COUNT(*) FROM buses")
+                total_buses = cur.fetchone()[0]
+                
+                cur.execute("SELECT COUNT(*) FROM students")
+                total_students = cur.fetchone()[0]
+                
+                cur.execute("SELECT COUNT(DISTINCT student_id) FROM bus_manifest")
+                present_students = cur.fetchone()[0]
             
         else:  # SCHOOL_ADMIN
             # School Admin sees only their school
@@ -277,6 +296,7 @@ def dashboard_stats():
         import traceback
         traceback.print_exc()
         return json.dumps({"error": str(e)}), 500
+
 
 # --- MQTT LISTENER (Background Task) ---
 # This runs separately so it doesn't block the website
