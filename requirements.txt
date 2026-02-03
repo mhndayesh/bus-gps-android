@@ -1,5 +1,6 @@
 flask
 flask-socketio
+flask-limiter
 eventlet
 paho-mqtt
 psycopg2-binary

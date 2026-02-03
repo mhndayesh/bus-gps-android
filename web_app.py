@@ -176,10 +176,34 @@ def role_required(allowed_roles):
     return decorator
 
 # --- SETUP FLASK & SOCKETIO ---
-# --- SETUP FLASK & SOCKETIO ---
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins="*")
+
+# SECURITY: Secret key from environment variable (CRITICAL!)
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
+
+# SECURITY: Session cookie settings
+app.config['SESSION_COOKIE_SECURE'] = True        # HTTPS only
+app.config['SESSION_COOKIE_HTTPONLY'] = True      # No JavaScript access
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'     # CSRF protection
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600   # 1 hour session expiry
+
+# SECURITY: CORS - Restrict to allowed origins
+ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', '*').split(',')
+# In production, set CORS_ORIGINS=https://your-app.railway.app
+socketio = SocketIO(app, cors_allowed_origins=ALLOWED_ORIGINS if ALLOWED_ORIGINS != ['*'] else "*")
+
+# SECURITY: Rate limiting to prevent brute-force attacks
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+
+# Password hashing utilities
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # --- MIGRATION ON STARTUP (For Gunicorn/Cloud) ---
 try:
@@ -560,6 +584,7 @@ def admin():
         return "Unknown Role", 403
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute", methods=["POST"])
 def login():
     """Admin Login Portal - Only for SUPER_ADMIN and SCHOOL_ADMIN"""
     if request.method == 'POST':
@@ -568,28 +593,44 @@ def login():
         
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT id, name, role, school_id FROM users WHERE name = %s AND password_hash = %s", (username, password))
+        # Get user with password hash for verification
+        cur.execute("SELECT id, name, role, school_id, password_hash FROM users WHERE name = %s", (username,))
         user = cur.fetchone()
         cur.close()
         conn.close()
         
-        if user:
-            role = user[2]
-            # Validate: Only Admins allowed here
-            if role not in ['SUPER_ADMIN', 'SCHOOL_ADMIN']:
-                return "❌ Access Denied: Use the correct portal for your role.", 403
+        if user and user[4]:  # user[4] is password_hash
+            # SECURITY: Verify password using hash
+            # Support both old plain-text (temporary) and new hashed passwords
+            stored_hash = user[4]
+            password_valid = False
             
-            session['user_id'] = user[0]
-            session['user_name'] = user[1]
-            session['user_role'] = role
-            session['school_id'] = user[3]
-            return redirect(url_for('admin'))
-        else:
-            return "❌ Invalid Login", 401
+            if stored_hash.startswith('pbkdf2:') or stored_hash.startswith('scrypt:'):
+                # New hashed password
+                password_valid = check_password_hash(stored_hash, password)
+            else:
+                # Legacy plain-text (will be migrated)
+                password_valid = (stored_hash == password)
+            
+            if password_valid:
+                role = user[2]
+                # Validate: Only Admins allowed here
+                if role not in ['SUPER_ADMIN', 'SCHOOL_ADMIN']:
+                    return "❌ Access Denied: Use the correct portal for your role.", 403
+                
+                session['user_id'] = user[0]
+                session['user_name'] = user[1]
+                session['user_role'] = role
+                session['school_id'] = user[3]
+                return redirect(url_for('admin'))
+        
+        return "❌ Invalid Login", 401
     
     return render_template('login.html')
 
+
 @app.route('/driver/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute", methods=["POST"])
 def driver_login():
     """Driver Login Portal - Only for DRIVER"""
     if request.method == 'POST':
@@ -598,27 +639,38 @@ def driver_login():
         
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT id, name, role, school_id FROM users WHERE name = %s AND password_hash = %s", (username, password))
+        cur.execute("SELECT id, name, role, school_id, password_hash FROM users WHERE name = %s", (username,))
         user = cur.fetchone()
         cur.close()
         conn.close()
         
-        if user:
-            role = user[2]
-            if role != 'DRIVER':
-                return "❌ Access Denied: This portal is for Drivers only.", 403
+        if user and user[4]:
+            stored_hash = user[4]
+            password_valid = False
             
-            session['user_id'] = user[0]
-            session['user_name'] = user[1]
-            session['user_role'] = role
-            session['school_id'] = user[3]
-            return redirect(url_for('driver_ui'))
-        else:
-            return "❌ Invalid Login", 401
+            if stored_hash.startswith('pbkdf2:') or stored_hash.startswith('scrypt:'):
+                password_valid = check_password_hash(stored_hash, password)
+            else:
+                password_valid = (stored_hash == password)
+            
+            if password_valid:
+                role = user[2]
+                if role != 'DRIVER':
+                    return "❌ Access Denied: This portal is for Drivers only.", 403
+                
+                session['user_id'] = user[0]
+                session['user_name'] = user[1]
+                session['user_role'] = role
+                session['school_id'] = user[3]
+                return redirect(url_for('driver_ui'))
+        
+        return "❌ Invalid Login", 401
     
     return render_template('driver_login.html')
 
+
 @app.route('/parent/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute", methods=["POST"])
 def parent_login():
     """Parent Login Portal - Only for PARENT"""
     if request.method == 'POST':
@@ -627,25 +679,35 @@ def parent_login():
         
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT id, name, role, school_id FROM users WHERE name = %s AND password_hash = %s", (username, password))
+        cur.execute("SELECT id, name, role, school_id, password_hash FROM users WHERE name = %s", (username,))
         user = cur.fetchone()
         cur.close()
         conn.close()
         
-        if user:
-            role = user[2]
-            if role != 'PARENT':
-                return "❌ Access Denied: This portal is for Parents only.", 403
+        if user and user[4]:
+            stored_hash = user[4]
+            password_valid = False
             
-            session['user_id'] = user[0]
-            session['user_name'] = user[1]
-            session['user_role'] = role
-            session['school_id'] = user[3]
-            return redirect(url_for('parent_dashboard'))
-        else:
-            return "❌ Invalid Login", 401
+            if stored_hash.startswith('pbkdf2:') or stored_hash.startswith('scrypt:'):
+                password_valid = check_password_hash(stored_hash, password)
+            else:
+                password_valid = (stored_hash == password)
+            
+            if password_valid:
+                role = user[2]
+                if role != 'PARENT':
+                    return "❌ Access Denied: This portal is for Parents only.", 403
+                
+                session['user_id'] = user[0]
+                session['user_name'] = user[1]
+                session['user_role'] = role
+                session['school_id'] = user[3]
+                return redirect(url_for('parent_dashboard'))
+        
+        return "❌ Invalid Login", 401
     
     return render_template('parent_login.html')
+
 
 @app.route('/logout')
 def logout():
@@ -741,6 +803,9 @@ def create_parent():
         username = data.get('username', data['name'])  # Default to name if no username
         password = data.get('password', 'parent123')   # Default password
         
+        # SECURITY: Hash the password before storing
+        hashed_password = generate_password_hash(password)
+        
         # School ID Logic
         if session['user_role'] == 'SCHOOL_ADMIN':
              school_id = session['school_id']
@@ -753,7 +818,7 @@ def create_parent():
         cur.execute("""
             INSERT INTO users (id, name, role, school_id, password_hash)
             VALUES (%s, %s, 'PARENT', %s, %s)
-        """, (new_id, username, school_id, password))
+        """, (new_id, username, school_id, hashed_password))
         
         conn.commit()
         cur.close()
@@ -1126,10 +1191,13 @@ def create_school_admin():
         import uuid
         new_user_id = str(uuid.uuid4())
         
+        # SECURITY: Hash the password before storing
+        hashed_password = generate_password_hash(password)
+        
         cur.execute("""
             INSERT INTO users (id, name, role, school_id, password_hash)
             VALUES (%s, %s, 'SCHOOL_ADMIN', %s, %s)
-        """, (new_user_id, username, new_school_id, password))
+        """, (new_user_id, username, new_school_id, hashed_password))
         
         conn.commit()
         cur.close()
@@ -1155,12 +1223,15 @@ def update_parent_credentials():
         conn = get_db_connection()
         cur = conn.cursor()
         
+        # SECURITY: Hash the password before storing
+        hashed_password = generate_password_hash(new_password)
+        
         # Update entry
         cur.execute("""
             UPDATE users 
             SET name = %s, password_hash = %s 
             WHERE id = %s AND role = 'PARENT'
-        """, (new_username, new_password, parent_id))
+        """, (new_username, hashed_password, parent_id))
         
         if cur.rowcount == 0:
             return "Parent not found", 404
@@ -1241,10 +1312,13 @@ def create_driver():
             school_id = data.get('school_id')
             if not school_id: return json.dumps({"status": "error", "message": "School ID required"}), 400
 
+        # SECURITY: Hash the password before storing
+        hashed_password = generate_password_hash(data['password'])
+
         cur.execute("""
             INSERT INTO users (id, name, role, school_id, password_hash)
             VALUES (%s, %s, 'DRIVER', %s, %s)
-        """, (new_id, data['username'], school_id, data['password']))
+        """, (new_id, data['username'], school_id, hashed_password))
         
         conn.commit()
         cur.close()
