@@ -3,14 +3,15 @@ import os
 
 # --- PASTE YOUR RAILWAY CREDENTIALS HERE ---
 # (Copy these from the Variables tab in Railway)
-DB_HOST = "yamabiko.proxy.rlwy.net"
-DB_NAME = "railway"
-DB_USER = "postgres"
-DB_PASS = "yskvrNocmTymfEkzyhpHXTKdKHIcxvDN"
-DB_PORT = "27535"
+# --- CONFIGURATION: ENV VARS > HARDCODED ---
+DB_HOST = os.environ.get("DB_HOST", "yamabiko.proxy.rlwy.net")
+DB_NAME = os.environ.get("DB_NAME", "railway")
+DB_USER = os.environ.get("DB_USER", "postgres")
+DB_PASS = os.environ.get("DB_PASS", "yskvrNocmTymfEkzyhpHXTKdKHIcxvDN")
+DB_PORT = os.environ.get("DB_PORT", "27535")
 
 def create_tables():
-    print(f"🔌 Connecting to {DB_HOST}...")
+    print(f"🔌 Connecting to {DB_HOST} (User: {DB_USER})...")
     try:
         conn = psycopg2.connect(
             host=DB_HOST,
