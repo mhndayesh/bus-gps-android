@@ -400,13 +400,18 @@
                 </select>
 
                 <label>اختر الطالب:</label>
-                <select id="upd_student_id">
+                <select id="upd_student_id" onchange="loadStudentLocation()">
                     <option value="" disabled selected>اختر ولي الأمر أولاً</option>
                 </select>
 
+                <label>تحديث الموقع على الخريطة:</label>
+                <div id="update-map-picker"
+                    style="height: 300px; width: 100%; border-radius: 10px; border: 2px solid var(--sage-green); margin-bottom: 15px;">
+                </div>
+
                 <div class="row">
-                    <input type="text" id="upd_lat" placeholder="Lat جديد">
-                    <input type="text" id="upd_lng" placeholder="Lng جديد">
+                    <input type="text" id="upd_lat" placeholder="Lat جديد" readonly style="background: #f0f0f0;">
+                    <input type="text" id="upd_lng" placeholder="Lng جديد" readonly style="background: #f0f0f0;">
                 </div>
                 <input type="text" id="upd_address_text" placeholder="ملاحظة الموقع">
 
@@ -770,7 +775,48 @@
 
         // Fix map size when tab opens (Modal issue)
         function refreshMap() {
-            setTimeout(() => { mapPicker.invalidateSize(); }, 200);
+            setTimeout(() => {
+                mapPicker.invalidateSize();
+                if (typeof updateMapPicker !== 'undefined') updateMapPicker.invalidateSize();
+            }, 200);
+        }
+
+        // --- Update Student Map Logic ---
+        var updateMapPicker = L.map('update-map-picker').setView([24.7136, 46.6753], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(updateMapPicker);
+        var updatePinMarker = L.marker([24.7136, 46.6753], { draggable: true }).addTo(updateMapPicker);
+
+        // Update inputs when drag ends
+        updatePinMarker.on('dragend', function (e) {
+            var coord = e.target.getLatLng();
+            document.getElementById('upd_lat').value = coord.lat.toFixed(6);
+            document.getElementById('upd_lng').value = coord.lng.toFixed(6);
+        });
+
+        // Move marker on map click
+        updateMapPicker.on('click', function (e) {
+            updatePinMarker.setLatLng(e.latlng);
+            document.getElementById('upd_lat').value = e.latlng.lat.toFixed(6);
+            document.getElementById('upd_lng').value = e.latlng.lng.toFixed(6);
+        });
+
+        function loadStudentLocation() {
+            const sid = document.getElementById('upd_student_id').value;
+            // ALL_STUDENTS might have IDs as numbers or strings, best to handle both
+            const student = ALL_STUDENTS.find(s => s.id == sid);
+
+            if (student) {
+                // Pre-fill inputs
+                document.getElementById('upd_lat').value = student.lat || '';
+                document.getElementById('upd_lng').value = student.lng || '';
+                document.getElementById('upd_address_text').value = student.address_text || '';
+
+                if (student.lat && student.lng) {
+                    const latLng = [parseFloat(student.lat), parseFloat(student.lng)];
+                    updatePinMarker.setLatLng(latLng);
+                    updateMapPicker.setView(latLng, 15);
+                }
+            }
         }
 
     </script>
