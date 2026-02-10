@@ -760,12 +760,12 @@ def add_student():
         # For this demo, let's assume the user passes a valid parent_id or we insert NULL if allowed (it's FK though).
         # We will wrap in try/catch.
         
-             # Universal Mode: Use Lat/Lng Columns (No PostGIS)
-             cur.execute("""
-                INSERT INTO students (name, parent_id, school_id, nfc_tag_id, lat, lng, home_address_text, student_code)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id
-            """, (data['name'], data['parent_id'], school_target, data['nfc_id'], data.get('lat'), data.get('lng'), data.get('address_text', ''), data.get('student_code')))
+        # Universal Mode: Use Lat/Lng Columns (No PostGIS)
+        cur.execute("""
+            INSERT INTO students (name, parent_id, school_id, nfc_tag_id, lat, lng, home_address_text, student_code)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (data['name'], data['parent_id'], school_target, data['nfc_id'], data.get('lat'), data.get('lng'), data.get('address_text', ''), data.get('student_code')))
             
         new_student_id = cur.fetchone()[0]
         conn.commit()
