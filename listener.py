@@ -2,6 +2,16 @@ import json
 import paho.mqtt.client as mqtt
 import psycopg2
 import time
+import math
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371000  # radius of Earth in meters
+    phi1, phi2 = math.radians(lat1), math.radians(lat2) 
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
+    c = 2*math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return R*c
 
 # --- CONFIGURATION (CLOUD vs LOCAL) ---
 import os
@@ -77,16 +87,19 @@ def check_safety_logic(client, bus_id, lat, lng):
         conn = get_db()
         cur = conn.cursor()
 
-        # LOGIC: Find any stops within 50 meters of this bus location
-        # We use PostGIS 'ST_DWithin' for fast math
-        # Note: ST_MakePoint(lng, lat) is (x, y)
-        query = """
-        SELECT stop_name, assigned_student_id 
-        FROM route_stops 
-        WHERE ST_DWithin(location, ST_SetSRID(ST_MakePoint(%s, %s), 4326), 50)
-        """
-        cur.execute(query, (lng, lat))
-        nearby_stop = cur.fetchone()
+        # LOGIC: Find any stops within 50 meters of this bus location (Python Haversine)
+        cur.execute("SELECT stop_name, assigned_student_id, lat, lng FROM route_stops WHERE bus_id = %s", (bus_id,))
+        stops = cur.fetchall()
+        
+        nearby_stop = None
+        for s in stops:
+            s_name, s_student, s_lat, s_lng = s
+            if s_lat is None or s_lng is None: continue
+            
+            dist = haversine(lat, lng, s_lat, s_lng)
+            if dist <= 50: # 50 meters
+                nearby_stop = (s_name, s_student)
+                break
 
         if nearby_stop:
             stop_name, student_target = nearby_stop
@@ -144,9 +157,9 @@ def on_message(client, userdata, msg):
                 cur = conn.cursor()
                 try:
                     cur.execute("""
-                        INSERT INTO trip_logs (bus_id, location, speed, timestamp) 
-                        VALUES (%s, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, NOW())
-                    """, (bus_id, lng, lat, speed))
+                        INSERT INTO trip_logs (bus_id, lat, lng, speed, timestamp) 
+                        VALUES (%s, %s, %s, %s, NOW())
+                    """, (bus_id, lat, lng, speed))
                     conn.commit()
                 except Exception as db_err:
                     print(f"DB Error: {db_err}")

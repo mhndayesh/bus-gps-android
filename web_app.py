@@ -760,22 +760,12 @@ def add_student():
         # For this demo, let's assume the user passes a valid parent_id or we insert NULL if allowed (it's FK though).
         # We will wrap in try/catch.
         
-        # Cloud Compatibility Check
-        import os
-        if os.environ.get('RENDER'):
-             # Cloud Mode: No PostGIS (for now)
+             # Universal Mode: Use Lat/Lng Columns (No PostGIS)
              cur.execute("""
-                INSERT INTO students (name, parent_id, school_id, nfc_tag_id, student_code)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO students (name, parent_id, school_id, nfc_tag_id, lat, lng, home_address_text, student_code)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (data['name'], data['parent_id'], school_target, data['nfc_id'], data.get('student_code')))
-        else:
-             # Local Mode: Use PostGIS
-             cur.execute("""
-                INSERT INTO students (name, parent_id, school_id, nfc_tag_id, home_location, student_code)
-                VALUES (%s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s)
-                RETURNING id
-            """, (data['name'], data['parent_id'], school_target, data['nfc_id'], data['lng'], data['lat'], data.get('student_code')))
+            """, (data['name'], data['parent_id'], school_target, data['nfc_id'], data.get('lat'), data.get('lng'), data.get('address_text', ''), data.get('student_code')))
             
         new_student_id = cur.fetchone()[0]
         conn.commit()
@@ -973,29 +963,20 @@ def update_student_location():
         cur = conn.cursor()
 
         # Security Check
-        # Cloud Compatibility Check
-        import os
-        if os.environ.get('RENDER'):
-             # Cloud Mode: Update Text Address only (if column exists, but for now just skip location update)
-             if session['user_role'] == 'SCHOOL_ADMIN':
-                 cur.execute("UPDATE students SET home_address_text = %s WHERE id = %s AND school_id = %s", (address_text, student_id, session['school_id']))
-             else:
-                 cur.execute("UPDATE students SET home_address_text = %s WHERE id = %s", (address_text, student_id))
+        # Universal Update (No PostGIS check needed)
+        # We update lat, lng, and address_text directly
+        if session['user_role'] == 'SCHOOL_ADMIN':
+            cur.execute("""
+                UPDATE students 
+                SET lat = %s, lng = %s, home_address_text = %s
+                WHERE id = %s AND school_id = %s
+            """, (lat, lng, address_text, student_id, session['school_id']))
         else:
-            if session['user_role'] == 'SCHOOL_ADMIN':
-                cur.execute("""
-                    UPDATE students 
-                    SET home_location = ST_SetSRID(ST_MakePoint(%s, %s), 4326),
-                        home_address_text = %s
-                    WHERE id = %s AND school_id = %s
-                """, (lng, lat, address_text, student_id, session['school_id']))
-            else:
-                cur.execute("""
-                    UPDATE students 
-                    SET home_location = ST_SetSRID(ST_MakePoint(%s, %s), 4326),
-                        home_address_text = %s
-                    WHERE id = %s
-                """, (lng, lat, address_text, student_id))
+             cur.execute("""
+                UPDATE students 
+                SET lat = %s, lng = %s, home_address_text = %s
+                WHERE id = %s
+            """, (lat, lng, address_text, student_id))
             
         if cur.rowcount == 0:
              # Just in case
@@ -1042,26 +1023,12 @@ def assign_bus():
                 VALUES (%s, %s, %s)
              """, (f"{student_name}'s Home", student_id, bus_id))
              
-        else:
-            # Local Mode: Original Logic
-            # 1. Get Student Name & Location
-            cur.execute("SELECT name, home_location FROM students WHERE id = %s", (student_id,))
-            student = cur.fetchone()
-            
-            if not student:
-                return "Student not found", 404
-                
-            student_name = student[0]
-            location = student[1] # This is a geometry object
-            
-            if not location:
-                return "Student has no home location set", 400
-
-            # 2. Create Stop in route_stops
+            # 2. Create Stop in route_stops (Copy lat/lng from student)
+            # Make sure to handle NULLs if student has no location
             cur.execute("""
-                INSERT INTO route_stops (stop_name, assigned_student_id, location)
-                SELECT %s, id, home_location FROM students WHERE id = %s
-            """, (f"{student_name}'s Home", student_id))
+                INSERT INTO route_stops (stop_name, assigned_student_id, bus_id, lat, lng)
+                SELECT %s, id, %s, lat, lng FROM students WHERE id = %s
+            """, (f"{student_name}'s Home", bus_id, student_id))
         
         conn.commit()
         cur.close()
@@ -1416,7 +1383,7 @@ def optimize_route(bus_id):
         
         # STRATEGY: "Drop-off Mode" -> Optimize route for students currently on the bus.
         cur.execute("""
-            SELECT s.name, ST_X(s.home_location) as lng, ST_Y(s.home_location) as lat
+            SELECT s.name, s.lng, s.lat
             FROM bus_manifest bm
             JOIN students s ON bm.student_id = s.id::text
             WHERE bm.bus_id = %s

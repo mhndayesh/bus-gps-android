@@ -24,12 +24,12 @@ def create_tables():
         
         print("🛠️ Creating Tables...")
         
-        # 0. Enable PostGIS
-        try:
-            cur.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
-        except Exception as e:
-            print(f"⚠️ PostGIS Warning: {e}")
-            conn.rollback()
+        # 0. Enable PostGIS (SKIPPED - Not available on some Railway plans)
+        # try:
+        #     cur.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
+        # except Exception as e:
+        #     print(f"⚠️ PostGIS Warning: {e}")
+        #     conn.rollback()
         
         # 1. School
         cur.execute("""
@@ -57,20 +57,20 @@ def create_tables():
                 plate_number TEXT NOT NULL,
                 iot_device_id TEXT UNIQUE,
                 school_id INTEGER REFERENCES schools(id),
-                driver_id TEXT REFERENCES users(id), /* Added for Driver Assignment */
+                driver_id TEXT REFERENCES users(id),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
         
-        # MIGRATION: Ensure driver_id exists (for existing DBs)
+        # MIGRATION: Ensure driver_id exists
         try:
             cur.execute("ALTER TABLE buses ADD COLUMN IF NOT EXISTS driver_id TEXT REFERENCES users(id);")
             conn.commit()
-        except Exception as e:
-            print(f"⚠️ Migration Note: {e}")
+        except:
             conn.rollback()
 
         # 4. Students
+        # REFACTOR: Removed PostGIS dependency. Using simple Lat/Lng.
         cur.execute("""
             CREATE TABLE IF NOT EXISTS students (
                 id SERIAL PRIMARY KEY,
@@ -79,44 +79,44 @@ def create_tables():
                 parent_id TEXT REFERENCES users(id),
                 school_id INTEGER REFERENCES schools(id),
                 nfc_tag_id TEXT UNIQUE,
-                home_address_text TEXT, /* Added for Map Search */
-                home_location GEOMETRY(POINT, 4326) /* PostGIS Location */
+                home_address_text TEXT,
+                lat FLOAT, 
+                lng FLOAT
             );
         """)
 
-        # MIGRATION: Ensure home_address_text exists (for existing DBs)
+        # MIGRATIONS for Students
         try:
             cur.execute("ALTER TABLE students ADD COLUMN IF NOT EXISTS home_address_text TEXT;")
             conn.commit()
-        except Exception as e:
-            print(f"⚠️ Migration Note (students.home_address_text): {e}")
+        except:
             conn.rollback()
 
-        # MIGRATION: Ensure home_location exists (for existing DBs)
         try:
-            cur.execute("ALTER TABLE students ADD COLUMN IF NOT EXISTS home_location GEOMETRY(POINT, 4326);")
+            cur.execute("ALTER TABLE students ADD COLUMN IF NOT EXISTS lat FLOAT;")
+            cur.execute("ALTER TABLE students ADD COLUMN IF NOT EXISTS lng FLOAT;")
             conn.commit()
-        except Exception as e:
-            print(f"⚠️ Migration Note (students.home_location): {e}")
+        except:
             conn.rollback()
 
-        # 4.5 Route Stops (Added for Cloud Compat)
+        # 4.5 Route Stops
         cur.execute("""
             CREATE TABLE IF NOT EXISTS route_stops (
                 id SERIAL PRIMARY KEY,
                 stop_name TEXT,
                 assigned_student_id TEXT,
                 bus_id INTEGER REFERENCES buses(id),
-                location GEOMETRY(POINT, 4326) /* PostGIS Location */
+                lat FLOAT,
+                lng FLOAT
             );
         """)
-
-        # MIGRATION: Ensure route_stops.location exists
+        
+        # MIGRATION for Route Stops
         try:
-            cur.execute("ALTER TABLE route_stops ADD COLUMN IF NOT EXISTS location GEOMETRY(POINT, 4326);")
+            cur.execute("ALTER TABLE route_stops ADD COLUMN IF NOT EXISTS lat FLOAT;")
+            cur.execute("ALTER TABLE route_stops ADD COLUMN IF NOT EXISTS lng FLOAT;")
             conn.commit()
-        except Exception as e:
-            print(f"⚠️ Migration Note (route_stops.location): {e}")
+        except:
             conn.rollback()
         
         # 5. Manifest
@@ -134,10 +134,20 @@ def create_tables():
             CREATE TABLE IF NOT EXISTS trip_logs (
                 id SERIAL PRIMARY KEY,
                 bus_id INTEGER REFERENCES buses(id),
+                lat FLOAT,
+                lng FLOAT,
                 speed FLOAT,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
+        
+        # MIGRATION: Ensure trip_logs lat/lng exist
+        try:
+            cur.execute("ALTER TABLE trip_logs ADD COLUMN IF NOT EXISTS lat FLOAT;")
+            cur.execute("ALTER TABLE trip_logs ADD COLUMN IF NOT EXISTS lng FLOAT;")
+            conn.commit()
+        except:
+            conn.rollback()
         
         # 7. Seed Data
         print("🌱 Seeding Data...")
