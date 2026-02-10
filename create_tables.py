@@ -69,9 +69,18 @@ def create_tables():
                 student_code TEXT,
                 parent_id TEXT REFERENCES users(id),
                 school_id INTEGER REFERENCES schools(id),
-                nfc_tag_id TEXT UNIQUE
+                nfc_tag_id TEXT UNIQUE,
+                home_address_text TEXT /* Added for Map Search */
             );
         """)
+
+        # MIGRATION: Ensure home_address_text exists (for existing DBs)
+        try:
+            cur.execute("ALTER TABLE students ADD COLUMN IF NOT EXISTS home_address_text TEXT;")
+            conn.commit()
+        except Exception as e:
+            print(f"⚠️ Migration Note (students.home_address_text): {e}")
+            conn.rollback()
 
         # 4.5 Route Stops (Added for Cloud Compat)
         cur.execute("""
