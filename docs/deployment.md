@@ -59,6 +59,12 @@
 
 ---
 
+## 📦 Database Migrations
+- The application automatically checks for missing tables and columns on startup (`create_tables.py`).
+- No manual SQL scripts are required for standard updates.
+
+---
+
 ## 🏗️ Docker Production Build
 
 ```dockerfile

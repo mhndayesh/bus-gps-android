@@ -76,7 +76,22 @@
   {
     "student_id": "123",
     "lat": 24.7136,
-    "lng": 46.6753
+    "lng": 46.6753,
+    "address_text": "Near KSU"
+  }
+  ```
+
+### Optimize Route (Driver)
+**GET** `/api/optimize_route/<bus_id>`
+- **Role Required:** `DRIVER`
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "stops": [ { "name": "Student A", "lat": 24.7, "lng": 46.6, "order": 1 } ],
+    "geometry": "...", // GeoJSON LineString
+    "distance": 15000,
+    "duration": 1200
   }
   ```
 

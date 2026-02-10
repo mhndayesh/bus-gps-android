@@ -26,7 +26,13 @@ A comprehensive, real-time school bus tracking system designed to ensure student
 - **Super Admin:** Full system control options.
 - **School Admin:** Manages their specific school, buses, and students.
 - **Driver:** Mobile app for navigation and attendance.
+- **Driver:** Mobile app for navigation and attendance.
 - **Parent:** View their children's bus and receive alerts.
+
+### 🗺️ Smart Mapping v2.0
+- **Address Pinning:** Drag & Drop pins to set student home locations.
+- **Search:** Find landmarks and addresses directly on the map.
+- **Route Optimization:** Drivers get the fastest route calculated automatically (OSRM).
 
 ---
 

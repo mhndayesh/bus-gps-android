@@ -59,6 +59,7 @@ Student profiles.
 | `school_id` | INT | FK | Link to `schools` |
 | `nfc_tag_id` | TEXT | UNIQUE | Physical ID of NFC Card |
 | `home_location` | GEOMETRY | | Lat/Lng of Home (PostGIS) |
+| `home_address_text` | TEXT | | Human-readable address |
 
 ### 4. `buses`
 Fleet management.
