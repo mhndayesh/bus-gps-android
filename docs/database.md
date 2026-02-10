@@ -101,6 +101,7 @@ Geofenced stops for route planning.
 | `stop_name` | TEXT | e.g. "Ahmed's House" |
 | `location` | GEOMETRY | Stop Coordinates |
 | `assigned_student_id` | TEXT | Linked Student |
+| `assigned_student_id` | TEXT | Linked Student |
 
 ---
 

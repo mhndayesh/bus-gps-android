@@ -22,6 +22,14 @@ def create_tables():
         cur = conn.cursor()
         
         print("🛠️ Creating Tables...")
+        
+        # 0. Enable PostGIS
+        try:
+            cur.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
+        except Exception as e:
+            print(f"⚠️ PostGIS Warning: {e}")
+            conn.rollback()
+        
         # 1. School
         cur.execute("""
             CREATE TABLE IF NOT EXISTS schools (
@@ -70,7 +78,8 @@ def create_tables():
                 parent_id TEXT REFERENCES users(id),
                 school_id INTEGER REFERENCES schools(id),
                 nfc_tag_id TEXT UNIQUE,
-                home_address_text TEXT /* Added for Map Search */
+                home_address_text TEXT, /* Added for Map Search */
+                home_location GEOMETRY(POINT, 4326) /* PostGIS Location */
             );
         """)
 
@@ -82,15 +91,32 @@ def create_tables():
             print(f"⚠️ Migration Note (students.home_address_text): {e}")
             conn.rollback()
 
+        # MIGRATION: Ensure home_location exists (for existing DBs)
+        try:
+            cur.execute("ALTER TABLE students ADD COLUMN IF NOT EXISTS home_location GEOMETRY(POINT, 4326);")
+            conn.commit()
+        except Exception as e:
+            print(f"⚠️ Migration Note (students.home_location): {e}")
+            conn.rollback()
+
         # 4.5 Route Stops (Added for Cloud Compat)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS route_stops (
                 id SERIAL PRIMARY KEY,
                 stop_name TEXT,
                 assigned_student_id TEXT,
-                bus_id INTEGER REFERENCES buses(id)
+                bus_id INTEGER REFERENCES buses(id),
+                location GEOMETRY(POINT, 4326) /* PostGIS Location */
             );
         """)
+
+        # MIGRATION: Ensure route_stops.location exists
+        try:
+            cur.execute("ALTER TABLE route_stops ADD COLUMN IF NOT EXISTS location GEOMETRY(POINT, 4326);")
+            conn.commit()
+        except Exception as e:
+            print(f"⚠️ Migration Note (route_stops.location): {e}")
+            conn.rollback()
         
         # 5. Manifest
         cur.execute("""
