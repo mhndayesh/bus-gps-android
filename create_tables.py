@@ -10,16 +10,33 @@ DB_USER = os.environ.get("DB_USER", "postgres")
 DB_PASS = os.environ.get("DB_PASS", "yskvrNocmTymfEkzyhpHXTKdKHIcxvDN")
 DB_PORT = os.environ.get("DB_PORT", "27535")
 
+import time
+
 def create_tables():
-    print(f"🔌 Connecting to {DB_HOST} (User: {DB_USER})...")
     try:
-        conn = psycopg2.connect(
-            host=DB_HOST,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASS,
-            port=DB_PORT
-        )
+        retries = 5
+        conn = None
+        while retries > 0:
+            print(f"🔌 Connecting to {DB_HOST} (User: {DB_USER})... (Attempt {6 - retries}/5)")
+            try:
+                conn = psycopg2.connect(
+                    host=DB_HOST,
+                    database=DB_NAME,
+                    user=DB_USER,
+                    password=DB_PASS,
+                    port=DB_PORT
+                )
+                print("✅ Connected to Database!")
+                break
+            except Exception as e:
+                print(f"❌ Connection failed: {e}")
+                retries -= 1
+                if retries == 0:
+                    print("❌ Could not connect to database after 5 attempts. Exiting.")
+                    raise e
+                print("⏳ Waiting 5 seconds before retrying...")
+                time.sleep(5)
+
         cur = conn.cursor()
         
         print("🛠️ Creating Tables...")
