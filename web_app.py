@@ -1380,6 +1380,107 @@ def assign_driver():
     except Exception as e:
         return str(e), 500
 
+@app.route('/api/optimize_route/<int:bus_id>', methods=['GET'])
+@role_required(['DRIVER', 'SCHOOL_ADMIN', 'SUPER_ADMIN'])
+def optimize_route(bus_id):
+    """
+    Calculate optimized route for a bus using OSRM (Open Source Routing Machine).
+    1. Get all students assigned to this bus.
+    2. Get their home locations.
+    3. Send to OSRM Trip API.
+    4. Return sorted waypoints and geometry.
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # 1. Get Students on this Bus
+        # We need to join bus_manifest (who is on board) OR just all assigned students?
+        # For a "Morning Pick-up", we want ALL assigned students.
+        # For an "Afternoon Drop-off", we might only want students currently ON board.
+        # Let's assume "Morning Pick-up" (All assigned) for now, or use a query param.
+        
+        # Get students assigned to this bus (via route_stops or direct assignment?)
+        # Current schema doesn't have direct 'bus_id' in students table usually, 
+        # but we can infer from 'bus_manifest' if they are boarded, 
+        # OR we need a way to know "Which bus picks up this student?".
+        # In our schema, we have 'route_stops' but it's not fully linked yet.
+        # Let's START SIMPLE: Get students who have this bus assigned in `bus_manifest` (current) 
+        # OR add a `bus_id` to `students` table for static assignment.
+        
+        # Checking schema... `students` table has `school_id` but not `bus_id`.
+        # `bus_manifest` is for live attendance.
+        # We need to look up students based on 'route_stops' if available, otherwise manual selection?
+        # Let's fallback: Get ALL students for the school (Prototype shortcut) 
+        # or just students currently BOARDED for drop-off optimization.
+        
+        # STRATEGY: "Drop-off Mode" -> Optimize route for students currently on the bus.
+        cur.execute("""
+            SELECT s.name, ST_X(s.home_location) as lng, ST_Y(s.home_location) as lat
+            FROM bus_manifest bm
+            JOIN students s ON bm.student_id = s.id::text
+            WHERE bm.bus_id = %s
+        """, (bus_id,))
+        
+        students = cur.fetchall()
+        
+        if not students:
+            return json.dumps({"status": "error", "message": "No students found on this bus to route."}), 404
+
+        # 2. Prepare OSRM Request
+        # Format: {lon},{lat};{lon},{lat}...
+        # Add Bus Current Location as Start Point? (User needs to send it)
+        # For now, let's just optimize the student stops.
+        
+        coords = [f"{s[1]},{s[2]}" for s in students if s[1] and s[2]]
+        
+        if len(coords) < 2:
+             return json.dumps({"status": "error", "message": "Need at least 2 locations to optimize."}), 400
+             
+        coordinates_string = ";".join(coords)
+        osrm_url = f"http://router.project-osrm.org/trip/v1/driving/{coordinates_string}?source=first&geometry=geojson"
+        
+        # 3. Call OSRM
+        import requests
+        response = requests.get(osrm_url)
+        
+        if response.status_code != 200:
+             return json.dumps({"status": "error", "message": "Routing Engine Error"}), 500
+             
+        data = response.json()
+        
+        # 4. Process Result
+        trips = data.get('trips', [])
+        if not trips:
+            return json.dumps({"status": "error", "message": "No route found"}), 404
+            
+        optimized_route = trips[0]
+        geometry = optimized_route['geometry'] # GeoJSON LineString
+        waypoints = data.get('waypoints', [])
+        
+        # Sort students based on waypoint_index
+        sorted_students = []
+        for wp in waypoints:
+            original_index = wp['waypoint_index']
+            sorted_students.append({
+                "name": students[original_index][0],
+                "lat": students[original_index][2],
+                "lng": students[original_index][1],
+                "order": original_index + 1
+            })
+            
+        return json.dumps({
+            "status": "success",
+            "geometry": geometry,
+            "stops": sorted_students,
+            "distance": optimized_route['distance'],
+            "duration": optimized_route['duration']
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Optimization Error: {e}")
+        return json.dumps({"status": "error", "message": str(e)}), 500
+
 @app.route('/parent/dashboard')
 def parent_dashboard_view():
     return render_template('parent_dashboard.html')

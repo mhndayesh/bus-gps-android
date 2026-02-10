@@ -274,6 +274,23 @@
         .stat-card.absent-card .stat-number {
             color: #e74c3c;
         }
+
+        /* Map Picker Styles */
+        #map-picker {
+            height: 300px;
+            width: 100%;
+            border-radius: 10px;
+            border: 2px solid var(--sage-green);
+            margin-bottom: 15px;
+            cursor: crosshair;
+        }
+
+        .location-hint {
+            font-size: 0.8em;
+            color: var(--sage-dark);
+            margin-bottom: 10px;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -358,10 +375,13 @@
                 <label>NFC Tag:</label>
                 <input type="text" id="nfc_id" placeholder="TAG_ID">
 
-                <label>الموقع (خط العرض/الطول):</label>
+                <label>إحداثيات المنزل (Lat, Lng):</label>
+                <div class="location-hint">💡 قم بتحريك الدبوس الأزرق لتحديد موقع المنزل بدقة</div>
+                <div id="map-picker"></div>
+
                 <div class="row">
-                    <input type="text" id="lat" placeholder="Lat">
-                    <input type="text" id="lng" placeholder="Lng">
+                    <input type="text" id="lat" placeholder="خط العرض (Lat)" readonly style="background: #f0f0f0;">
+                    <input type="text" id="lng" placeholder="خط الطول (Lng)" readonly style="background: #f0f0f0;">
                 </div>
 
                 <input type="text" id="address_text" placeholder="ملاحظة الموقع">
@@ -476,12 +496,18 @@
 
     <script>
         // Tab Navigation
+        // Tab Navigation
         function showTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
             document.getElementById('tab-' + tabName).classList.add('active');
             event.target.closest('.tab-btn').classList.add('active');
+
+            // Refresh map if Students tab is opened
+            if (tabName === 'students' && typeof refreshMap === 'function') {
+                refreshMap();
+            }
         }
 
         function showResult(elementId, msg) {
@@ -722,7 +748,29 @@
 
         // Refresh stats every 30 seconds
         setInterval(loadDashboardStats, 30000);
-    </script>
-</body>
+        // Initialize Map Picker
+        var mapPicker = L.map('map-picker').setView([24.7136, 46.6753], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapPicker);
 
-</html>
+        var pinMarker = L.marker([24.7136, 46.6753], { draggable: true }).addTo(mapPicker);
+
+        // Update inputs when drag ends
+        pinMarker.on('dragend', function (e) {
+            var coord = e.target.getLatLng();
+            document.getElementById('lat').value = coord.lat.toFixed(6);
+            document.getElementById('lng').value = coord.lng.toFixed(6);
+        });
+
+        // Move marker on map click
+        mapPicker.on('click', function (e) {
+            pinMarker.setLatLng(e.latlng);
+            document.getElementById('lat').value = e.latlng.lat.toFixed(6);
+            document.getElementById('lng').value = e.latlng.lng.toFixed(6);
+        });
+
+        // Fix map size when tab opens (Modal issue)
+        function refreshMap() {
+            setTimeout(() => { mapPicker.invalidateSize(); }, 200);
+        }
+
+</html >
