@@ -1002,33 +1002,19 @@ def assign_bus():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Cloud Compatibility Check
-        import os
-        if os.environ.get('RENDER'):
-             # Cloud Mode: No PostGIS, No Location
-             cur.execute("SELECT name FROM students WHERE id = %s", (student_id,))
-             student = cur.fetchone()
-             if not student:
-                 return "Student not found", 404
-             
-             student_name = student[0]
-             # In cloud we skip location check/storage for stops
-             
-             # Create Stop (No location)
-             # Also assuming route_stops has bus_id column if we ran the updated script
-             # Or stick to original logic: (stop_name, assigned_student_id)
-             # Let's insert bus_id too if available from request
-             cur.execute("""
-                INSERT INTO route_stops (stop_name, assigned_student_id, bus_id)
-                VALUES (%s, %s, %s)
-             """, (f"{student_name}'s Home", student_id, bus_id))
-             
-            # 2. Create Stop in route_stops (Copy lat/lng from student)
-            # Make sure to handle NULLs if student has no location
-            cur.execute("""
-                INSERT INTO route_stops (stop_name, assigned_student_id, bus_id, lat, lng)
-                SELECT %s, id, %s, lat, lng FROM students WHERE id = %s
-            """, (f"{student_name}'s Home", bus_id, student_id))
+        # Universal Mode: Use Lat/Lng Columns (No PostGIS)
+        cur.execute("SELECT name FROM students WHERE id = %s", (student_id,))
+        student = cur.fetchone()
+        if not student:
+            return "Student not found", 404
+        
+        student_name = student[0]
+        
+        # Create Stop in route_stops (Copy lat/lng from student)
+        cur.execute("""
+            INSERT INTO route_stops (stop_name, assigned_student_id, bus_id, lat, lng)
+            SELECT %s, id, %s, lat, lng FROM students WHERE id = %s
+        """, (f"{student_name}'s Home", bus_id, student_id))
         
         conn.commit()
         cur.close()
