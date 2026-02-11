@@ -11,7 +11,7 @@ DB_PORT = os.environ.get("DB_PORT", "27535")
 def create_tables():
     """Connect to DB and run migrations. No retries - caller handles that."""
     print(f"🔌 Connecting to {DB_HOST} (User: {DB_USER})...")
-    print(f"🔌 Connecting to {DB_HOST} (User: {DB_USER})...")
+
     try:
         conn = psycopg2.connect(
             host=DB_HOST,
