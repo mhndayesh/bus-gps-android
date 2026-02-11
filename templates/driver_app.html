@@ -811,99 +811,64 @@
 
         function _performRouteFetch(lat, lng, btn, mapContainer, silent) {
             if (!silent) btn.innerHTML = "⏳ جاري الحساب...";
+            btn.disabled = true;
 
+            // Call Backend to get Sorted List of Students
             fetch(`/api/optimize_route/${busId}?lat=${lat}&lng=${lng}`)
                 .then(res => res.json())
                 .then(data => {
-                    if (!silent) {
-                        btn.innerHTML = "🗺️ احسب المسار الأسرع";
-                        btn.disabled = false;
-                    }
+                    btn.disabled = false;
+                    if (!silent) btn.innerHTML = "🗺️ احسب المسار الأسرع";
 
-                    // Handle empty bus smoothly
                     if (data.status === 'empty') {
-                        if (!silent) alert("لا يوجد طلاب على متن الحافلة");
-                        // Clear map if empty
-                        _routeActive = false;
-                        // Keep map visible for tracking
-                        if (routeLayer && routeMap) routeMap.removeLayer(routeLayer);
-                        const old = document.getElementById('gmaps-btn');
-                        if (old) old.remove();
+                        if (!silent) alert("لا يوجد طلاب على متن الحافلة حالياً.");
                         return;
                     }
 
                     if (data.status !== 'success') {
-                        if (!silent) alert("تعذر حساب المسار: " + (data.message || "خطأ"));
+                        if (!silent) alert("حدث خطأ: " + (data.message || "Unknown Error"));
                         return;
                     }
 
-                    _routeActive = true;
-                    // Initialize Map
-                    if (!routeMap) {
-                        routeMap = L.map('map');
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(routeMap);
-                    }
+                    // 1. Generate Google Maps Link
+                    const stops = data.stops;
+                    if (stops && stops.length > 0) {
+                        let gmUrl = "https://www.google.com/maps/dir/?api=1";
+                        gmUrl += `&origin=${lat},${lng}`; // Driver Location
+                        gmUrl += `&travelmode=driving`;
 
-                    // Clear layers (except bus marker)
-                    if (routeLayer) routeMap.removeLayer(routeLayer);
-                    routeMap.eachLayer((layer) => {
-                        if (layer instanceof L.Marker && layer !== busMarker) routeMap.removeLayer(layer);
-                    });
+                        // Last stop is the destination
+                        const lastStop = stops[stops.length - 1];
+                        gmUrl += `&destination=${lastStop.lat},${lastStop.lng}`;
 
-                    // Draw geometry
-                    if (data.geometry) {
-                        routeLayer = L.geoJSON(data.geometry, {
-                            style: { color: '#4285F4', weight: 5 }
-                        }).addTo(routeMap);
-                        routeMap.fitBounds(routeLayer.getBounds());
-                    }
-
-                    // Bus Marker
-                    if (busMarker) {
-                        busMarker.setLatLng([lat, lng]);
-                    } else {
-                        busMarker = L.marker([lat, lng], {
-                            icon: L.divIcon({ html: '🚌', className: 'bus-icon', iconSize: [30, 30] })
-                        }).addTo(routeMap).bindPopup('<b>موقعك الحالي</b>');
-                    }
-
-                    // Student Markers
-                    data.stops.forEach((stop, i) => {
-                        L.marker([stop.lat, stop.lng])
-                            .addTo(routeMap)
-                            .bindPopup(`<b>${i + 1}. ${stop.name}</b>`);
-                    });
-
-                    // Google Maps Button
-                    const stops = data.stops.filter(s => s.lat && s.lng);
-                    if (stops.length >= 1) {
-                        let gmUrl;
-                        if (stops.length === 1) {
-                            gmUrl = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${stops[0].lat},${stops[0].lng}&travelmode=driving`;
-                        } else {
-                            const last = stops[stops.length - 1];
-                            const wps = stops.slice(0, -1).map(s => `${s.lat},${s.lng}`).join('|');
-                            gmUrl = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${last.lat},${last.lng}&travelmode=driving&waypoints=${wps}`;
+                        // Intermediate stops (Waypoints)
+                        if (stops.length > 1) {
+                            const waypoints = stops.slice(0, -1).map(s => `${s.lat},${s.lng}`).join('|');
+                            gmUrl += `&waypoints=${waypoints}`;
                         }
 
-                        const old = document.getElementById('gmaps-btn');
-                        if (old) old.remove();
+                        // 2. Add/Update the Button
+                        let oldBtn = document.getElementById('gmaps-btn');
+                        if (oldBtn) oldBtn.remove();
+
                         const gb = document.createElement('button');
                         gb.id = 'gmaps-btn';
-                        gb.innerHTML = '🧭 افتح في خرائط قوقل';
-                        gb.style.cssText = 'width:100%;padding:14px;margin-top:10px;font-size:16px;background:#34A853;color:white;border:none;border-radius:10px;cursor:pointer;font-weight:bold;';
-                        gb.onclick = () => window.open(gmUrl, '_blank');
-                        mapContainer.after(gb);
-                    }
+                        gb.innerHTML = `🚀 اضغط هنا لبدء الرحلة في Google Maps (${stops.length} محطات)`;
+                        gb.style.cssText = 'width:100%; padding:20px; margin-top:15px; font-size:18px; background:#28a745; color:white; border:none; border-radius:12px; cursor:pointer; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); animation: pulse 2s infinite;';
+                        gb.onclick = () => {
+                            window.open(gmUrl, '_blank');
+                        };
 
-                    if (!silent) {
-                        if (data.distance > 0) {
-                            const distKm = (data.distance / 1000).toFixed(1);
-                            const durMin = Math.round(data.duration / 60);
-                            alert(`✅ تم تحسين المسار!\nالمسافة: ${distKm} كم\nالوقت المتوقع: ${durMin} دقيقة\nعدد المحطات: ${data.stops.length}`);
-                        } else {
-                            alert(`✅ طالب واحد متبقي: ${data.stops[0].name}\nاضغط زر خرائط قوقل للتنقل`);
+                        // Insert after the Calculate button
+                        btn.parentNode.insertBefore(gb, btn.nextSibling);
+
+                        if (!silent) {
+                            // Auto-scroll to the new button
+                            gb.scrollIntoView({ behavior: "smooth" });
+                            // Optional: Trigger click automatically? No, browser blocks popups. User must click.
                         }
+                    } else {
+                        if (!silent) alert("لا يوجد محطات صالحة (احداثيات مفقودة).");
                     }
                 })
                 .catch(err => {

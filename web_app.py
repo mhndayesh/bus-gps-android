@@ -1434,24 +1434,20 @@ def handle_camera_frame(data):
 @role_required(['DRIVER', 'SCHOOL_ADMIN', 'SUPER_ADMIN'])
 def optimize_route(bus_id):
     """
-    Calculate optimized route for a bus using OSRM.
-    Uses driver's current location as start point.
-    Only includes students currently BOARDED (in bus_manifest).
-    Query params: ?lat=X&lng=Y (driver's current position)
+    Simpler Route Optimization (Nearest Neighbor) v2
+    Returns sorted list of students for Google Maps integration.
     """
-    print(f"🗺️ Calculating Route for Bus {bus_id}...")
     conn = None
     cur = None
     try:
-        # Get driver's current location from query params
+        # 1. Get Driver Location (Optional, defaults to first student)
         driver_lat = request.args.get('lat', type=float)
         driver_lng = request.args.get('lng', type=float)
         
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Get only students currently ON BOARD (in bus_manifest)
-        # Filter by status = 'BOARDED'
+        # 2. Get Boarded Students with GPS
         cur.execute("""
             SELECT s.name, s.lng, s.lat
             FROM bus_manifest bm
@@ -1464,86 +1460,58 @@ def optimize_route(bus_id):
         students = cur.fetchall()
         
         if not students:
-            print(f"⚠️ Bus {bus_id} is empty.")
-            return json.dumps({"status": "empty", "message": "لا يوجد طلاب على متن الحافلة"}), 200
-
-    # ... (inside optimize_route) ...
-        
-        # 2. Nearest Neighbor Sorting (Simple TSP Heuristic)
-        # Start at driver location
+            return json.dumps({"status": "empty", "message": "No students boarded"}), 200
+            
+        # 3. Nearest Neighbor Sort
+        # Prepare list
+        unvisited = []
+        for s in students:
+            unvisited.append({"name": s[0], "lng": s[1], "lat": s[2]})
+            
+        # Start point: Driver OR First Student
         current_lat = driver_lat
         current_lng = driver_lng
         
-        # Safe handling if driver location is missing (e.g. GPS error)
         if current_lat is None or current_lng is None:
-             if students:
-                 # Default to first student in list if no driver GPS
-                 current_lat = students[0][2]
-                 current_lng = students[0][1]
-        
-        # Create a list of dicts for easier handling
-        # students query result: (name, lng, lat)
-        unvisited = []
-        for s in students:
-            unvisited.append({
-                "name": s[0],
-                "lng": s[1],
-                "lat": s[2]
-            })
+            # Fallback: Start at first student
+            current_lat = unvisited[0]['lat']
+            current_lng = unvisited[0]['lng']
             
-        sorted_students = []
+        sorted_stops = []
         
         while unvisited:
             nearest_idx = -1
             min_dist = float('inf')
             
             for i, stop in enumerate(unvisited):
-                # Simple Euclidean distance squared (sufficient for local sorting)
-                # (lat1-lat2)^2 + (lng1-lng2)^2
+                # Euclidan Distance Squared
                 d_lat = stop['lat'] - current_lat
                 d_lng = stop['lng'] - current_lng
-                dist = (d_lat * d_lat) + (d_lng * d_lng)
+                dist = (d_lat**2) + (d_lng**2)
                 
                 if dist < min_dist:
                     min_dist = dist
                     nearest_idx = i
             
-            # Move to nearest
+            # Add nearest to path
             if nearest_idx != -1:
                 next_stop = unvisited.pop(nearest_idx)
-                sorted_students.append(next_stop)
+                sorted_stops.append(next_stop)
+                # Update current pos to this stop
                 current_lat = next_stop['lat']
                 current_lng = next_stop['lng']
             else:
-                break # Should not happen unless list empty
-        
-        # Now sorted_students is our optimize path
-        
-        # 3. Final Result (OSRM Removed)
-        # We rely purely on the sorted list (Nearest Neighbor) which is passed to the frontend.
-        # The frontend will generate a Google Maps link for the driver app based on this sorted order.
-        
-        final_stops = []
-        for i, s in enumerate(sorted_students):
-            final_stops.append({
-                "name": s['name'],
-                "lat": s['lat'],
-                "lng": s['lng'],
-                "order": i + 1
-            })
-            
-        print(f"✅ Route Optimized (Local Sort): {len(final_stops)} stops.")
-        
+                break
+                
+        # 4. Return Result
         return json.dumps({
             "status": "success",
-            "geometry": None, # No map line
-            "stops": final_stops,
-            "distance": 0,
-            "duration": 0
+            "stops": sorted_stops,
+            "count": len(sorted_stops)
         }), 200
-        
+
     except Exception as e:
-        print(f"❌ Optimization Critical Error: {e}")
+        print(f"❌ Route Calc Error: {e}")
         return json.dumps({"status": "error", "message": str(e)}), 500
     finally:
         if cur: cur.close()
