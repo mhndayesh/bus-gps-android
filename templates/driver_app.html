@@ -704,14 +704,24 @@
             } catch (error) {
                 console.error('Flip camera error:', error);
                 alert('خطأ في تبديل الكاميرا: ' + error.message);
-                // Try to restart with original camera
                 useFrontCamera = !useFrontCamera;
                 await startCamera();
             }
         }
 
+        // --- GPS TRACKER (always running, caches latest position) ---
+        let _driverLat = null;
+        let _driverLng = null;
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(
+                (pos) => { _driverLat = pos.coords.latitude; _driverLng = pos.coords.longitude; },
+                (err) => { console.warn('GPS:', err.message); },
+                { enableHighAccuracy: true }
+            );
+        }
+
         // --- ATTENDANCE LOGIC ---
-        let _routeActive = false;  // Track if route was calculated
+        let _routeActive = false;
 
         function toggleStudent(btn, studentId) {
             const isBoarding = btn.innerText.trim() === "صعود";
@@ -725,9 +735,9 @@
                 btn.className = "toggle-btn btn-board";
                 socket.emit('manual_attendance', { student_id: studentId, status: "DROPPED", bus_id: busId });
 
-                // Auto-recalculate route from CURRENT location after drop-off
+                // Auto-recalculate route silently 3s after drop-off
                 if (_routeActive) {
-                    setTimeout(() => optimizeRoute(), 1000);  // Wait 1s for DB to update
+                    setTimeout(() => _calcRoute(true), 3000);
                 }
             }
         }
@@ -736,121 +746,102 @@
         let routeMap = null;
         let routeLayer = null;
 
-        function optimizeRoute() {
+        function optimizeRoute() { _calcRoute(false); }
+
+        function _calcRoute(silent) {
             const btn = document.querySelector('button[onclick="optimizeRoute()"]');
             const mapContainer = document.getElementById('map');
 
-            btn.innerHTML = "⏳ جاري تحديد الموقع...";
-            btn.disabled = true;
-
-            // Get driver's CURRENT GPS position
-            if (!navigator.geolocation) {
-                alert("المتصفح لا يدعم تحديد الموقع");
-                btn.innerHTML = "🗺️ احسب المسار الأسرع";
-                btn.disabled = false;
-                return;
+            if (!silent) {
+                btn.innerHTML = "⏳ جاري الحساب...";
+                btn.disabled = true;
             }
 
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const driverLat = position.coords.latitude;
-                    const driverLng = position.coords.longitude;
+            // Build URL with cached GPS position
+            let url = `/api/optimize_route/${busId}`;
+            if (_driverLat && _driverLng) {
+                url += `?lat=${_driverLat}&lng=${_driverLng}`;
+            }
 
-                    btn.innerHTML = "⏳ جاري الحساب...";
-
-                    fetch(`/api/optimize_route/${busId}?lat=${driverLat}&lng=${driverLng}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            btn.innerHTML = "🗺️ احسب المسار الأسرع";
-                            btn.disabled = false;
-
-                            if (data.status !== 'success') {
-                                alert("تعذر حساب المسار: " + (data.message || "خطأ غير معروف"));
-                                _routeActive = false;
-                                return;
-                            }
-
-                            _routeActive = true;
-
-                            // Show Map
-                            mapContainer.style.display = 'block';
-
-                            // Initialize Map if needed
-                            if (!routeMap) {
-                                routeMap = L.map('map');
-                                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(routeMap);
-                            }
-
-                            // Clear previous layers
-                            if (routeLayer) routeMap.removeLayer(routeLayer);
-                            routeMap.eachLayer((layer) => {
-                                if (layer instanceof L.Marker) routeMap.removeLayer(layer);
-                            });
-
-                            // Draw route
-                            if (data.geometry) {
-                                routeLayer = L.geoJSON(data.geometry, {
-                                    style: { color: '#4285F4', weight: 5 }
-                                }).addTo(routeMap);
-                                routeMap.fitBounds(routeLayer.getBounds());
-                            }
-
-                            // Add driver marker (green)
-                            L.marker([driverLat, driverLng], {
-                                icon: L.divIcon({
-                                    html: '🚌',
-                                    className: 'bus-icon',
-                                    iconSize: [30, 30]
-                                })
-                            }).addTo(routeMap).bindPopup('<b>موقعك الحالي</b>');
-
-                            // Add student markers
-                            data.stops.forEach((stop, index) => {
-                                L.marker([stop.lat, stop.lng])
-                                    .addTo(routeMap)
-                                    .bindPopup(`<b>${index + 1}. ${stop.name}</b>`);
-                            });
-
-                            // Build Google Maps URL: origin=driver, waypoints=students, destination=last
-                            const stops = data.stops.filter(s => s.lat && s.lng);
-                            if (stops.length >= 1) {
-                                const lastStop = stops[stops.length - 1];
-                                const waypoints = stops.slice(0, -1).map(s => `${s.lat},${s.lng}`).join('|');
-                                let gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${driverLat},${driverLng}&destination=${lastStop.lat},${lastStop.lng}&travelmode=driving`;
-                                if (waypoints) {
-                                    gmapsUrl += `&waypoints=${waypoints}`;
-                                }
-
-                                // Remove old button if exists
-                                const oldBtn = document.getElementById('gmaps-btn');
-                                if (oldBtn) oldBtn.remove();
-
-                                const gmapsBtn = document.createElement('button');
-                                gmapsBtn.id = 'gmaps-btn';
-                                gmapsBtn.innerHTML = '🧭 افتح في خرائط قوقل';
-                                gmapsBtn.style.cssText = 'width:100%;padding:14px;margin-top:10px;font-size:16px;background:#34A853;color:white;border:none;border-radius:10px;cursor:pointer;font-weight:bold;';
-                                gmapsBtn.onclick = () => window.open(gmapsUrl, '_blank');
-                                mapContainer.after(gmapsBtn);
-                            }
-
-                            const distKm = (data.distance / 1000).toFixed(1);
-                            const durMin = Math.round(data.duration / 60);
-                            alert(`✅ تم تحسين المسار!\nالمسافة: ${distKm} كم\nالوقت المتوقع: ${durMin} دقيقة\nعدد المحطات: ${data.stops.length}`);
-                        })
-                        .catch(err => {
-                            console.error(err);
-                            btn.innerHTML = "🗺️ احسب المسار الأسرع";
-                            btn.disabled = false;
-                            alert("خطأ في الاتصال بالسيرفر");
-                        });
-                },
-                (error) => {
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
                     btn.innerHTML = "🗺️ احسب المسار الأسرع";
                     btn.disabled = false;
-                    alert("تعذر تحديد موقعك: " + error.message);
-                },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
+
+                    if (data.status !== 'success') {
+                        if (!silent) alert("تعذر حساب المسار: " + (data.message || "خطأ غير معروف"));
+                        if (data.message && data.message.includes("لا يوجد")) {
+                            _routeActive = false;
+                            mapContainer.style.display = 'none';
+                            const oldBtn = document.getElementById('gmaps-btn');
+                            if (oldBtn) oldBtn.remove();
+                        }
+                        return;
+                    }
+
+                    _routeActive = true;
+                    mapContainer.style.display = 'block';
+
+                    if (!routeMap) {
+                        routeMap = L.map('map');
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(routeMap);
+                    }
+
+                    if (routeLayer) routeMap.removeLayer(routeLayer);
+                    routeMap.eachLayer((layer) => {
+                        if (layer instanceof L.Marker) routeMap.removeLayer(layer);
+                    });
+
+                    if (data.geometry) {
+                        routeLayer = L.geoJSON(data.geometry, {
+                            style: { color: '#4285F4', weight: 5 }
+                        }).addTo(routeMap);
+                        routeMap.fitBounds(routeLayer.getBounds());
+                    }
+
+                    if (_driverLat && _driverLng) {
+                        L.marker([_driverLat, _driverLng], {
+                            icon: L.divIcon({ html: '🚌', className: 'bus-icon', iconSize: [30, 30] })
+                        }).addTo(routeMap).bindPopup('<b>موقعك الحالي</b>');
+                    }
+
+                    data.stops.forEach((stop, index) => {
+                        L.marker([stop.lat, stop.lng])
+                            .addTo(routeMap)
+                            .bindPopup(`<b>${index + 1}. ${stop.name}</b>`);
+                    });
+
+                    const stops = data.stops.filter(s => s.lat && s.lng);
+                    if (stops.length >= 1) {
+                        const lastStop = stops[stops.length - 1];
+                        const wps = stops.slice(0, -1).map(s => `${s.lat},${s.lng}`).join('|');
+                        let gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lastStop.lat},${lastStop.lng}&travelmode=driving`;
+                        if (_driverLat && _driverLng) gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${_driverLat},${_driverLng}&destination=${lastStop.lat},${lastStop.lng}&travelmode=driving`;
+                        if (wps) gmapsUrl += `&waypoints=${wps}`;
+
+                        const oldBtn = document.getElementById('gmaps-btn');
+                        if (oldBtn) oldBtn.remove();
+                        const gmapsBtn = document.createElement('button');
+                        gmapsBtn.id = 'gmaps-btn';
+                        gmapsBtn.innerHTML = '🧭 افتح في خرائط قوقل';
+                        gmapsBtn.style.cssText = 'width:100%;padding:14px;margin-top:10px;font-size:16px;background:#34A853;color:white;border:none;border-radius:10px;cursor:pointer;font-weight:bold;';
+                        gmapsBtn.onclick = () => window.open(gmapsUrl, '_blank');
+                        mapContainer.after(gmapsBtn);
+                    }
+
+                    if (!silent) {
+                        const distKm = (data.distance / 1000).toFixed(1);
+                        const durMin = Math.round(data.duration / 60);
+                        alert(`✅ تم تحسين المسار!\nالمسافة: ${distKm} كم\nالوقت المتوقع: ${durMin} دقيقة\nعدد المحطات: ${data.stops.length}`);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    btn.innerHTML = "🗺️ احسب المسار الأسرع";
+                    btn.disabled = false;
+                    if (!silent) alert("خطأ في الاتصال بالسيرفر");
+                });
         }
 
         // Clean up on page unload
