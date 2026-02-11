@@ -1467,24 +1467,66 @@ def optimize_route(bus_id):
             print(f"⚠️ Bus {bus_id} is empty.")
             return json.dumps({"status": "empty", "message": "لا يوجد طلاب على متن الحافلة"}), 200
 
-        # Build coordinates: driver location first, then students
+    # ... (inside optimize_route) ...
+        
+        # 2. Nearest Neighbor Sorting (Simple TSP Heuristic)
+        # Start at driver location
+        current_lat = driver_lat
+        current_lng = driver_lng
+        
+        # Create a list of dicts for easier handling
+        # students query result: (name, lng, lat)
+        unvisited = []
+        for s in students:
+            unvisited.append({
+                "name": s[0],
+                "lng": s[1],
+                "lat": s[2]
+            })
+            
+        sorted_students = []
+        
+        while unvisited:
+            nearest_idx = -1
+            min_dist = float('inf')
+            
+            for i, stop in enumerate(unvisited):
+                # Simple Euclidean distance squared (sufficient for local sorting)
+                # (lat1-lat2)^2 + (lng1-lng2)^2
+                d_lat = stop['lat'] - current_lat
+                d_lng = stop['lng'] - current_lng
+                dist = (d_lat * d_lat) + (d_lng * d_lng)
+                
+                if dist < min_dist:
+                    min_dist = dist
+                    nearest_idx = i
+            
+            # Move to nearest
+            if nearest_idx != -1:
+                next_stop = unvisited.pop(nearest_idx)
+                sorted_students.append(next_stop)
+                current_lat = next_stop['lat']
+                current_lng = next_stop['lng']
+            else:
+                break # Should not happen unless list empty
+        
+        # Now sorted_students is our optimize path
+        
+        # Build Coordinates String for OSRM
         # OSRM expects: {lng},{lat}
         coords = []
-        has_driver_loc = False
-        
         if driver_lat and driver_lng:
             coords.append(f"{driver_lng},{driver_lat}")
-            has_driver_loc = True
         
-        for s in students:
-            coords.append(f"{s[1]},{s[2]}")
+        for s in sorted_students:
+            coords.append(f"{s['lng']},{s['lat']}")
         
         # If only 1 coord (1 student, no GPS), return direct location
         if len(coords) < 2:
-            return json.dumps({
+             return json.dumps({
                 "status": "success",
                 "geometry": None,
-                "stops": [{"name": students[0][0], "lat": students[0][2], "lng": students[0][1], "order": 1}],
+                "stops": [{"name": sorted_students[0]['name'], "lat": sorted_students[0]['lat'], "lng": sorted_students[0]['lng'], "order": 1}],
                 "distance": 0,
                 "duration": 0
             }), 200
@@ -1492,59 +1534,55 @@ def optimize_route(bus_id):
         coordinates_string = ";".join(coords)
         # Use route API (trip API is broken on public OSRM server)
         # Note: 'route' API respects order. It does NOT optimize (TSP).
-        # But it provides geometry and instructions.
+        # But we just did the optimization ourselves!
         osrm_url = f"http://router.project-osrm.org/route/v1/driving/{coordinates_string}?geometries=geojson&overview=full"
         
         # 3. Call OSRM with timeout
         import requests
-        print(f"📡 Calling OSRM API...")
-        response = requests.get(osrm_url, timeout=20)
-        data = response.json()
+        print(f"📡 Calling OSRM API (Optimized)...")
         
-        if response.status_code != 200 or data.get('code') != 'Ok':
-             error_msg = data.get('message', 'Routing Engine Error')
-             print(f"❌ OSRM Error: {error_msg}")
-             return json.dumps({"status": "error", "message": error_msg}), 500
+        geometry = None
+        distance = 0
+        duration = 0
         
-        # 4. Process Result
-        routes = data.get('routes', [])
-        if not routes:
-            return json.dumps({"status": "error", "message": "No route found"}), 404
+        try:
+            response = requests.get(osrm_url, timeout=5) # Reduced timeout to fail faster
+            data = response.json()
             
-        best_route = routes[0]
-        geometry = best_route['geometry']  # GeoJSON LineString
+            if response.status_code == 200 and data.get('code') == 'Ok':
+                routes = data.get('routes', [])
+                if routes:
+                    best_route = routes[0]
+                    geometry = best_route['geometry']
+                    distance = best_route['distance']
+                    duration = best_route['duration']
+            else:
+                 print(f"⚠️ OSRM API Error (Non-Critical): {data.get('message')}")
+                 
+        except Exception as osrm_err:
+            print(f"⚠️ OSRM Connection Failed (Non-Critical): {osrm_err}")
+            # Continue without geometry...
         
-        # Build ordered stops from the waypoints
-        # Since 'route' API preserves order, the order is same as input list.
-        # But we must map back to 'students' list correctly.
+        # 4. Final Result (Always return stops, even if geometry failed)
         
-        # waypoints[0] -> input[0] (Driver or Student 0)
-        # waypoints[1] -> input[1] (Student 0 or Student 1)
-        
-        waypoints = data.get('waypoints', [])
-        sorted_students = []
-        
-        # Start index for students in input list
-        student_start_idx = 1 if has_driver_loc else 0
-        
-        # Currently, 'students' list matches input coords[student_start_idx:]
-        # So we just iterate 'students'
-        
-        for i, student in enumerate(students):
-            sorted_students.append({
-                "name": student[0],
-                "lat": student[2],
-                "lng": student[1],
+        # Final formatting for Frontend
+        final_stops = []
+        for i, s in enumerate(sorted_students):
+            final_stops.append({
+                "name": s['name'],
+                "lat": s['lat'],
+                "lng": s['lng'],
                 "order": i + 1
             })
             
-        print(f"✅ Route Calculated: {len(sorted_students)} stops, {best_route['distance']}m")
+        print(f"✅ Route Calculated: {len(final_stops)} stops. (Geometry: {'Yes' if geometry else 'No'})")
+        
         return json.dumps({
             "status": "success",
             "geometry": geometry,
-            "stops": sorted_students,
-            "distance": best_route['distance'],
-            "duration": best_route['duration']
+            "stops": final_stops,
+            "distance": distance,
+            "duration": duration
         }), 200
         
     except Exception as e:
