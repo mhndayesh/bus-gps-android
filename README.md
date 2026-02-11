@@ -29,10 +29,14 @@ A comprehensive, real-time school bus tracking system designed to ensure student
 - **Driver:** Mobile app for navigation and attendance.
 - **Parent:** View their children's bus and receive alerts.
 
-### 🗺️ Smart Mapping v2.0
-- **Address Pinning:** Drag & Drop pins to set student home locations.
-- **Search:** Find landmarks and addresses directly on the map.
-- **Route Optimization:** Drivers get the fastest route calculated automatically (OSRM).
+### 🗺️ Smart Mapping v2.0 (New!)
+- **Nearest Neighbor Routing:** Automatically calculates the most efficient path for the driver.
+- **Manifest-Based Navigation:** Route is generated solely from confirmed boarded students for maximum accuracy.
+- **Google Maps Integration:** One-click export of the optimized route to Google Maps.
+
+### 🛠️ Driver Tools (v7)
+- **On-Screen Debug Console:** Built-in diagnostics for troubleshooting on the go.
+- **Real-Time Sync:** Admin location updates allow instant re-routing without app restarts.
 
 ---
 
