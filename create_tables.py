@@ -117,6 +117,7 @@ def create_tables():
         print(f"⚠️ Migration failed for route_stops table: {e}")
 
     # 5. Manifest
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS bus_manifest (
             bus_id INTEGER REFERENCES buses(id),
             student_id TEXT,
