@@ -8,38 +8,25 @@ from flask_socketio import SocketIO
 from functools import wraps
 import psycopg2
 
-# --- CONFIGURATION (CLOUD vs LOCAL) ---
+# --- CONFIGURATION (Universal - Uses ENV VARS with fallbacks) ---
 import os
 import ssl
 
-if os.environ.get('RENDER'):
-    # --- CLOUD SETTINGS (Render + HiveMQ) ---
-    print("☁️ Detected Cloud Environment (Render)")
-    DB_HOST = os.environ.get("DB_HOST")
-    DB_NAME = os.environ.get("DB_NAME")
-    DB_USER = os.environ.get("DB_USER")
-    DB_PASS = os.environ.get("DB_PASS")
-    DB_PORT = "5432"
-    
-    MQTT_BROKER = os.environ.get("MQTT_BROKER")
-    MQTT_PORT = 8883 # SSL Port for HiveMQ
-    MQTT_USER = os.environ.get("MQTT_USER")
-    MQTT_PASS = os.environ.get("MQTT_PASS")
-    USE_SSL = True
-else:
-    # --- LOCAL SETTINGS (Docker Compose) ---
-    print("💻 Detected Local Environment")
-    DB_HOST = os.environ.get("DB_HOST", "localhost")
-    DB_NAME = os.environ.get("DB_NAME", "bus_tracker_db")
-    DB_USER = os.environ.get("DB_USER", "postgres")
-    DB_PASS = os.environ.get("DB_PASS", "password")
-    DB_PORT = "5432"
-    
-    MQTT_BROKER = os.environ.get("MQTT_BROKER", "localhost")
-    MQTT_PORT = 1883
-    MQTT_USER = None
-    MQTT_PASS = None
-    USE_SSL = False
+# Database: Always use ENV VARS (Railway sets these automatically)
+DB_HOST = os.environ.get("DB_HOST", "yamabiko.proxy.rlwy.net")
+DB_NAME = os.environ.get("DB_NAME", "railway")
+DB_USER = os.environ.get("DB_USER", "postgres")
+DB_PASS = os.environ.get("DB_PASS", "yskvrNocmTymfEkzyhpHXTKdKHIcxvDN")
+DB_PORT = os.environ.get("DB_PORT", "27535")
+
+# MQTT: Always use ENV VARS
+MQTT_BROKER = os.environ.get("MQTT_BROKER", "localhost")
+MQTT_PORT = int(os.environ.get("MQTT_PORT", "8883"))
+MQTT_USER = os.environ.get("MQTT_USER")
+MQTT_PASS = os.environ.get("MQTT_PASS")
+USE_SSL = bool(MQTT_USER)  # Use SSL if credentials are provided
+
+print(f"🔌 DB Config: {DB_HOST}:{DB_PORT}/{DB_NAME} (User: {DB_USER})")
 
 MQTT_TOPIC = "bus/+/telemetry"
 
