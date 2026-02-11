@@ -5,3 +5,4 @@ eventlet
 paho-mqtt
 psycopg2-binary
 gunicorn
+requests
