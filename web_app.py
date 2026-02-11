@@ -33,15 +33,35 @@ MQTT_TOPIC = "bus/+/telemetry"
 # Mock User Session REMOVED - Using Flask Session now
 
 # --- DATABASE HELPERS ---
+_db_host_override = None  # Will switch to public proxy if internal fails
+
 def get_db_connection():
-    conn = psycopg2.connect(
-        host=DB_HOST,
-        database=DB_NAME,
-        user=DB_USER,
-        password=DB_PASS,
-        port=DB_PORT
-    )
-    return conn
+    global _db_host_override
+    host = _db_host_override or DB_HOST
+    try:
+        conn = psycopg2.connect(
+            host=host,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASS,
+            port=DB_PORT
+        )
+        return conn
+    except Exception as e:
+        # If internal hostname failed, try public proxy
+        if not _db_host_override and host != "yamabiko.proxy.rlwy.net":
+            print(f"⚠️ Internal DB connection failed ({host}), trying public proxy...")
+            _db_host_override = "yamabiko.proxy.rlwy.net"
+            conn = psycopg2.connect(
+                host=_db_host_override,
+                database=DB_NAME,
+                user=DB_USER,
+                password=DB_PASS,
+                port=DB_PORT
+            )
+            print(f"✅ Connected via public proxy!")
+            return conn
+        raise
 
 def init_db():
     """Initialize the database - delegates to create_tables.py."""
