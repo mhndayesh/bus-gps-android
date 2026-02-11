@@ -438,11 +438,14 @@
         const FRAME_RATE = 10; // 10 FPS (100ms interval) - smooth streaming
         const FRAME_QUALITY = 0.6; // JPEG quality (0.6 = 60%)
 
+        let _allStudents = []; // Store full student data locally
+
         // --- LOAD MANIFEST ---
         function loadManifest() {
             fetch('/api/driver/manifest')
                 .then(res => res.json())
                 .then(students => {
+                    _allStudents = students; // Save for client-side routing
                     const container = document.getElementById('student-container');
                     if (students.length === 0) {
                         container.innerHTML = '<h3 class="section-title">📋 قائمة الطلاب</h3><p class="no-students">لا يوجد طلاب مسجلين في هذه الرحلة</p>';
@@ -451,23 +454,148 @@
 
                     let html = '<h3 class="section-title">📋 قائمة الطلاب</h3>';
                     students.forEach(s => {
-                        const isBoarded = s.status === 'BOARDED';
-                        const btnClass = isBoarded ? "btn-drop" : "btn-board";
-                        const btnText = isBoarded ? "إنزال" : "صعود";
+                        let statusClass = s.status === 'BOARDED' ? 'status-boarded' : 'status-dropped';
+                        let statusText = s.status === 'BOARDED' ? '✅ راكب' : '🏠 نزل';
+                        if (s.status === 'DROPPED') statusClass += ' status-dropped';
 
                         html += `
-                        <div class="student-row">
-                            <span>${s.name}</span>
-                            <button class="toggle-btn ${btnClass}" onclick="toggleStudent(this, '${s.id}')">
-                                ${btnText}
-                            </button>
-                        </div>`;
+                        <div class="student-card ${statusClass}" id="student-${s.id}">
+                            <div class="student-info">
+                                <div class="student-name">${s.name}</div>
+                                <div class="student-status">${statusText}</div>
+                            </div>
+                            <!-- NFC Simulation Button (Hidden in Prod) -->
+                            <button onclick="simulateNfc('${s.id}')" style="font-size:10px; padding:2px;">Simulate NFC</button>
+                        </div>
+                        `;
                     });
                     container.innerHTML = html;
-                });
+                })
+                .catch(err => console.error("Error loading manifest:", err));
         }
 
         loadManifest();
+
+        // --- CLIENT-SIDE ROUTE CALCULATION (No Backend) ---
+        function optimizeRoute() {
+            const btn = document.querySelector('button[onclick="optimizeRoute()"]');
+            btn.innerHTML = "⏳ جاري الحساب...";
+            btn.disabled = true;
+
+            // 1. Get Driver Location
+            if (_driverLat && _driverLng) {
+                _generateGoogleMapsLink(_driverLat, _driverLng, btn);
+            } else {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            _generateGoogleMapsLink(pos.coords.latitude, pos.coords.longitude, btn);
+                        },
+                        (err) => {
+                            // Fallback: Use first student as start if GPS fails
+                            alert("تعذر تحديد موقعك. سيتم بدء المسار من أول طالب.");
+                            _generateGoogleMapsLink(null, null, btn);
+                        },
+                        { enableHighAccuracy: true, timeout: 5000 }
+                    );
+                } else {
+                    alert("المتصفح لا يدعم تحديد الموقع.");
+                    _generateGoogleMapsLink(null, null, btn);
+                }
+            }
+        }
+
+        function _generateGoogleMapsLink(startLat, startLng, btn) {
+            try {
+                // 1. Filter Boarded Students with GPS
+                const targets = _allStudents.filter(s => s.status === 'BOARDED' && s.lat && s.lng);
+
+                if (targets.length === 0) {
+                    alert("لا يوجد طلاب (راكبين) لديهم إحداثيات GPS.");
+                    btn.innerHTML = "🗺️ احسب المسار الأسرع";
+                    btn.disabled = false;
+                    return;
+                }
+
+                // 2. Nearest Neighbor Sort
+                let currentLat = startLat;
+                let currentLng = startLng;
+
+                // If no driver GPS, start at first student
+                if (!currentLat || !currentLng) {
+                    currentLat = targets[0].lat;
+                    currentLng = targets[0].lng;
+                }
+
+                let unvisited = [...targets];
+                let sortedStops = [];
+
+                while (unvisited.length > 0) {
+                    let nearestIdx = -1;
+                    let minDist = Infinity;
+
+                    for (let i = 0; i < unvisited.length; i++) {
+                        const s = unvisited[i];
+                        const d = (s.lat - currentLat) ** 2 + (s.lng - currentLng) ** 2;
+                        if (d < minDist) {
+                            minDist = d;
+                            nearestIdx = i;
+                        }
+                    }
+
+                    if (nearestIdx !== -1) {
+                        const next = unvisited.splice(nearestIdx, 1)[0];
+                        sortedStops.push(next);
+                        currentLat = next.lat;
+                        currentLng = next.lng;
+                    } else {
+                        break;
+                    }
+                }
+
+                // 3. Generate Link
+                let gmUrl = "https://www.google.com/maps/dir/?api=1";
+                if (startLat && startLng) {
+                    gmUrl += `&origin=${startLat},${startLng}`;
+                } else {
+                    // Origin is the first student if no GPS
+                    gmUrl += `&origin=${sortedStops[0].lat},${sortedStops[0].lng}`;
+                }
+
+                gmUrl += `&travelmode=driving`;
+
+                // Destination is last stop
+                const last = sortedStops[sortedStops.length - 1];
+                gmUrl += `&destination=${last.lat},${last.lng}`;
+
+                // Waypoints
+                if (sortedStops.length > 1) {
+                    // Exclude last one (destination)
+                    const waypoints = sortedStops.slice(0, -1).map(s => `${s.lat},${s.lng}`).join('|');
+                    gmUrl += `&waypoints=${waypoints}`;
+                }
+
+                // 4. Show Button
+                let oldBtn = document.getElementById('gmaps-btn');
+                if (oldBtn) oldBtn.remove();
+
+                const gb = document.createElement('button');
+                gb.id = 'gmaps-btn';
+                gb.innerHTML = `🚀 اضغط هنا لبدء الرحلة (${sortedStops.length} محطات)`;
+                gb.style.cssText = 'width:100%; padding:20px; margin-top:15px; font-size:18px; background:#28a745; color:white; border:none; border-radius:12px; cursor:pointer; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); animation: pulse 2s infinite;';
+                gb.onclick = () => window.open(gmUrl, '_blank');
+
+                btn.parentNode.insertBefore(gb, btn.nextSibling);
+                gb.scrollIntoView({ behavior: "smooth" });
+
+            } catch (e) {
+                console.error(e);
+                alert("حدث خطأ أثناء الحساب: " + e.message);
+            } finally {
+                btn.innerHTML = "🗺️ احسب المسار الأسرع";
+                btn.disabled = false;
+            }
+        }
 
         // --- GPS LOGIC ---
         function startTrip() {
