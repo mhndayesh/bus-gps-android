@@ -1492,6 +1492,15 @@ def optimize_route(bus_id):
 def parent_dashboard_view():
     return render_template('parent_dashboard.html')
 
+@app.route('/api/fix_gps')
+def api_fix_gps():
+    try:
+        from fix_student_gps import fix_gps
+        fix_gps() # Run the fix
+        return "✅ Success! All students now have GPS locations. You can now use the Route Calculator.", 200
+    except Exception as e:
+        return f"❌ Error: {e}", 500
+
 # --- START ---
 if __name__ == '__main__':
     # Initialize DB (Create tables if missing)
