@@ -1416,19 +1416,36 @@ def optimize_route(bus_id):
         cur = conn.cursor()
         
         # 2. Get Boarded Students with GPS
+        print(f"🔍 OptRoute: Finding boarded students for Bus {bus_id}...")
         cur.execute("""
-            SELECT s.name, s.lng, s.lat
+            SELECT s.name, s.lng, s.lat, s.id
             FROM bus_manifest bm
             JOIN students s ON bm.student_id = s.id::text
             WHERE bm.bus_id = %s 
               AND bm.status = 'BOARDED'
-              AND s.lat IS NOT NULL AND s.lng IS NOT NULL
         """, (bus_id,))
         
-        students = cur.fetchall()
+        all_boarded = cur.fetchall()
+        print(f"Found {len(all_boarded)} raw BOARDED students.")
         
+        students = []
+        for r in all_boarded:
+            s_name = r[0]
+            s_lng = r[1]
+            s_lat = r[2]
+            s_id = r[3]
+            if s_lat is not None and s_lng is not None:
+                students.append((s_name, s_lng, s_lat))
+            else:
+                print(f"⚠️ Student {s_name} ({s_id}) is BOARDED but missing GPS!")
+
         if not students:
-            return json.dumps({"status": "empty", "message": "No students boarded"}), 200
+            print("❌ OptRoute: No students with valid GPS found.")
+            return json.dumps({"status": "empty", "message": "No students boarded with valid GPS"}), 200
+            
+        print(f"✅ OptRoute: Valid Students for Route: {len(students)}")
+            
+        # 3. Nearest Neighbor Sort
             
         # 3. Nearest Neighbor Sort
         # Prepare list
