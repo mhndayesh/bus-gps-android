@@ -476,125 +476,100 @@
 
         loadManifest();
 
-        // --- CLIENT-SIDE ROUTE CALCULATION (No Backend) ---
+        // --- CLIENT-SIDE ROUTE CALCULATION (Restored Backend Call) ---
         function optimizeRoute() {
-            const btn = document.querySelector('button[onclick="optimizeRoute()"]');
-            btn.innerHTML = "⏳ جاري الحساب...";
-            btn.disabled = true;
+            _calcRoute(false);
+        }
 
-            // 1. Get Driver Location
+        function _calcRoute(silent) {
+            const btn = document.querySelector('button[onclick="optimizeRoute()"]');
+
+            if (!silent) {
+                btn.innerHTML = "⏳ جاري الحساب...";
+                btn.disabled = true;
+            }
+
             if (_driverLat && _driverLng) {
-                _generateGoogleMapsLink(_driverLat, _driverLng, btn);
+                _performRouteFetch(_driverLat, _driverLng, btn, silent);
             } else {
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
                         (pos) => {
-                            _generateGoogleMapsLink(pos.coords.latitude, pos.coords.longitude, btn);
+                            _performRouteFetch(pos.coords.latitude, pos.coords.longitude, btn, silent);
                         },
                         (err) => {
-                            // Fallback: Use first student as start if GPS fails
-                            alert("تعذر تحديد موقعك. سيتم بدء المسار من أول طالب.");
-                            _generateGoogleMapsLink(null, null, btn);
+                            if (!silent) {
+                                alert("تعذر تحديد موقعك. سيتم المحاولة بدون موقع.");
+                                _performRouteFetch(null, null, btn, silent);
+                            }
                         },
                         { enableHighAccuracy: true, timeout: 5000 }
                     );
                 } else {
-                    alert("المتصفح لا يدعم تحديد الموقع.");
-                    _generateGoogleMapsLink(null, null, btn);
+                    _performRouteFetch(null, null, btn, silent);
                 }
             }
         }
 
-        function _generateGoogleMapsLink(startLat, startLng, btn) {
-            try {
-                // 1. Filter Boarded Students with GPS
-                const targets = _allStudents.filter(s => s.status === 'BOARDED' && s.lat && s.lng);
+        function _performRouteFetch(lat, lng, btn, silent) {
+            let url = `/api/optimize_route/${busId}`;
+            if (lat && lng) url += `?lat=${lat}&lng=${lng}`;
 
-                if (targets.length === 0) {
-                    alert("لا يوجد طلاب (راكبين) لديهم إحداثيات GPS.");
-                    btn.innerHTML = "🗺️ احسب المسار الأسرع";
-                    btn.disabled = false;
-                    return;
-                }
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if (!silent) {
+                        btn.innerHTML = "🗺️ احسب المسار الأسرع";
+                        btn.disabled = false;
+                    }
 
-                // 2. Nearest Neighbor Sort
-                let currentLat = startLat;
-                let currentLng = startLng;
+                    if (data.status === 'success') {
+                        const stops = data.stops;
+                        if (stops.length > 0) {
+                            // Generate Google Maps Link
+                            let gmUrl = "https://www.google.com/maps/dir/?api=1";
+                            if (lat && lng) {
+                                gmUrl += `&origin=${lat},${lng}`;
+                            } else {
+                                gmUrl += `&origin=${stops[0].lat},${stops[0].lng}`;
+                            }
 
-                // If no driver GPS, start at first student
-                if (!currentLat || !currentLng) {
-                    currentLat = targets[0].lat;
-                    currentLng = targets[0].lng;
-                }
+                            const last = stops[stops.length - 1];
+                            gmUrl += `&destination=${last.lat},${last.lng}`;
+                            gmUrl += `&travelmode=driving`;
 
-                let unvisited = [...targets];
-                let sortedStops = [];
+                            if (stops.length > 1) {
+                                const wps = stops.slice(0, -1).map(s => `${s.lat},${s.lng}`).join('|');
+                                gmUrl += `&waypoints=${wps}`;
+                            }
 
-                while (unvisited.length > 0) {
-                    let nearestIdx = -1;
-                    let minDist = Infinity;
+                            let oldBtn = document.getElementById('gmaps-btn');
+                            if (oldBtn) oldBtn.remove();
 
-                    for (let i = 0; i < unvisited.length; i++) {
-                        const s = unvisited[i];
-                        const d = (s.lat - currentLat) ** 2 + (s.lng - currentLng) ** 2;
-                        if (d < minDist) {
-                            minDist = d;
-                            nearestIdx = i;
+                            const gb = document.createElement('button');
+                            gb.id = 'gmaps-btn';
+                            gb.innerHTML = `🚀 اضغط هنا لبدء الرحلة (${stops.length} محطات)`;
+                            gb.style.cssText = 'width:100%; padding:20px; margin-top:15px; font-size:18px; background:#28a745; color:white; border:none; border-radius:12px; cursor:pointer; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); animation: pulse 2s infinite;';
+                            gb.onclick = () => window.open(gmUrl, '_blank');
+
+                            const mapContainer = document.getElementById('map');
+                            mapContainer.after(gb);
+                            gb.scrollIntoView({ behavior: "smooth" });
+                        } else {
+                            if (!silent) alert("لا يوجد محطات (Fastest Route).");
                         }
-                    }
-
-                    if (nearestIdx !== -1) {
-                        const next = unvisited.splice(nearestIdx, 1)[0];
-                        sortedStops.push(next);
-                        currentLat = next.lat;
-                        currentLng = next.lng;
                     } else {
-                        break;
+                        if (!silent) alert("Error: " + data.message);
                     }
-                }
-
-                // 3. Generate Link
-                let gmUrl = "https://www.google.com/maps/dir/?api=1";
-                if (startLat && startLng) {
-                    gmUrl += `&origin=${startLat},${startLng}`;
-                } else {
-                    // Origin is the first student if no GPS
-                    gmUrl += `&origin=${sortedStops[0].lat},${sortedStops[0].lng}`;
-                }
-
-                gmUrl += `&travelmode=driving`;
-
-                // Destination is last stop
-                const last = sortedStops[sortedStops.length - 1];
-                gmUrl += `&destination=${last.lat},${last.lng}`;
-
-                // Waypoints
-                if (sortedStops.length > 1) {
-                    // Exclude last one (destination)
-                    const waypoints = sortedStops.slice(0, -1).map(s => `${s.lat},${s.lng}`).join('|');
-                    gmUrl += `&waypoints=${waypoints}`;
-                }
-
-                // 4. Show Button
-                let oldBtn = document.getElementById('gmaps-btn');
-                if (oldBtn) oldBtn.remove();
-
-                const gb = document.createElement('button');
-                gb.id = 'gmaps-btn';
-                gb.innerHTML = `🚀 اضغط هنا لبدء الرحلة (${sortedStops.length} محطات)`;
-                gb.style.cssText = 'width:100%; padding:20px; margin-top:15px; font-size:18px; background:#28a745; color:white; border:none; border-radius:12px; cursor:pointer; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); animation: pulse 2s infinite;';
-                gb.onclick = () => window.open(gmUrl, '_blank');
-
-                btn.parentNode.insertBefore(gb, btn.nextSibling);
-                gb.scrollIntoView({ behavior: "smooth" });
-
-            } catch (e) {
-                console.error(e);
-                alert("حدث خطأ أثناء الحساب: " + e.message);
-            } finally {
-                btn.innerHTML = "🗺️ احسب المسار الأسرع";
-                btn.disabled = false;
-            }
+                })
+                .catch(err => {
+                    console.error(err);
+                    if (!silent) {
+                        btn.innerHTML = "🗺️ احسب المسار الأسرع";
+                        btn.disabled = false;
+                        alert("Fetch Error: " + err.message);
+                    }
+                });
         }
 
         // --- GPS LOGIC ---

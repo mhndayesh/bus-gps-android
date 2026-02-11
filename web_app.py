@@ -1398,6 +1398,94 @@ def handle_camera_frame(data):
     # Emit to room "stream_bus_{bus_id}"
     socketio.emit('camera_feed', data, room=f"stream_bus_{bus_id}")
 
+@app.route('/api/optimize_route/<int:bus_id>', methods=['GET'])
+@role_required(['DRIVER', 'SCHOOL_ADMIN', 'SUPER_ADMIN'])
+def optimize_route(bus_id):
+    """
+    Simpler Route Optimization (Nearest Neighbor) v2
+    Returns sorted list of students for Google Maps integration.
+    """
+    conn = None
+    cur = None
+    try:
+        # 1. Get Driver Location (Optional, defaults to first student)
+        driver_lat = request.args.get('lat', type=float)
+        driver_lng = request.args.get('lng', type=float)
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # 2. Get Boarded Students with GPS
+        cur.execute("""
+            SELECT s.name, s.lng, s.lat
+            FROM bus_manifest bm
+            JOIN students s ON bm.student_id = s.id::text
+            WHERE bm.bus_id = %s 
+              AND bm.status = 'BOARDED'
+              AND s.lat IS NOT NULL AND s.lng IS NOT NULL
+        """, (bus_id,))
+        
+        students = cur.fetchall()
+        
+        if not students:
+            return json.dumps({"status": "empty", "message": "No students boarded"}), 200
+            
+        # 3. Nearest Neighbor Sort
+        # Prepare list
+        unvisited = []
+        for s in students:
+            unvisited.append({"name": s[0], "lng": s[1], "lat": s[2]})
+            
+        # Start point: Driver OR First Student
+        current_lat = driver_lat
+        current_lng = driver_lng
+        
+        if current_lat is None or current_lng is None:
+            # Fallback: Start at first student
+            # Check if list is not empty (already checked above)
+            current_lat = unvisited[0]['lat']
+            current_lng = unvisited[0]['lng']
+            
+        sorted_stops = []
+        
+        while unvisited:
+            nearest_idx = -1
+            min_dist = float('inf')
+            
+            for i, stop in enumerate(unvisited):
+                # Euclidan Distance Squared
+                d_lat = stop['lat'] - current_lat
+                d_lng = stop['lng'] - current_lng
+                dist = (d_lat**2) + (d_lng**2)
+                
+                if dist < min_dist:
+                    min_dist = dist
+                    nearest_idx = i
+            
+            # Add nearest to path
+            if nearest_idx != -1:
+                next_stop = unvisited.pop(nearest_idx)
+                sorted_stops.append(next_stop)
+                # Update current pos to this stop
+                current_lat = next_stop['lat']
+                current_lng = next_stop['lng']
+            else:
+                break
+                
+        # 4. Return Result
+        return json.dumps({
+            "status": "success",
+            "stops": sorted_stops,
+            "count": len(sorted_stops)
+        }), 200
+
+    except Exception as e:
+        print(f"❌ Route Calc Error: {e}")
+        return json.dumps({"status": "error", "message": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
 
 
 @app.route('/parent/dashboard')
