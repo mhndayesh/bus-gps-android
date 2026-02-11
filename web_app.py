@@ -1415,35 +1415,50 @@ def optimize_route(bus_id):
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # 2. Get Boarded Students with GPS
-        print(f"🔍 OptRoute: Finding boarded students for Bus {bus_id}...")
+        # 2. Get Boarded Students (Step 1: Get IDs from Manifest)
+        print(f"🔍 OptRoute: Finding boarded IDs for Bus {bus_id}...")
         cur.execute("""
-            SELECT s.name, s.lng, s.lat, s.id
-            FROM bus_manifest bm
-            JOIN students s ON bm.student_id = s.id::text
-            WHERE bm.bus_id = %s 
-              AND bm.status = 'BOARDED'
+            SELECT student_id FROM bus_manifest 
+            WHERE bus_id = %s AND status = 'BOARDED'
         """, (bus_id,))
         
-        all_boarded = cur.fetchall()
-        print(f"Found {len(all_boarded)} raw BOARDED students.")
+        manifest_rows = cur.fetchall()
+        boarded_ids = [r[0] for r in manifest_rows]
+        print(f"📋 OptRoute: Found {len(boarded_ids)} boarded IDs: {boarded_ids}")
+        
+        if not boarded_ids:
+             return json.dumps({"status": "empty", "message": "No students marked as BOARDED"}), 200
+
+        # Step 2: Get Details from Students Table
+        # Convert IDs to string for safely handling both int/str ID types in DB
+        ids_tuple = tuple(str(x) for x in boarded_ids)
+        
+        # Determine placeholder string based on length
+        placeholders = ','.join(['%s'] * len(ids_tuple))
+        query = f"SELECT name, lng, lat, id FROM students WHERE id::text IN ({placeholders})"
+        
+        cur.execute(query, ids_tuple)
+        student_details = cur.fetchall()
+        print(f"🗃️ OptRoute: Retrieved {len(student_details)} student records from DB.")
         
         students = []
-        for r in all_boarded:
+        for r in student_details:
             s_name = r[0]
             s_lng = r[1]
             s_lat = r[2]
             s_id = r[3]
+            
             if s_lat is not None and s_lng is not None:
                 students.append((s_name, s_lng, s_lat))
+                print(f"   ✅ Added {s_name} ({s_lat}, {s_lng})")
             else:
-                print(f"⚠️ Student {s_name} ({s_id}) is BOARDED but missing GPS!")
+                print(f"   ⚠️ Skipping {s_name} (ID: {s_id}): Missing GPS")
 
         if not students:
-            print("❌ OptRoute: No students with valid GPS found.")
-            return json.dumps({"status": "empty", "message": "No students boarded with valid GPS"}), 200
+            print("❌ OptRoute: Boarded students found, but none have valid GPS.")
+            return json.dumps({"status": "empty", "message": "Boarded students are missing GPS data"}), 200
             
-        print(f"✅ OptRoute: Valid Students for Route: {len(students)}")
+        print(f"✅ OptRoute: Final List Size: {len(students)}")
             
         # 3. Nearest Neighbor Sort
             
