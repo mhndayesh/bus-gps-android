@@ -993,6 +993,44 @@
             }
         });
     </script>
+    <!-- ON-SCREEN DEBUG LOG -->
+    <div id="debug-console"
+        style="margin: 20px; padding: 10px; background: #000; color: #0f0; border-radius: 8px; font-family: monospace; max-height: 200px; overflow-y: scroll; direction: ltr; text-align: left; position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;">
+        <strong>Debug Console:</strong><br>
+    </div>
+
+    <script>
+        (function () {
+            var oldLog = console.log;
+            var oldError = console.error;
+            var debugConsole = document.getElementById('debug-console');
+
+            function logToScreen(msg, color) {
+                var div = document.createElement('div');
+                div.style.color = color || '#0f0';
+                div.style.borderBottom = '1px solid #333';
+                div.textContent = '> ' + msg;
+                if (debugConsole) {
+                    debugConsole.appendChild(div);
+                    debugConsole.scrollTop = debugConsole.scrollHeight;
+                }
+            }
+
+            console.log = function (message) {
+                oldLog.apply(console, arguments);
+                if (debugConsole) logToScreen(Array.from(arguments).join(' '));
+            };
+
+            console.error = function (message) {
+                oldError.apply(console, arguments);
+                if (debugConsole) logToScreen(Array.from(arguments).join(' '), '#f00');
+            };
+
+            window.onerror = function (msg, url, line) {
+                if (debugConsole) logToScreen("Global Error: " + msg + " line " + line, '#f00');
+            };
+        })();
+    </script>
 </body>
 
 </html>
