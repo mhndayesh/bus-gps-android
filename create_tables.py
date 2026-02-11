@@ -18,20 +18,25 @@ def create_tables():
             database=DB_NAME,
             user=DB_USER,
             password=DB_PASS,
-            port=DB_PORT
+            port=DB_PORT,
+            connect_timeout=3
         )
     except Exception as e:
         print(f"⚠️ Internal DB connection failed ({DB_HOST}), trying public proxy...")
         # Fallback to public proxy
-        fallback_host = "yamabiko.proxy.rlwy.net"
-        conn = psycopg2.connect(
-            host=fallback_host,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASS,
-            port=DB_PORT
-        )
-        print(f"✅ Connected via public proxy ({fallback_host})!")
+        try:
+            conn = psycopg2.connect(
+                host="yamabiko.proxy.rlwy.net",
+                database=DB_NAME,
+                user=DB_USER,
+                password=DB_PASS,
+                port=DB_PORT,
+                connect_timeout=10
+            )
+            print(f"✅ Connected via public proxy (yamabiko.proxy.rlwy.net)!")
+        except Exception as e2:
+            print(f"❌ Failed to connect to DB (Both Internal & Proxy): {e2}")
+            return
         
     print("✅ Connected to Database!")
     cur = conn.cursor()

@@ -47,7 +47,8 @@ def get_db_connection():
             database=DB_NAME,
             user=DB_USER,
             password=DB_PASS,
-            port=DB_PORT
+            port=DB_PORT,
+            connect_timeout=3
         )
         return conn
     except Exception as e:
@@ -55,16 +56,21 @@ def get_db_connection():
         if not _db_host_override and host != "yamabiko.proxy.rlwy.net":
             print(f"⚠️ Internal DB connection failed ({host}), trying public proxy...")
             _db_host_override = "yamabiko.proxy.rlwy.net"
-            conn = psycopg2.connect(
-                host=_db_host_override,
-                database=DB_NAME,
-                user=DB_USER,
-                password=DB_PASS,
-                port=DB_PORT
-            )
-            print(f"✅ Connected via public proxy!")
-            return conn
-        raise
+            try:
+                conn = psycopg2.connect(
+                    host=_db_host_override,
+                    database=DB_NAME,
+                    user=DB_USER,
+                    password=DB_PASS,
+                    port=DB_PORT,
+                    connect_timeout=10
+                )
+                print(f"✅ Connected via public proxy!")
+                return conn
+            except Exception as e2:
+                print(f"❌ Public Proxy Connect Error: {e2}")
+                raise e2
+        raise e
 
 def init_db():
     """Initialize the database - delegates to create_tables.py."""
