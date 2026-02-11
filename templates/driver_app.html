@@ -454,20 +454,17 @@
 
                     let html = '<h3 class="section-title">📋 قائمة الطلاب</h3>';
                     students.forEach(s => {
-                        let statusClass = s.status === 'BOARDED' ? 'status-boarded' : 'status-dropped';
-                        let statusText = s.status === 'BOARDED' ? '✅ راكب' : '🏠 نزل';
-                        if (s.status === 'DROPPED') statusClass += ' status-dropped';
+                        const isBoarded = s.status === 'BOARDED';
+                        const btnClass = isBoarded ? "btn-drop" : "btn-board";
+                        const btnText = isBoarded ? "إنزال" : "صعود";
 
                         html += `
-                        <div class="student-card ${statusClass}" id="student-${s.id}">
-                            <div class="student-info">
-                                <div class="student-name">${s.name}</div>
-                                <div class="student-status">${statusText}</div>
-                            </div>
-                            <!-- NFC Simulation Button (Hidden in Prod) -->
-                            <button onclick="simulateNfc('${s.id}')" style="font-size:10px; padding:2px;">Simulate NFC</button>
-                        </div>
-                        `;
+                        <div class="student-row">
+                            <span>${s.name}</span>
+                            <button class="toggle-btn ${btnClass}" onclick="toggleStudent(this, '${s.id}')">
+                                ${btnText}
+                            </button>
+                        </div>`;
                     });
                     container.innerHTML = html;
                 })
