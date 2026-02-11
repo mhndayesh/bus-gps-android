@@ -1433,6 +1433,9 @@ def optimize_route(bus_id):
     Only includes students currently BOARDED (in bus_manifest).
     Query params: ?lat=X&lng=Y (driver's current position)
     """
+    print(f"🗺️ Calculating Route for Bus {bus_id}...")
+    conn = None
+    cur = None
     try:
         # Get driver's current location from query params
         driver_lat = request.args.get('lat', type=float)
@@ -1453,16 +1456,19 @@ def optimize_route(bus_id):
         """, (bus_id,))
         
         students = cur.fetchall()
-        cur.close()
-        conn.close()
         
         if not students:
+            print(f"⚠️ Bus {bus_id} is empty.")
             return json.dumps({"status": "empty", "message": "لا يوجد طلاب على متن الحافلة"}), 200
 
-        # Build coordinates: driver location first, then student homes
+        # Build coordinates: driver location first, then students
+        # OSRM expects: {lng},{lat}
         coords = []
+        has_driver_loc = False
+        
         if driver_lat and driver_lng:
-            coords.append(f"{driver_lng},{driver_lat}")  # OSRM uses lng,lat
+            coords.append(f"{driver_lng},{driver_lat}")
+            has_driver_loc = True
         
         for s in students:
             coords.append(f"{s[1]},{s[2]}")
@@ -1479,11 +1485,14 @@ def optimize_route(bus_id):
              
         coordinates_string = ";".join(coords)
         # Use route API (trip API is broken on public OSRM server)
+        # Note: 'route' API respects order. It does NOT optimize (TSP).
+        # But it provides geometry and instructions.
         osrm_url = f"http://router.project-osrm.org/route/v1/driving/{coordinates_string}?geometries=geojson&overview=full"
         
-        # 3. Call OSRM
+        # 3. Call OSRM with timeout
         import requests
-        response = requests.get(osrm_url, timeout=10)
+        print(f"📡 Calling OSRM API...")
+        response = requests.get(osrm_url, timeout=20)
         data = response.json()
         
         if response.status_code != 200 or data.get('code') != 'Ok':
@@ -1500,17 +1509,30 @@ def optimize_route(bus_id):
         geometry = best_route['geometry']  # GeoJSON LineString
         
         # Build ordered stops from the waypoints
+        # Since 'route' API preserves order, the order is same as input list.
+        # But we must map back to 'students' list correctly.
+        
+        # waypoints[0] -> input[0] (Driver or Student 0)
+        # waypoints[1] -> input[1] (Student 0 or Student 1)
+        
         waypoints = data.get('waypoints', [])
         sorted_students = []
-        for i, wp in enumerate(waypoints):
-            if i < len(students):
-                sorted_students.append({
-                    "name": students[i][0],
-                    "lat": students[i][2],
-                    "lng": students[i][1],
-                    "order": i + 1
-                })
+        
+        # Start index for students in input list
+        student_start_idx = 1 if has_driver_loc else 0
+        
+        # Currently, 'students' list matches input coords[student_start_idx:]
+        # So we just iterate 'students'
+        
+        for i, student in enumerate(students):
+            sorted_students.append({
+                "name": student[0],
+                "lat": student[2],
+                "lng": student[1],
+                "order": i + 1
+            })
             
+        print(f"✅ Route Calculated: {len(sorted_students)} stops, {best_route['distance']}m")
         return json.dumps({
             "status": "success",
             "geometry": geometry,
@@ -1520,8 +1542,11 @@ def optimize_route(bus_id):
         }), 200
         
     except Exception as e:
-        print(f"❌ Optimization Error: {e}")
+        print(f"❌ Optimization Critical Error: {e}")
         return json.dumps({"status": "error", "message": str(e)}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 
 @app.route('/parent/dashboard')
 def parent_dashboard_view():
