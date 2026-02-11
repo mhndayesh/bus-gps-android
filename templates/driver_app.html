@@ -791,10 +791,16 @@
                             // Google Maps button
                             const stops = data.stops.filter(s => s.lat && s.lng);
                             if (stops.length >= 1) {
-                                const last = stops[stops.length - 1];
-                                const wps = stops.slice(0, -1).map(s => `${s.lat},${s.lng}`).join('|');
-                                let gmUrl = `https://www.google.com/maps/dir/?api=1&origin=${dLat},${dLng}&destination=${last.lat},${last.lng}&travelmode=driving`;
-                                if (wps) gmUrl += `&waypoints=${wps}`;
+                                let gmUrl;
+                                if (stops.length === 1) {
+                                    // Single student: simple navigation
+                                    gmUrl = `https://www.google.com/maps/dir/?api=1&origin=${dLat},${dLng}&destination=${stops[0].lat},${stops[0].lng}&travelmode=driving`;
+                                } else {
+                                    // Multiple students: route with waypoints
+                                    const last = stops[stops.length - 1];
+                                    const wps = stops.slice(0, -1).map(s => `${s.lat},${s.lng}`).join('|');
+                                    gmUrl = `https://www.google.com/maps/dir/?api=1&origin=${dLat},${dLng}&destination=${last.lat},${last.lng}&travelmode=driving&waypoints=${wps}`;
+                                }
 
                                 const old = document.getElementById('gmaps-btn');
                                 if (old) old.remove();
@@ -806,9 +812,13 @@
                                 mapContainer.after(gb);
                             }
 
-                            const distKm = (data.distance / 1000).toFixed(1);
-                            const durMin = Math.round(data.duration / 60);
-                            alert(`✅ تم تحسين المسار!\nالمسافة: ${distKm} كم\nالوقت المتوقع: ${durMin} دقيقة\nعدد المحطات: ${data.stops.length}`);
+                            if (data.distance > 0) {
+                                const distKm = (data.distance / 1000).toFixed(1);
+                                const durMin = Math.round(data.duration / 60);
+                                alert(`✅ تم تحسين المسار!\nالمسافة: ${distKm} كم\nالوقت المتوقع: ${durMin} دقيقة\nعدد المحطات: ${data.stops.length}`);
+                            } else {
+                                alert(`✅ طالب واحد متبقي: ${data.stops[0].name}\nاضغط زر خرائط قوقل للتنقل`);
+                            }
                         })
                         .catch(err => {
                             console.error(err);
