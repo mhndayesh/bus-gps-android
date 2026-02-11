@@ -373,7 +373,7 @@
     <button class="big-btn btn-stop" onclick="stopTrip()">🔴 إنهاء الرحلة</button>
 
     <!-- Optimization Button -->
-    <button class="big-btn" style="background: #3498db; color: white;" onclick="optimizeRoute()">
+    <button id="btn-optimize" class="big-btn" style="background: #3498db; color: white;" onclick="optimizeRoute()">
         🗺️ احسب المسار الأسرع
     </button>
 
@@ -475,11 +475,13 @@
 
         // --- CLIENT-SIDE ROUTE CALCULATION (Restored Backend Call) ---
         function optimizeRoute() {
+            console.log("🖱️ Optimize Route Clicked!");
+            // alert("DEBUG: Optimize Route Clicked"); 
             _calcRoute(false);
         }
 
         function _calcRoute(silent) {
-            const btn = document.querySelector('button[onclick="optimizeRoute()"]');
+            const btn = document.getElementById('btn-optimize');
 
             if (!silent) {
                 btn.innerHTML = "⏳ جاري الحساب...";
@@ -511,6 +513,9 @@
         function _performRouteFetch(lat, lng, btn, silent) {
             let url = `/api/optimize_route/${busId}`;
             if (lat && lng) url += `?lat=${lat}&lng=${lng}`;
+
+            console.log(`🌐 Fetching Route from: ${url}`);
+            // alert(`DEBUG: Fetching ${url}`);
 
             fetch(url)
                 .then(res => res.json())
