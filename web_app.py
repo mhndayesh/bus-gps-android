@@ -1,6 +1,7 @@
 import eventlet
-from datetime import datetime
 eventlet.monkey_patch()
+
+from datetime import datetime
 from psycogreen.eventlet import patch_psycopg
 patch_psycopg()
 
