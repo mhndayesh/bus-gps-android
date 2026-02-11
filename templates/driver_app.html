@@ -428,6 +428,10 @@
     <script>
         const socket = io();
         let watchId = null;
+        let _allStudents = [];
+        let _routeActive = false;
+        let _driverLat = null;
+        let _driverLng = null;
         const busId = "{{ bus_id }}";
 
         // Camera variables
@@ -437,8 +441,6 @@
         let useFrontCamera = false; // false = back camera, true = front camera
         const FRAME_RATE = 10; // 10 FPS (100ms interval) - smooth streaming
         const FRAME_QUALITY = 0.6; // JPEG quality (0.6 = 60%)
-
-        let _allStudents = []; // Store full student data locally
 
         // --- LOAD MANIFEST ---
         function loadManifest() {
@@ -826,7 +828,6 @@
         }
 
         // --- ATTENDANCE LOGIC ---
-        let _routeActive = false;
 
         function toggleStudent(btn, studentId) {
             const isBoarding = btn.innerText.trim() === "صعود";
