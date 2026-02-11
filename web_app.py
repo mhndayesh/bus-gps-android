@@ -1290,58 +1290,44 @@ def assign_driver():
 @role_required(['DRIVER', 'SCHOOL_ADMIN', 'SUPER_ADMIN'])
 def optimize_route(bus_id):
     """
-    Calculate optimized route for a bus using OSRM (Open Source Routing Machine).
-    1. Get all students assigned to this bus.
-    2. Get their home locations.
-    3. Send to OSRM Trip API.
-    4. Return sorted waypoints and geometry.
+    Calculate optimized route for a bus using OSRM.
+    Uses driver's current location as start point.
+    Only includes students currently BOARDED (in bus_manifest).
+    Query params: ?lat=X&lng=Y (driver's current position)
     """
     try:
+        # Get driver's current location from query params
+        driver_lat = request.args.get('lat', type=float)
+        driver_lng = request.args.get('lng', type=float)
+        
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # 1. Get Students on this Bus
-        # We need to join bus_manifest (who is on board) OR just all assigned students?
-        # For a "Morning Pick-up", we want ALL assigned students.
-        # For an "Afternoon Drop-off", we might only want students currently ON board.
-        # Let's assume "Morning Pick-up" (All assigned) for now, or use a query param.
-        
-        # Get students assigned to this bus (via route_stops or direct assignment?)
-        # Current schema doesn't have direct 'bus_id' in students table usually, 
-        # but we can infer from 'bus_manifest' if they are boarded, 
-        # OR we need a way to know "Which bus picks up this student?".
-        # In our schema, we have 'route_stops' but it's not fully linked yet.
-        # Let's START SIMPLE: Get students who have this bus assigned in `bus_manifest` (current) 
-        # OR add a `bus_id` to `students` table for static assignment.
-        
-        # Checking schema... `students` table has `school_id` but not `bus_id`.
-        # `bus_manifest` is for live attendance.
-        # We need to look up students based on 'route_stops' if available, otherwise manual selection?
-        # Let's fallback: Get ALL students for the school (Prototype shortcut) 
-        # or just students currently BOARDED for drop-off optimization.
-        
-        # STRATEGY: "Drop-off Mode" -> Optimize route for students currently on the bus.
+        # Get only students currently ON BOARD (in bus_manifest)
         cur.execute("""
             SELECT s.name, s.lng, s.lat
             FROM bus_manifest bm
             JOIN students s ON bm.student_id = s.id::text
-            WHERE bm.bus_id = %s
+            WHERE bm.bus_id = %s AND s.lat IS NOT NULL AND s.lng IS NOT NULL
         """, (bus_id,))
         
         students = cur.fetchall()
+        cur.close()
+        conn.close()
         
         if not students:
-            return json.dumps({"status": "error", "message": "No students found on this bus to route."}), 404
+            return json.dumps({"status": "error", "message": "لا يوجد طلاب على متن الحافلة"}), 404
 
-        # 2. Prepare OSRM Request
-        # Format: {lon},{lat};{lon},{lat}...
-        # Add Bus Current Location as Start Point? (User needs to send it)
-        # For now, let's just optimize the student stops.
+        # Build coordinates: driver location first, then student homes
+        coords = []
+        if driver_lat and driver_lng:
+            coords.append(f"{driver_lng},{driver_lat}")  # OSRM uses lng,lat
         
-        coords = [f"{s[1]},{s[2]}" for s in students if s[1] and s[2]]
+        for s in students:
+            coords.append(f"{s[1]},{s[2]}")
         
         if len(coords) < 2:
-             return json.dumps({"status": "error", "message": "Need at least 2 locations to optimize."}), 400
+             return json.dumps({"status": "error", "message": "تحتاج موقعين على الأقل لحساب المسار"}), 400
              
         coordinates_string = ";".join(coords)
         # Use route API (trip API is broken on public OSRM server)
