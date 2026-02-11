@@ -901,12 +901,13 @@ def update_student_location():
         # Security Check
         # Universal Update (No PostGIS check needed)
         # We update lat, lng, and address_text directly
-        if session['user_role'] == 'SCHOOL_ADMIN':
+        if session.get('user_role') == 'SCHOOL_ADMIN':
+            school_id = session.get('school_id')
             cur.execute("""
                 UPDATE students 
                 SET lat = %s, lng = %s, home_address_text = %s
                 WHERE id = %s AND school_id = %s
-            """, (lat, lng, address_text, student_id, session['school_id']))
+            """, (lat, lng, address_text, student_id, school_id))
         else:
              cur.execute("""
                 UPDATE students 
@@ -914,9 +915,12 @@ def update_student_location():
                 WHERE id = %s
             """, (lat, lng, address_text, student_id))
             
-        if cur.rowcount == 0:
-             # Just in case
-             pass
+        # SYNC TO MANIFEST (If student is currently boarded/listed)
+        cur.execute("""
+            UPDATE bus_manifest
+            SET lat = %s, lng = %s
+            WHERE student_id = %s
+        """, (lat, lng, student_id))
             
         conn.commit()
         cur.close()
