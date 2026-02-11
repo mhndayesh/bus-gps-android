@@ -382,42 +382,7 @@ def handle_join_stream(data):
     is_streaming = bus_id in active_streams
     socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': is_streaming})
 
-def mqtt_listener():
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-    
-    def on_connect(c, u, f, rc, properties=None):
-        c.subscribe(MQTT_TOPIC)
-        print("✅ Connected to MQTT Broker. Listening for buses...")
 
-    def on_message(c, u, msg):
-        try:
-            # 1. Receive GPS from Bus
-            payload = json.loads(msg.payload.decode())
-            bus_id = payload.get("bus_id")
-            
-            print(f"📡 Data received from Bus {bus_id}")
-            
-            # 2. Push to Web Browser immediately (Real-time!)
-            socketio.emit('update_map', payload)
-        except Exception as e:
-            print(f"Error forwarding message: {e}")
-
-    client.on_connect = on_connect
-    client.on_message = on_message
-    
-    # Auth and SSL
-    if MQTT_USER and MQTT_PASS:
-        client.username_pw_set(MQTT_USER, MQTT_PASS)
-    
-    if USE_SSL:
-        client.tls_set(cert_reqs=ssl.CERT_NONE)
-        client.tls_insecure_set(True)
-
-    try:
-        client.connect(MQTT_BROKER, int(MQTT_PORT), 60)
-        client.loop_forever()
-    except Exception as e:
-        print(f"MQTT Connection Error: {e}")
 
 # --- WEB ROUTES ---
 @app.route('/driver')
