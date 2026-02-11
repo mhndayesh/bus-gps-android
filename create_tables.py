@@ -108,6 +108,16 @@ def create_tables():
         conn.rollback()
         print(f"⚠️ Migration failed for students table: {e}")
 
+    # MIGRATION for Buses (Live Tracking)
+    try:
+        cur.execute("ALTER TABLE buses ADD COLUMN IF NOT EXISTS current_lat FLOAT;")
+        cur.execute("ALTER TABLE buses ADD COLUMN IF NOT EXISTS current_lng FLOAT;")
+        cur.execute("ALTER TABLE buses ADD COLUMN IF NOT EXISTS current_speed FLOAT;")
+        cur.execute("ALTER TABLE buses ADD COLUMN IF NOT EXISTS last_updated TIMESTAMP;")
+        conn.commit()
+    except:
+        conn.rollback()
+
     # 4.5 Route Stops
     cur.execute("""
         CREATE TABLE IF NOT EXISTS route_stops (
