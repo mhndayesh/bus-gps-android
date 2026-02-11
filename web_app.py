@@ -146,14 +146,26 @@ def _lazy_migrate():
     if _migration_done:
         return  # Already done, skip
     try:
-        print("🔄 [Migration] Running on first request...")
-        from create_tables import init_db
-        init_db()
+        # Use get_db_connection which has the public proxy fallback
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Check if tables already exist (migration was run from local)
+        cur.execute("SELECT COUNT(*) FROM information_schema.columns WHERE table_name='students' AND column_name='lat'")
+        has_lat = cur.fetchone()[0] > 0
+        cur.close()
+        conn.close()
+        if has_lat:
+            _migration_done = True
+            print("✅ [Migration] Tables already up-to-date, skipping.")
+            return
+        # Tables missing columns - run full migration
+        print("🔄 [Migration] Running create_tables...")
+        from create_tables import create_tables as _ct
+        _ct()
         _migration_done = True
         print("✅ [Migration] Complete!")
     except Exception as e:
         print(f"⚠️ [Migration] Will retry next request: {e}")
-        # Don't set _migration_done, so it retries on next request
 
 # --- MANUAL MIGRATION API (Safety Net) ---
 @app.route('/api/force_migrate')
