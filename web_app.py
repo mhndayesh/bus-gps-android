@@ -1519,60 +1519,10 @@ def optimize_route(bus_id):
         
         # Now sorted_students is our optimize path
         
-        # Build Coordinates String for OSRM
-        # OSRM expects: {lng},{lat}
-        coords = []
-        if driver_lat and driver_lng:
-            coords.append(f"{driver_lng},{driver_lat}")
+        # 3. Final Result (OSRM Removed)
+        # We rely purely on the sorted list (Nearest Neighbor) which is passed to the frontend.
+        # The frontend will generate a Google Maps link for the driver app based on this sorted order.
         
-        for s in sorted_students:
-            coords.append(f"{s['lng']},{s['lat']}")
-        
-        # If only 1 coord (1 student, no GPS), return direct location
-        if len(coords) < 2:
-             return json.dumps({
-                "status": "success",
-                "geometry": None,
-                "stops": [{"name": sorted_students[0]['name'], "lat": sorted_students[0]['lat'], "lng": sorted_students[0]['lng'], "order": 1}],
-                "distance": 0,
-                "duration": 0
-            }), 200
-             
-        coordinates_string = ";".join(coords)
-        # Use route API (trip API is broken on public OSRM server)
-        # Note: 'route' API respects order. It does NOT optimize (TSP).
-        # But we just did the optimization ourselves!
-        osrm_url = f"http://router.project-osrm.org/route/v1/driving/{coordinates_string}?geometries=geojson&overview=full"
-        
-        # 3. Call OSRM with timeout
-        import requests
-        print(f"📡 Calling OSRM API (Optimized)...")
-        
-        geometry = None
-        distance = 0
-        duration = 0
-        
-        try:
-            response = requests.get(osrm_url, timeout=5) # Reduced timeout to fail faster
-            data = response.json()
-            
-            if response.status_code == 200 and data.get('code') == 'Ok':
-                routes = data.get('routes', [])
-                if routes:
-                    best_route = routes[0]
-                    geometry = best_route['geometry']
-                    distance = best_route['distance']
-                    duration = best_route['duration']
-            else:
-                 print(f"⚠️ OSRM API Error (Non-Critical): {data.get('message')}")
-                 
-        except Exception as osrm_err:
-            print(f"⚠️ OSRM Connection Failed (Non-Critical): {osrm_err}")
-            # Continue without geometry...
-        
-        # 4. Final Result (Always return stops, even if geometry failed)
-        
-        # Final formatting for Frontend
         final_stops = []
         for i, s in enumerate(sorted_students):
             final_stops.append({
@@ -1582,14 +1532,14 @@ def optimize_route(bus_id):
                 "order": i + 1
             })
             
-        print(f"✅ Route Calculated: {len(final_stops)} stops. (Geometry: {'Yes' if geometry else 'No'})")
+        print(f"✅ Route Optimized (Local Sort): {len(final_stops)} stops.")
         
         return json.dumps({
             "status": "success",
-            "geometry": geometry,
+            "geometry": None, # No map line
             "stops": final_stops,
-            "distance": distance,
-            "duration": duration
+            "distance": 0,
+            "duration": 0
         }), 200
         
     except Exception as e:
