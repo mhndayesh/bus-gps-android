@@ -1530,8 +1530,6 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"DB Init Failed: {e}")
 
-    # Start the MQTT listener in the background
-    eventlet.spawn(mqtt_listener)
     # Start the Web Server
     import os
     port = int(os.environ.get('PORT', 5000))
