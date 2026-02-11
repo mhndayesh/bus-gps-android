@@ -1,4 +1,5 @@
 import eventlet
+from datetime import datetime
 eventlet.monkey_patch()
 from psycogreen.eventlet import patch_psycopg
 patch_psycopg()
@@ -1287,6 +1288,150 @@ def assign_driver():
         return "Driver Assigned", 200
     except Exception as e:
         return str(e), 500
+
+# --- SOCKET.IO HANDLERS ---
+
+@socketio.on('connect')
+def handle_connect():
+    print(f"✅ Client Connected: {request.sid}")
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print(f"❌ Client Disconnected: {request.sid}")
+
+@socketio.on('join')
+def on_join(data):
+    room = data['room']
+    from flask_socketio import join_room
+    join_room(room)
+    print(f"📢 Client {request.sid} joined room: {room}")
+
+@socketio.on('driver_gps_update')
+def handle_driver_gps(data):
+    """
+    Received GPS data from Driver App.
+    Data: { 'bus_id': 1, 'lat': ..., 'lng': ..., 'speed': ... }
+    """
+    bus_id = data.get('bus_id')
+    lat = data.get('lat')
+    lng = data.get('lng')
+    speed = data.get('speed', 0)
+    
+    if not bus_id or not lat or not lng:
+        return
+
+    # 1. Broadcast to School Admins / Parents watching this bus
+    # Emit to a specific room for this bus (if we had rooms per bus)
+    # OR emit to a 'school_admin' room.
+    # For now, simplistic broadcast or specific room if implemented.
+    # Let's emit to "bus_{bus_id}" room which parents/admins join.
+    socketio.emit('bus_update', data, room=f"bus_{bus_id}")
+    
+    # Also emit to global map for admins?
+    socketio.emit('global_bus_update', data) # Listeners on dashboard
+
+    # 2. Update DB (Asynchronously via eventlet/psycogreen)
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE buses 
+            SET current_lat = %s, current_lng = %s, current_speed = %s, last_updated = NOW()
+            WHERE id = %s
+        """, (lat, lng, speed, bus_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"GPS Update DB Error: {e}")
+
+@socketio.on('manual_attendance')
+def handle_manual_attendance(data):
+    """
+    Driver manually toggles student status.
+    Data: { 'student_id': 123, 'status': 'BOARDED'|'DROPPED', 'bus_id': 1 }
+    """
+    student_id = data.get('student_id')
+    status = data.get('status')
+    bus_id = data.get('bus_id')
+    
+    print(f"🚌 Manual Attendance: Student {student_id} -> {status} (Bus {bus_id})")
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Update/Insert into bus_manifest
+        # We need to update the status.
+        # Check if exists first? 
+        # Actually, bus_manifest is (bus_id, student_id, ...).
+        # We should update the record.
+        
+        # If student is BOARDED, ensure they are in manifest with status BOARDED
+        # If DROPPED, update status to DROPPED (or DELETE from manifest?)
+        # User requirement: "bus_manifest was initially seeded... causing issues".
+        # Current logic: Manifest is filled at start? Or we just track Boarded?
+        
+        # Let's assume we UPSERT into bus_manifest.
+        
+        if status == 'BOARDED':
+            cur.execute("""
+                INSERT INTO bus_manifest (bus_id, student_id, student_name, lat, lng, status, timestamp)
+                SELECT %s, id, name, lat, lng, 'BOARDED', NOW()
+                FROM students WHERE id = %s
+                ON CONFLICT (bus_id, student_id) 
+                DO UPDATE SET status = 'BOARDED', timestamp = NOW()
+            """, (bus_id, student_id))
+        else:
+            # DROPPED
+            # We can either delete or mark dropped. 
+            # Mark as dropped so we know they were on the bus?
+            # Or delete to keep manifest clean?
+            # User previously said: "bus_manifest is temporary for current ride".
+            # Let's DELETE if DROPPED, OR update to DROPPED. 
+            # Update to DROPPED allows us to show "Dropped off" status to parent.
+            cur.execute("""
+                UPDATE bus_manifest 
+                SET status = 'DROPPED', timestamp = NOW()
+                WHERE bus_id = %s AND student_id = %s
+            """, (bus_id, student_id))
+            
+        conn.commit()
+        
+        # Notify Parents/Admins
+        socketio.emit('attendance_update', {
+            'student_id': student_id,
+            'status': status,
+            'bus_id': bus_id,
+            'timestamp': str(datetime.now())
+        }, room=f"bus_{bus_id}")
+        
+        cur.close()
+        conn.close()
+        
+    except Exception as e:
+        print(f"Attendance Update Error: {e}")
+
+# --- CAMERA STREAMING HANDLERS ---
+@socketio.on('camera_stream_start')
+def handle_stream_start(data):
+    bus_id = data.get('bus_id')
+    print(f"📹 Stream Started for Bus {bus_id}")
+    socketio.emit('stream_status', {'bus_id': bus_id, 'status': 'live'}, room="admin_room")
+
+@socketio.on('camera_stream_stop')
+def handle_stream_stop(data):
+    bus_id = data.get('bus_id')
+    print(f"🛑 Stream Stopped for Bus {bus_id}")
+    socketio.emit('stream_status', {'bus_id': bus_id, 'status': 'offline'}, room="admin_room")
+
+@socketio.on('camera_frame')
+def handle_camera_frame(data):
+    # data: { bus_id, frame (base64) }
+    # Broadcast to anyone watching this bus stream
+    bus_id = data.get('bus_id')
+    # Emit to room "stream_bus_{bus_id}"
+    socketio.emit('camera_feed', data, room=f"stream_bus_{bus_id}")
 
 @app.route('/api/optimize_route/<int:bus_id>', methods=['GET'])
 @role_required(['DRIVER', 'SCHOOL_ADMIN', 'SUPER_ADMIN'])
