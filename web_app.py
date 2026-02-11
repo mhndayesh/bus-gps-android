@@ -152,15 +152,21 @@ def _lazy_migrate():
         # Use get_db_connection which has the public proxy fallback
         conn = get_db_connection()
         cur = conn.cursor()
+        # OLD CHECK REMOVED: It was preventing new migrations (like bus_manifest.status)
+        # from running because it only checked for 'students.lat'.
+        # We now rely on create_tables() being idempotent.
+        
         # Check if tables already exist (migration was run from local)
-        cur.execute("SELECT COUNT(*) FROM information_schema.columns WHERE table_name='students' AND column_name='lat'")
-        has_lat = cur.fetchone()[0] > 0
+        # cur.execute("SELECT COUNT(*) FROM information_schema.columns WHERE table_name='students' AND column_name='lat'")
+        # has_lat = cur.fetchone()[0] > 0
         cur.close()
         conn.close()
-        if has_lat:
-            _migration_done = True
-            print("✅ [Migration] Tables already up-to-date, skipping.")
-            return
+        
+        # Always run create_tables (it handles IF NOT EXISTS)
+        # if has_lat:
+        #    _migration_done = True
+        #    print("✅ [Migration] Tables already up-to-date, skipping.")
+        #    return
         # Tables missing columns - run full migration
         print("🔄 [Migration] Running create_tables...")
         from create_tables import create_tables as _ct
