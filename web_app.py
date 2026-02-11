@@ -192,14 +192,34 @@ limiter = Limiter(
 # Password hashing utilities
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# --- MIGRATION ON STARTUP (For Gunicorn/Cloud) ---
-try:
-    from create_tables import init_db
-    print("🔄 Running DB Migrations...")
-    init_db()
-    print("✅ DB Migrations Complete")
-except Exception as e:
-    print(f"⚠️ Migration Warning: {e}")
+# --- MIGRATION ON STARTUP (Background - waits for DB to wake up) ---
+def _run_migrations_background():
+    """Run DB migrations in background greenlet so gunicorn starts immediately."""
+    import eventlet as _ev
+    max_retries = 30
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"🔄 [Migration] Attempt {attempt}/{max_retries}: Connecting to DB...")
+            conn = psycopg2.connect(
+                host=DB_HOST, database=DB_NAME,
+                user=DB_USER, password=DB_PASS, port=DB_PORT
+            )
+            conn.close()
+            print("✅ [Migration] DB is ready! Running migrations...")
+            from create_tables import init_db
+            init_db()
+            print("✅ [Migration] Complete!")
+            return
+        except Exception as e:
+            print(f"❌ [Migration] Attempt {attempt} failed: {e}")
+            if attempt < max_retries:
+                print("⏳ [Migration] Waiting 5 seconds...")
+                _ev.sleep(5)
+    print("❌ [Migration] Failed after all attempts. Please run /api/force_migrate manually.")
+
+# Spawn migration 10 seconds after startup to give Railway time
+print("📋 [Migration] Scheduled to run in 10 seconds (background)...")
+eventlet.spawn_after(10, _run_migrations_background)
 
 # --- MANUAL MIGRATION API (Safety Net) ---
 @app.route('/api/force_migrate')
