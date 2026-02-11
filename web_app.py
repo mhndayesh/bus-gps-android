@@ -770,7 +770,7 @@ def get_driver_manifest():
         # Assuming simplified model where stops link student to bus
         cur.execute("""
             SELECT s.id, s.name, s.lat, s.lng,
-                   CASE WHEN m.student_id IS NOT NULL THEN 1 ELSE 0 END as on_board
+                   COALESCE(m.status, 'DROPPED') as status
             FROM route_stops rs
             JOIN students s ON rs.assigned_student_id = s.id::text
             LEFT JOIN bus_manifest m ON m.student_id = s.id::text AND m.bus_id = %s
@@ -784,7 +784,7 @@ def get_driver_manifest():
             "name": r[1],
             "lat": r[2],
             "lng": r[3],
-            "status": "BOARDED" if r[4] else "DROPPED"
+            "status": r[4]  # Use the actual status from DB (defaults to DROPPED if null)
         } for r in rows]
         
         # If no route stops assigned, maybe show ALL students (for testing)?
