@@ -6,6 +6,8 @@ __pycache__
 venv
 env
 node_modules
+**/node_modules
+ingestion-service
 backups
 *.log
 tmp
