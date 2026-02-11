@@ -44,84 +44,9 @@ def get_db_connection():
     return conn
 
 def init_db():
-    """Initialize the database with the schema."""
-    conn = get_db_connection()
-    cur = conn.cursor()
-    
-    # 1. Enable PostGIS
-    cur.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
-    
-    # 2. Key Tables
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS schools (
-            id SERIAL PRIMARY KEY,
-            name TEXT NOT NULL UNIQUE
-        );
-        
-        CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY, -- UUID
-            name TEXT NOT NULL,
-            role TEXT NOT NULL, -- SUPER_ADMIN, SCHOOL_ADMIN, PARENT
-            school_id INTEGER REFERENCES schools(id),
-            password_hash TEXT
-        );
-        
-        CREATE TABLE IF NOT EXISTS buses (
-            id SERIAL PRIMARY KEY,
-            plate_number TEXT NOT NULL,
-            iot_device_id TEXT UNIQUE,
-            school_id INTEGER REFERENCES schools(id),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        
-        CREATE TABLE IF NOT EXISTS students (
-            id SERIAL PRIMARY KEY,
-            name TEXT NOT NULL,
-            student_code TEXT,
-            parent_id TEXT REFERENCES users(id),
-            school_id INTEGER REFERENCES schools(id),
-            nfc_tag_id TEXT UNIQUE,
-            home_location GEOMETRY(Point, 4326)
-        );
-
-        CREATE TABLE IF NOT EXISTS bus_manifest (
-            bus_id INTEGER REFERENCES buses(id),
-            student_id TEXT, -- Storing NFC Tag ID for simplicity in prototype
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (bus_id, student_id)
-        );
-
-        CREATE TABLE IF NOT EXISTS trip_logs (
-            id SERIAL PRIMARY KEY,
-            bus_id INTEGER REFERENCES buses(id),
-            location GEOMETRY(Point, 4326),
-            speed FLOAT,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE TABLE IF NOT EXISTS route_stops (
-            id SERIAL PRIMARY KEY,
-            stop_name TEXT,
-            location GEOMETRY(Point, 4326),
-            assigned_student_id TEXT
-        );
-    """)
-    
-    # 3. Create Default Super Admin (if checks users empty?)
-    # We will let the user create it via setup or SQL if needed, 
-    # but for prototype let's ensure School 1 and Admin exists?
-    # Better to leave empty or checked.
-    # Let's check if School 1 exists.
-    cur.execute("SELECT count(*) FROM schools")
-    if cur.fetchone()[0] == 0:
-        print("SEEDING: Creating Default School and Super Admin")
-        cur.execute("INSERT INTO schools (name) VALUES ('Happy Valley School') RETURNING id")
-        sid = cur.fetchone()[0]
-        cur.execute("INSERT INTO users (id, name, role, school_id, password_hash) VALUES ('admin', 'Super Admin', 'SUPER_ADMIN', %s, 'admin')", (sid,))
-    
-    conn.commit()
-    cur.close()
-    conn.close()
+    """Initialize the database - delegates to create_tables.py."""
+    from create_tables import create_tables
+    create_tables()
     print("✅ Database Initialized")
 
 def role_required(allowed_roles):
