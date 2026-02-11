@@ -779,6 +779,29 @@
                             .bindPopup(`<b>${index + 1}. ${stop.name}</b>`);
                     });
 
+                    // Build Google Maps URL with all stops
+                    const stops = data.stops.filter(s => s.lat && s.lng);
+                    if (stops.length >= 1) {
+                        const lastStop = stops[stops.length - 1];
+                        const waypoints = stops.slice(0, -1).map(s => `${s.lat},${s.lng}`).join('|');
+                        let gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lastStop.lat},${lastStop.lng}&travelmode=driving`;
+                        if (waypoints) {
+                            gmapsUrl += `&waypoints=${waypoints}`;
+                        }
+
+                        // Remove old button if exists
+                        const oldBtn = document.getElementById('gmaps-btn');
+                        if (oldBtn) oldBtn.remove();
+
+                        // Add Google Maps button
+                        const gmapsBtn = document.createElement('button');
+                        gmapsBtn.id = 'gmaps-btn';
+                        gmapsBtn.innerHTML = '🧭 افتح في خرائط قوقل';
+                        gmapsBtn.style.cssText = 'width:100%;padding:14px;margin-top:10px;font-size:16px;background:#34A853;color:white;border:none;border-radius:10px;cursor:pointer;font-weight:bold;';
+                        gmapsBtn.onclick = () => window.open(gmapsUrl, '_blank');
+                        mapContainer.after(gmapsBtn);
+                    }
+
                     alert(`✅ تم تحسين المسار! المسافة: ${(data.distance / 1000).toFixed(1)} كم`);
                 })
                 .catch(err => {
