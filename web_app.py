@@ -1474,6 +1474,13 @@ def optimize_route(bus_id):
         current_lat = driver_lat
         current_lng = driver_lng
         
+        # Safe handling if driver location is missing (e.g. GPS error)
+        if current_lat is None or current_lng is None:
+             if students:
+                 # Default to first student in list if no driver GPS
+                 current_lat = students[0][2]
+                 current_lng = students[0][1]
+        
         # Create a list of dicts for easier handling
         # students query result: (name, lng, lat)
         unvisited = []
