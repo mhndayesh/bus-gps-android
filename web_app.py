@@ -1316,7 +1316,7 @@ def optimize_route(bus_id):
         conn.close()
         
         if not students:
-            return json.dumps({"status": "error", "message": "لا يوجد طلاب على متن الحافلة"}), 404
+            return json.dumps({"status": "empty", "message": "لا يوجد طلاب على متن الحافلة"}), 200
 
         # Build coordinates: driver location first, then student homes
         coords = []
@@ -1326,8 +1326,15 @@ def optimize_route(bus_id):
         for s in students:
             coords.append(f"{s[1]},{s[2]}")
         
+        # If only 1 coord (1 student, no GPS), return direct location
         if len(coords) < 2:
-             return json.dumps({"status": "error", "message": "تحتاج موقعين على الأقل لحساب المسار"}), 400
+            return json.dumps({
+                "status": "success",
+                "geometry": None,
+                "stops": [{"name": students[0][0], "lat": students[0][2], "lng": students[0][1], "order": 1}],
+                "distance": 0,
+                "duration": 0
+            }), 200
              
         coordinates_string = ";".join(coords)
         # Use route API (trip API is broken on public OSRM server)
