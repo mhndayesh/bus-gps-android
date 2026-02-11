@@ -1344,43 +1344,45 @@ def optimize_route(bus_id):
              return json.dumps({"status": "error", "message": "Need at least 2 locations to optimize."}), 400
              
         coordinates_string = ";".join(coords)
-        osrm_url = f"http://router.project-osrm.org/trip/v1/driving/{coordinates_string}?source=first&geometry=geojson"
+        # Use route API (trip API is broken on public OSRM server)
+        osrm_url = f"http://router.project-osrm.org/route/v1/driving/{coordinates_string}?geometries=geojson&overview=full"
         
         # 3. Call OSRM
         import requests
-        response = requests.get(osrm_url)
-        
-        if response.status_code != 200:
-             return json.dumps({"status": "error", "message": "Routing Engine Error"}), 500
-             
+        response = requests.get(osrm_url, timeout=10)
         data = response.json()
         
+        if response.status_code != 200 or data.get('code') != 'Ok':
+             error_msg = data.get('message', 'Routing Engine Error')
+             print(f"❌ OSRM Error: {error_msg}")
+             return json.dumps({"status": "error", "message": error_msg}), 500
+        
         # 4. Process Result
-        trips = data.get('trips', [])
-        if not trips:
+        routes = data.get('routes', [])
+        if not routes:
             return json.dumps({"status": "error", "message": "No route found"}), 404
             
-        optimized_route = trips[0]
-        geometry = optimized_route['geometry'] # GeoJSON LineString
-        waypoints = data.get('waypoints', [])
+        best_route = routes[0]
+        geometry = best_route['geometry']  # GeoJSON LineString
         
-        # Sort students based on waypoint_index
+        # Build ordered stops from the waypoints
+        waypoints = data.get('waypoints', [])
         sorted_students = []
-        for wp in waypoints:
-            original_index = wp['waypoint_index']
-            sorted_students.append({
-                "name": students[original_index][0],
-                "lat": students[original_index][2],
-                "lng": students[original_index][1],
-                "order": original_index + 1
-            })
+        for i, wp in enumerate(waypoints):
+            if i < len(students):
+                sorted_students.append({
+                    "name": students[i][0],
+                    "lat": students[i][2],
+                    "lng": students[i][1],
+                    "order": i + 1
+                })
             
         return json.dumps({
             "status": "success",
             "geometry": geometry,
             "stops": sorted_students,
-            "distance": optimized_route['distance'],
-            "duration": optimized_route['duration']
+            "distance": best_route['distance'],
+            "duration": best_route['duration']
         }), 200
         
     except Exception as e:
