@@ -11,13 +11,28 @@ DB_PORT = os.environ.get("DB_PORT", "27535")
 def create_tables():
     """Connect to DB and run migrations. No retries - caller handles that."""
     print(f"🔌 Connecting to {DB_HOST} (User: {DB_USER})...")
-    conn = psycopg2.connect(
-        host=DB_HOST,
-        database=DB_NAME,
-        user=DB_USER,
-        password=DB_PASS,
-        port=DB_PORT
-    )
+    print(f"🔌 Connecting to {DB_HOST} (User: {DB_USER})...")
+    try:
+        conn = psycopg2.connect(
+            host=DB_HOST,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASS,
+            port=DB_PORT
+        )
+    except Exception as e:
+        print(f"⚠️ Internal DB connection failed ({DB_HOST}), trying public proxy...")
+        # Fallback to public proxy
+        fallback_host = "yamabiko.proxy.rlwy.net"
+        conn = psycopg2.connect(
+            host=fallback_host,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASS,
+            port=DB_PORT
+        )
+        print(f"✅ Connected via public proxy ({fallback_host})!")
+        
     print("✅ Connected to Database!")
     cur = conn.cursor()
 
