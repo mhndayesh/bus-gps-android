@@ -378,8 +378,7 @@
     </button>
 
     <!-- Map Container -->
-    <div id="map"
-        style="height: 300px; margin: 15px; border-radius: 15px; border: 2px solid var(--gold); display:none;"></div>
+    <div id="map" style="height: 350px; margin: 15px; border-radius: 15px; border: 2px solid var(--gold);"></div>
 
     <!-- Camera Streaming Button -->
     <button class="big-btn btn-camera" id="camera-btn" onclick="toggleCamera()">
@@ -528,6 +527,18 @@
                     document.getElementById('gps-status').innerText = "GPS: 🟢 يبث الآن";
                     document.getElementById('gps-status').style.color = "#27ae60";
                     document.getElementById('speed-display').innerText = data.speed;
+
+                    // Update Map Marker
+                    if (routeMap) {
+                        if (busMarker) {
+                            busMarker.setLatLng([data.lat, data.lng]);
+                        } else {
+                            busMarker = L.marker([data.lat, data.lng], {
+                                icon: L.divIcon({ html: '🚌', className: 'bus-icon', iconSize: [30, 30] })
+                            }).addTo(routeMap).bindPopup('<b>موقعك الحالي</b>');
+                            routeMap.panTo([data.lat, data.lng]);
+                        }
+                    }
 
                     socket.emit('driver_gps_update', data);
                 },
@@ -735,6 +746,21 @@
         // --- ROUTE OPTIMIZATION ---
         let routeMap = null;
         let routeLayer = null;
+        let busMarker = null;
+
+        // Initialize Map on Load
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+        });
+
+        function initMap() {
+            if (routeMap) return;
+            // Default center (Jeddah/School), will update with GPS
+            routeMap = L.map('map').setView([21.543333, 39.172778], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(routeMap);
+        }
 
         function optimizeRoute() { _calcRoute(false); }
 
@@ -799,7 +825,8 @@
                         if (!silent) alert("لا يوجد طلاب على متن الحافلة");
                         // Clear map if empty
                         _routeActive = false;
-                        mapContainer.style.display = 'none';
+                        // Keep map visible for tracking
+                        if (routeLayer && routeMap) routeMap.removeLayer(routeLayer);
                         const old = document.getElementById('gmaps-btn');
                         if (old) old.remove();
                         return;
@@ -811,18 +838,16 @@
                     }
 
                     _routeActive = true;
-                    mapContainer.style.display = 'block';
-
                     // Initialize Map
                     if (!routeMap) {
                         routeMap = L.map('map');
                         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(routeMap);
                     }
 
-                    // Clear layers
+                    // Clear layers (except bus marker)
                     if (routeLayer) routeMap.removeLayer(routeLayer);
                     routeMap.eachLayer((layer) => {
-                        if (layer instanceof L.Marker) routeMap.removeLayer(layer);
+                        if (layer instanceof L.Marker && layer !== busMarker) routeMap.removeLayer(layer);
                     });
 
                     // Draw geometry
@@ -834,9 +859,13 @@
                     }
 
                     // Bus Marker
-                    L.marker([lat, lng], {
-                        icon: L.divIcon({ html: '🚌', className: 'bus-icon', iconSize: [30, 30] })
-                    }).addTo(routeMap).bindPopup('<b>موقعك الحالي</b>');
+                    if (busMarker) {
+                        busMarker.setLatLng([lat, lng]);
+                    } else {
+                        busMarker = L.marker([lat, lng], {
+                            icon: L.divIcon({ html: '🚌', className: 'bus-icon', iconSize: [30, 30] })
+                        }).addTo(routeMap).bindPopup('<b>موقعك الحالي</b>');
+                    }
 
                     // Student Markers
                     data.stops.forEach((stop, i) => {
