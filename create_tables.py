@@ -110,11 +110,14 @@ def create_tables():
             conn.rollback()
 
         try:
+            print("🔄 Migrating students table...")
             cur.execute("ALTER TABLE students ADD COLUMN IF NOT EXISTS lat FLOAT;")
             cur.execute("ALTER TABLE students ADD COLUMN IF NOT EXISTS lng FLOAT;")
             conn.commit()
-        except:
+            print("✅ students table migrated (lat/lng added).")
+        except Exception as e:
             conn.rollback()
+            print(f"⚠️ Migration failed for students table: {e}")
 
         # 4.5 Route Stops
         cur.execute("""
@@ -130,11 +133,14 @@ def create_tables():
         
         # MIGRATION for Route Stops
         try:
+            print("🔄 Migrating route_stops table...")
             cur.execute("ALTER TABLE route_stops ADD COLUMN IF NOT EXISTS lat FLOAT;")
             cur.execute("ALTER TABLE route_stops ADD COLUMN IF NOT EXISTS lng FLOAT;")
             conn.commit()
-        except:
+            print("✅ route_stops table migrated (lat/lng added).")
+        except Exception as e:
             conn.rollback()
+            print(f"⚠️ Migration failed for route_stops table: {e}")
         
         # 5. Manifest
         cur.execute("""
@@ -160,11 +166,14 @@ def create_tables():
         
         # MIGRATION: Ensure trip_logs lat/lng exist
         try:
+            print("🔄 Migrating trip_logs table...")
             cur.execute("ALTER TABLE trip_logs ADD COLUMN IF NOT EXISTS lat FLOAT;")
             cur.execute("ALTER TABLE trip_logs ADD COLUMN IF NOT EXISTS lng FLOAT;")
             conn.commit()
-        except:
+            print("✅ trip_logs table migrated (lat/lng added).")
+        except Exception as e:
             conn.rollback()
+            print(f"⚠️ Migration failed for trip_logs table: {e}")
         
         # 7. Seed Data
         print("🌱 Seeding Data...")
