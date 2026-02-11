@@ -1,5 +1,7 @@
 import eventlet
 eventlet.monkey_patch()
+from psycogreen.eventlet import patch_psycopg
+patch_psycopg()
 
 import json
 import paho.mqtt.client as mqtt
