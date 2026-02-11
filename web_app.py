@@ -1361,35 +1361,20 @@ def handle_manual_attendance(data):
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Update/Insert into bus_manifest
-        # We need to update the status.
-        # Check if exists first? 
-        # Actually, bus_manifest is (bus_id, student_id, ...).
-        # We should update the record.
-        
-        # If student is BOARDED, ensure they are in manifest with status BOARDED
-        # If DROPPED, update status to DROPPED (or DELETE from manifest?)
-        # User requirement: "bus_manifest was initially seeded... causing issues".
-        # Current logic: Manifest is filled at start? Or we just track Boarded?
-        
-        # Let's assume we UPSERT into bus_manifest.
+        # UPSERT into bus_manifest
+        # We only store bus_id, student_id, status.
+        # Other details (name, lat, lng) are in students table.
         
         if status == 'BOARDED':
             cur.execute("""
-                INSERT INTO bus_manifest (bus_id, student_id, student_name, lat, lng, status, timestamp)
-                SELECT %s, id, name, lat, lng, 'BOARDED', NOW()
-                FROM students WHERE id = %s
+                INSERT INTO bus_manifest (bus_id, student_id, status, timestamp)
+                VALUES (%s, %s, 'BOARDED', NOW())
                 ON CONFLICT (bus_id, student_id) 
                 DO UPDATE SET status = 'BOARDED', timestamp = NOW()
             """, (bus_id, student_id))
         else:
             # DROPPED
-            # We can either delete or mark dropped. 
-            # Mark as dropped so we know they were on the bus?
-            # Or delete to keep manifest clean?
-            # User previously said: "bus_manifest is temporary for current ride".
-            # Let's DELETE if DROPPED, OR update to DROPPED. 
-            # Update to DROPPED allows us to show "Dropped off" status to parent.
+            # Update status to DROPPED.
             cur.execute("""
                 UPDATE bus_manifest 
                 SET status = 'DROPPED', timestamp = NOW()
@@ -1451,11 +1436,14 @@ def optimize_route(bus_id):
         cur = conn.cursor()
         
         # Get only students currently ON BOARD (in bus_manifest)
+        # Filter by status = 'BOARDED'
         cur.execute("""
             SELECT s.name, s.lng, s.lat
             FROM bus_manifest bm
             JOIN students s ON bm.student_id = s.id::text
-            WHERE bm.bus_id = %s AND s.lat IS NOT NULL AND s.lng IS NOT NULL
+            WHERE bm.bus_id = %s 
+              AND bm.status = 'BOARDED'
+              AND s.lat IS NOT NULL AND s.lng IS NOT NULL
         """, (bus_id,))
         
         students = cur.fetchall()

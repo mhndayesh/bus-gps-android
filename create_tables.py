@@ -117,14 +117,21 @@ def create_tables():
         print(f"⚠️ Migration failed for route_stops table: {e}")
 
     # 5. Manifest
-    cur.execute("""
         CREATE TABLE IF NOT EXISTS bus_manifest (
             bus_id INTEGER REFERENCES buses(id),
             student_id TEXT,
+            status TEXT DEFAULT 'BOARDED',
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (bus_id, student_id)
         );
     """)
+
+    # MIGRATION for Bus Manifest
+    try:
+        cur.execute("ALTER TABLE bus_manifest ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'BOARDED';")
+        conn.commit()
+    except:
+        conn.rollback()
 
     # 6. Trip Logs
     cur.execute("""
