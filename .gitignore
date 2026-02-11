@@ -5,3 +5,5 @@ mosquitto/data/
 mosquitto/log/
 .env
 backups/
+node_modules/
+**/node_modules/
