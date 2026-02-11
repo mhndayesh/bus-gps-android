@@ -1342,16 +1342,24 @@ def handle_manual_attendance(data):
         cur = conn.cursor()
         
         # UPSERT into bus_manifest
-        # We only store bus_id, student_id, status.
-        # Other details (name, lat, lng) are in students table.
+        # We store denormalized data (name, lat, lng) for faster route calculation.
         
         if status == 'BOARDED':
+            # Need to fetch student details first
+            cur.execute("SELECT name, lat, lng FROM students WHERE id = %s", (student_id,))
+            s_row = cur.fetchone()
+            
+            s_name = s_row[0] if s_row else "Unknown"
+            s_lat = s_row[1] if s_row else None
+            s_lng = s_row[2] if s_row else None
+
             cur.execute("""
-                INSERT INTO bus_manifest (bus_id, student_id, status, timestamp)
-                VALUES (%s, %s, 'BOARDED', NOW())
+                INSERT INTO bus_manifest (bus_id, student_id, student_name, lat, lng, status, timestamp)
+                VALUES (%s, %s, %s, %s, %s, 'BOARDED', NOW())
                 ON CONFLICT (bus_id, student_id) 
-                DO UPDATE SET status = 'BOARDED', timestamp = NOW()
-            """, (bus_id, student_id))
+                DO UPDATE SET status = 'BOARDED', timestamp = NOW(), 
+                              student_name = EXCLUDED.student_name, lat = EXCLUDED.lat, lng = EXCLUDED.lng
+            """, (bus_id, student_id, s_name, s_lat, s_lng))
         else:
             # DROPPED
             # Update status to DROPPED.
@@ -1415,49 +1423,50 @@ def optimize_route(bus_id):
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # 2. Get Boarded Students (Step 1: Get IDs from Manifest)
-        print(f"🔍 OptRoute: Finding boarded IDs for Bus {bus_id}...")
+        # 2. Get Boarded Students (OPTIMIZED: Read directly from Manifest)
+        print(f"🔍 OptRoute: Reading manifest for Bus {bus_id}...")
         cur.execute("""
-            SELECT student_id FROM bus_manifest 
+            SELECT student_name, lng, lat, student_id 
+            FROM bus_manifest 
             WHERE bus_id = %s AND status = 'BOARDED'
         """, (bus_id,))
         
-        manifest_rows = cur.fetchall()
-        boarded_ids = [r[0] for r in manifest_rows]
-        print(f"📋 OptRoute: Found {len(boarded_ids)} boarded IDs: {boarded_ids}")
-        
-        if not boarded_ids:
-             return json.dumps({"status": "empty", "message": "No students marked as BOARDED"}), 200
-
-        # Step 2: Get Details from Students Table
-        # Convert IDs to string for safely handling both int/str ID types in DB
-        ids_tuple = tuple(str(x) for x in boarded_ids)
-        
-        # Determine placeholder string based on length
-        placeholders = ','.join(['%s'] * len(ids_tuple))
-        query = f"SELECT name, lng, lat, id FROM students WHERE id::text IN ({placeholders})"
-        
-        cur.execute(query, ids_tuple)
-        student_details = cur.fetchall()
-        print(f"🗃️ OptRoute: Retrieved {len(student_details)} student records from DB.")
+        rows = cur.fetchall()
+        print(f"📋 OptRoute: Found {len(rows)} boarded records.")
         
         students = []
-        for r in student_details:
+        missing_data_ids = []
+        
+        for r in rows:
             s_name = r[0]
             s_lng = r[1]
             s_lat = r[2]
             s_id = r[3]
             
+            # fast-path: data exists in manifest
             if s_lat is not None and s_lng is not None:
                 students.append((s_name, s_lng, s_lat))
-                print(f"   ✅ Added {s_name} ({s_lat}, {s_lng})")
             else:
-                print(f"   ⚠️ Skipping {s_name} (ID: {s_id}): Missing GPS")
+                # slow-path: data missing in manifest (old record), need fetch
+                missing_data_ids.append(s_id)
+
+        # Fallback for old records (Migration Safety)
+        if missing_data_ids:
+            print(f"⚠️ OptRoute: {len(missing_data_ids)} records missing denormalized data. Fetching from students table...")
+            ids_tuple = tuple(str(x) for x in missing_data_ids)
+            placeholders = ','.join(['%s'] * len(ids_tuple))
+            query = f"SELECT name, lng, lat FROM students WHERE id::text IN ({placeholders})"
+            cur.execute(query, ids_tuple)
+            details = cur.fetchall()
+            for d in details:
+                if d[1] is not None and d[2] is not None:
+                    students.append((d[0], d[1], d[2]))
+                    print(f"   Re-fetched {d[0]}")
 
         if not students:
-            print("❌ OptRoute: Boarded students found, but none have valid GPS.")
-            return json.dumps({"status": "empty", "message": "Boarded students are missing GPS data"}), 200
-            
+             print("❌ OptRoute: No valid GPS data found for boarded students.")
+             return json.dumps({"status": "empty", "message": "No valid GPS data for boarded students"}), 200
+
         print(f"✅ OptRoute: Final List Size: {len(students)}")
             
         # 3. Nearest Neighbor Sort

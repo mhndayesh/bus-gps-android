@@ -146,23 +146,32 @@ def create_tables():
         conn.rollback()
         print(f"⚠️ Migration failed for route_stops table: {e}")
 
-    # 5. Manifest
+    # 5. Manifest (Denormalized for Performance)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS bus_manifest (
             bus_id INTEGER REFERENCES buses(id),
             student_id TEXT,
+            student_name TEXT,
+            lat FLOAT,
+            lng FLOAT,
             status TEXT DEFAULT 'BOARDED',
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (bus_id, student_id)
         );
     """)
 
-    # MIGRATION for Bus Manifest
+    # MIGRATION for Bus Manifest (Add lat/lng/name)
     try:
+        print("🔄 Migrating bus_manifest table...")
         cur.execute("ALTER TABLE bus_manifest ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'BOARDED';")
+        cur.execute("ALTER TABLE bus_manifest ADD COLUMN IF NOT EXISTS student_name TEXT;")
+        cur.execute("ALTER TABLE bus_manifest ADD COLUMN IF NOT EXISTS lat FLOAT;")
+        cur.execute("ALTER TABLE bus_manifest ADD COLUMN IF NOT EXISTS lng FLOAT;")
         conn.commit()
-    except:
+        print("✅ bus_manifest table migrated (denormalized columns added).")
+    except Exception as e:
         conn.rollback()
+        print(f"⚠️ Migration failed for bus_manifest table: {e}")
 
     # 6. Trip Logs
     cur.execute("""
