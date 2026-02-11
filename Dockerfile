@@ -4,8 +4,11 @@ FROM python:3.9-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for Postgres
-RUN apt-get update && apt-get install -y libpq-dev gcc
+# Set working directory
+WORKDIR /app
+
+# (Removed apt-get) Psycopg2-binary handles dependencies
+
 
 # Install Python libraries
 COPY requirements.txt .
