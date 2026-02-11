@@ -11,13 +11,14 @@ DB_PASS = os.environ.get("DB_PASS", "yskvrNocmTymfEkzyhpHXTKdKHIcxvDN")
 DB_PORT = os.environ.get("DB_PORT", "27535")
 
 import time
+import sys
 
 def create_tables():
     try:
-        retries = 5
+        retries = 30
         conn = None
         while retries > 0:
-            print(f"🔌 Connecting to {DB_HOST} (User: {DB_USER})... (Attempt {6 - retries}/5)")
+            print(f"🔌 Connecting to {DB_HOST} (User: {DB_USER})... (Attempt {31 - retries}/30)")
             try:
                 conn = psycopg2.connect(
                     host=DB_HOST,
@@ -32,8 +33,8 @@ def create_tables():
                 print(f"❌ Connection failed: {e}")
                 retries -= 1
                 if retries == 0:
-                    print("❌ Could not connect to database after 5 attempts. Exiting.")
-                    raise e
+                    print("❌ Could not connect to database after 30 attempts. Exiting.")
+                    sys.exit(1)
                 print("⏳ Waiting 5 seconds before retrying...")
                 time.sleep(5)
 
