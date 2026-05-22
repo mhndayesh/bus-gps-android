@@ -1,958 +1,830 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
-    <title>آمن مدرستي - لوحة السائق</title>
+    <title>سائق - آمن مدرستي</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js" integrity="sha384-DkkWv9oJFWLIydBXXjkBWnG1/fuVhw8YPBq37uvvD6WSYRFRqr21eY5Dg9ZhmWdy" crossorigin="anonymous"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+
     <style>
+        * { box-sizing: border-box; }
+
         :root {
-            --sage-green: #9FB8AD;
-            --sage-dark: #7A9A8D;
-            --gold: #F5C518;
-            --gold-dark: #D4A914;
-            --black: #1A1A1A;
-            --cream: #F5F5F0;
-            --white: #FFFFFF;
+            --primary: #1a1a2e;
+            --green:   #27ae60;
+            --red:     #e74c3c;
+            --orange:  #f39c12;
+            --blue:    #2980b9;
+            --bg:      #f0f2f5;
+            --card:    #ffffff;
+            --border:  #e0e4ea;
+            --text:    #1a1a2e;
+            --muted:   #7f8c8d;
+            --gold:    #f5c518;
         }
 
         body {
             font-family: 'Tajawal', sans-serif;
             margin: 0;
-            background: var(--black);
-            color: var(--cream);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
+        /* ── HEADER ── */
         .header {
-            padding: 20px;
-            background: linear-gradient(135deg, var(--black) 0%, #2d2d2d 100%);
-            text-align: center;
-            border-bottom: 3px solid var(--gold);
-        }
-
-        .header h2 {
-            margin: 0;
-            color: var(--gold);
-        }
-
-        .header small {
-            color: var(--sage-green);
-        }
-
-        .status-box {
-            padding: 20px;
-            text-align: center;
-            background: rgba(159, 184, 173, 0.1);
-            margin: 15px;
-            border-radius: 15px;
-            border: 2px solid var(--sage-dark);
-        }
-
-        #gps-status {
-            color: var(--gold);
-            font-weight: bold;
-            font-size: 1.1em;
-        }
-
-        #speed-display {
-            font-size: 2.5em;
-            color: var(--cream);
-            font-weight: bold;
-            margin-top: 10px;
-        }
-
-        .speed-label {
-            font-size: 0.9em;
-            color: var(--sage-green);
-        }
-
-        /* Big Buttons for Driver Safety */
-        .big-btn {
-            width: 90%;
-            padding: 20px;
-            font-size: 18px;
-            border: none;
-            border-radius: 15px;
-            margin: 8px auto;
-            display: block;
-            cursor: pointer;
-            font-weight: bold;
-            font-family: 'Tajawal', sans-serif;
-            transition: all 0.3s ease;
-        }
-
-        .big-btn:hover {
-            transform: scale(1.02);
-        }
-
-        .btn-start {
-            background: var(--gold);
-            color: var(--black);
-        }
-
-        .btn-stop {
-            background: #c0392b;
-            color: white;
-            display: none;
-        }
-
-        .btn-camera {
-            background: #9b59b6;
-            color: white;
-        }
-
-        .btn-camera.streaming {
-            background: #e74c3c;
-            animation: pulse 1.5s infinite;
-        }
-
-        .btn-flip {
-            background: #3498db;
-            color: white;
-            display: none;
-        }
-
-        .btn-flip.visible {
-            display: block;
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.7;
-            }
-        }
-
-        /* Camera Preview */
-        .camera-container {
-            display: none;
-            margin: 15px;
-            border-radius: 15px;
-            overflow: hidden;
-            border: 3px solid var(--gold);
-            position: relative;
-        }
-
-        .camera-container.active {
-            display: block;
-        }
-
-        #camera-preview {
-            width: 100%;
-            height: auto;
-            display: block;
-            background: #000;
-        }
-
-        .camera-status {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(231, 76, 60, 0.9);
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: bold;
+            background: var(--primary);
+            color: #fff;
+            padding: 14px 16px;
             display: flex;
             align-items: center;
-            gap: 5px;
-        }
-
-        .live-dot {
-            width: 8px;
-            height: 8px;
-            background: white;
-            border-radius: 50%;
-            animation: blink 1s infinite;
-        }
-
-        @keyframes blink {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.3;
-            }
-        }
-
-        #canvas-capture {
-            display: none;
-        }
-
-        /* Attendance List Styles */
-        .student-list {
-            padding: 15px;
-        }
-
-        .section-title {
-            color: var(--gold);
-            text-align: center;
-            margin-bottom: 15px;
-            font-size: 1.2em;
-        }
-
-        .student-row {
-            display: flex;
             justify-content: space-between;
-            align-items: center;
-            background: var(--cream);
-            color: var(--black);
-            padding: 15px 20px;
-            margin-bottom: 10px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .student-row span {
-            font-weight: 500;
-        }
-
-        .toggle-btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
-            font-family: 'Tajawal', sans-serif;
-            transition: all 0.3s ease;
-        }
-
-        .btn-board {
-            background: var(--sage-dark);
-            color: var(--white);
-        }
-
-        .btn-board:hover {
-            background: var(--black);
-        }
-
-        .btn-drop {
-            background: var(--gold);
-            color: var(--black);
-        }
-
-        .btn-drop:hover {
-            background: var(--gold-dark);
-        }
-
-        .logout-link {
-            display: block;
-            text-align: center;
-            padding: 15px;
-            color: var(--sage-green);
-            text-decoration: none;
-            font-size: 0.9em;
-        }
-
-        .logout-link:hover {
-            color: #c0392b;
-        }
-
-        .no-students {
-            text-align: center;
-            color: var(--sage-green);
-            padding: 20px;
-        }
-
-        /* Attendance Alert Modal */
-        .modal-overlay {
-            display: none;
-            position: fixed;
+            position: sticky;
             top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,.25);
         }
 
-        .modal-content {
-            background: var(--cream);
-            color: var(--black);
-            padding: 30px;
-            border-radius: 20px;
-            max-width: 90%;
-            text-align: center;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-            border: 3px solid var(--gold);
+        .header-title { font-size: 1.1em; font-weight: 700; }
+        .header-sub   { font-size: 0.75em; color: var(--gold); margin-top: 2px; }
+
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+
+        .gps-pill {
+            display: flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,.1);
+            padding: 6px 12px; border-radius: 20px; font-size: 0.8em; font-weight: 600;
+        }
+        .gps-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--muted); flex-shrink: 0;
+            transition: background .4s;
+        }
+        .gps-dot.active  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        .gps-dot.error   { background: var(--red); }
+
+        .icon-btn {
+            background: rgba(255,255,255,.12); border: none; color: #fff;
+            width: 38px; height: 38px; border-radius: 10px;
+            font-size: 1.1em; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+        }
+        .icon-btn:active { background: rgba(255,255,255,.25); }
+        .icon-btn.cam-live { background: var(--red); animation: pulse 1.5s infinite; }
+
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.65; } }
+
+        /* ── PHASE SCREENS ── */
+        .phase { display: none; flex-direction: column; flex: 1; }
+        .phase.active { display: flex; }
+
+        /* Phase 1: pre-trip */
+        #phase-idle {
+            justify-content: center; align-items: center;
+            padding: 24px; gap: 24px;
         }
 
-        .modal-icon {
-            font-size: 4em;
-            margin-bottom: 15px;
+        .bus-badge {
+            background: var(--card); border-radius: 20px;
+            padding: 24px 36px; text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,.08);
+            width: 100%; max-width: 360px;
         }
+        .bus-badge .bus-icon { font-size: 3.5em; }
+        .bus-badge h2 { margin: 10px 0 4px; font-size: 1.5em; }
+        .bus-badge p  { margin: 0; color: var(--muted); font-size: 0.9em; }
 
-        .modal-title {
-            font-size: 1.4em;
-            font-weight: bold;
-            color: #c0392b;
-            margin-bottom: 10px;
-        }
-
-        .modal-message {
-            font-size: 1.1em;
-            margin-bottom: 20px;
-            color: var(--black);
-        }
-
-        .missing-list {
-            background: rgba(192, 57, 43, 0.1);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: right;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .missing-student {
-            padding: 8px;
-            border-bottom: 1px solid rgba(192, 57, 43, 0.2);
-            color: #c0392b;
-            font-weight: 500;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .modal-btn {
-            padding: 15px 25px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1em;
-            font-weight: bold;
-            cursor: pointer;
+        .btn-start-big {
+            width: 100%; max-width: 360px;
+            padding: 24px;
+            background: var(--green); color: #fff;
+            border: none; border-radius: 20px;
             font-family: 'Tajawal', sans-serif;
-            transition: all 0.3s ease;
+            font-size: 1.5em; font-weight: 800;
+            cursor: pointer; letter-spacing: .02em;
+            box-shadow: 0 8px 24px rgba(39,174,96,.35);
+            transition: transform .15s, box-shadow .15s;
+        }
+        .btn-start-big:active { transform: scale(.97); box-shadow: 0 4px 12px rgba(39,174,96,.3); }
+
+        /* Idle student list (attendance before trip) */
+        .idle-list { width: 100%; max-width: 360px; }
+        .idle-list-title {
+            font-size: 0.85em; font-weight: 700; color: var(--muted);
+            text-transform: uppercase; letter-spacing: .05em;
+            margin: 0 0 10px; padding: 0 4px;
         }
 
-        .modal-btn-start {
-            background: var(--gold);
-            color: var(--black);
+        /* Phase 2: in-trip */
+        #phase-trip { padding: 0; }
+
+        .trip-header {
+            background: var(--card); padding: 14px 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .trip-count { font-weight: 700; font-size: 1em; }
+        .trip-speed { font-size: 1.4em; font-weight: 800; color: var(--green); }
+        .trip-speed span { font-size: 0.55em; font-weight: 500; color: var(--muted); }
+
+        .student-list { padding: 12px; flex: 1; overflow-y: auto; }
+
+        .student-card {
+            background: var(--card); border-radius: 16px;
+            margin-bottom: 10px; overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,.06);
+            display: flex; align-items: stretch;
+            border-right: 5px solid var(--border);
+            transition: border-color .25s;
+        }
+        .student-card.boarded  { border-right-color: var(--green); }
+        .student-card.missing  { border-right-color: var(--orange); }
+
+        .student-info {
+            flex: 1; padding: 18px 16px;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .student-name  { font-size: 1.1em; font-weight: 700; }
+        .student-badge {
+            display: inline-block; margin-top: 4px;
+            padding: 3px 10px; border-radius: 20px; font-size: 0.75em; font-weight: 600;
+        }
+        .badge-boarded { background: #e8f8f0; color: var(--green); }
+        .badge-waiting  { background: #fef9e7; color: var(--orange); }
+
+        .student-toggle {
+            border: none; cursor: pointer;
+            min-width: 80px; padding: 0 16px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 0.9em; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            transition: background .2s;
+        }
+        .toggle-board { background: #e8f8f0; color: var(--green); }
+        .toggle-board:active { background: #d0f0e0; }
+        .toggle-drop  { background: #fdecea; color: var(--red); }
+        .toggle-drop:active  { background: #fad7d7; }
+
+        .trip-actions {
+            padding: 12px 16px;
+            background: var(--card); border-top: 1px solid var(--border);
+            display: flex; gap: 10px;
+        }
+        .btn-stop-big {
+            flex: 1; padding: 18px; background: var(--red); color: #fff;
+            border: none; border-radius: 14px;
+            font-family: 'Tajawal', sans-serif; font-size: 1.15em; font-weight: 800;
+            cursor: pointer; box-shadow: 0 4px 14px rgba(231,76,60,.3);
+            transition: transform .15s;
+        }
+        .btn-stop-big:active { transform: scale(.97); }
+        .btn-route {
+            padding: 18px 20px; background: var(--blue); color: #fff;
+            border: none; border-radius: 14px;
+            font-family: 'Tajawal', sans-serif; font-size: 1em; font-weight: 700;
+            cursor: pointer;
         }
 
-        .modal-btn-recheck {
-            background: var(--sage-dark);
-            color: white;
+        /* ── MAP SHEET (slide up) ── */
+        .map-sheet-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.5); z-index: 200;
+            align-items: flex-end;
         }
+        .map-sheet-overlay.open { display: flex; }
+        .map-sheet {
+            background: var(--card); width: 100%; border-radius: 20px 20px 0 0;
+            padding: 16px;
+        }
+        .map-sheet-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+        }
+        .map-sheet-header h3 { margin: 0; font-size: 1em; }
+        .map-close {
+            background: var(--border); border: none; width: 32px; height: 32px;
+            border-radius: 50%; cursor: pointer; font-size: 1em;
+        }
+        #map { height: 280px; border-radius: 14px; }
+        .route-result {
+            margin-top: 12px; font-size: 0.85em; color: var(--muted);
+            max-height: 120px; overflow-y: auto;
+        }
+        .route-stop { padding: 6px 0; border-bottom: 1px solid var(--border); }
+
+        /* ── CAMERA SHEET ── */
+        .camera-sheet-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.7); z-index: 200;
+            align-items: flex-end;
+        }
+        .camera-sheet-overlay.open { display: flex; }
+        .camera-sheet {
+            background: #000; width: 100%; border-radius: 20px 20px 0 0; padding: 16px;
+        }
+        .camera-sheet-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+        }
+        .camera-sheet-header h3 { margin: 0; color: #fff; font-size: 1em; }
+        #camera-preview { width: 100%; border-radius: 14px; background: #111; display: block; }
+        #canvas-capture { display: none; }
+        .camera-controls { display: flex; gap: 10px; margin-top: 12px; }
+        .cam-btn {
+            flex: 1; padding: 14px; border: none; border-radius: 12px;
+            font-family: 'Tajawal', sans-serif; font-size: 0.95em; font-weight: 700;
+            cursor: pointer;
+        }
+        .cam-btn-start  { background: var(--red);    color: #fff; }
+        .cam-btn-flip   { background: #444;          color: #fff; }
+        .cam-btn-close  { background: #555;          color: #fff; flex: 0; padding: 14px 18px; }
+
+        /* ── MODAL ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.7); z-index: 300;
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-card {
+            background: var(--card); border-radius: 24px;
+            padding: 32px 24px; width: 100%; max-width: 360px; text-align: center;
+            box-shadow: 0 16px 48px rgba(0,0,0,.3);
+        }
+        .modal-icon  { font-size: 3.5em; margin-bottom: 12px; }
+        .modal-title { font-size: 1.2em; font-weight: 800; color: var(--red); margin-bottom: 8px; }
+        .modal-msg   { color: var(--muted); font-size: 0.95em; margin-bottom: 16px; }
+        .missing-list {
+            background: #fdecea; border-radius: 12px; padding: 12px 16px;
+            text-align: right; max-height: 160px; overflow-y: auto; margin-bottom: 20px;
+        }
+        .missing-student { padding: 8px 0; border-bottom: 1px solid #f5c6c2; color: var(--red); font-weight: 600; }
+        .missing-student:last-child { border-bottom: none; }
+        .modal-buttons { display: flex; flex-direction: column; gap: 10px; }
+        .modal-btn {
+            padding: 16px; border: none; border-radius: 14px;
+            font-family: 'Tajawal', sans-serif; font-size: 1em; font-weight: 700;
+            cursor: pointer;
+        }
+        .modal-btn-force  { background: var(--green);  color: #fff; }
+        .modal-btn-recheck{ background: var(--border); color: var(--text); }
     </style>
 </head>
-
 <body>
 
-    <div class="header">
-        <h2>🚌 الحافلة {{ plate_number }}</h2>
-        <small>(رقم النظام: {{ bus_id }})</small>
+<!-- ── HEADER ── -->
+<header class="header">
+    <div>
+        <div class="header-title">🚌 <span id="h-plate">{{ plate_number }}</span></div>
+        <div class="header-sub" id="h-sub">لوحة السائق</div>
+    </div>
+    <div class="header-actions">
+        <div class="gps-pill">
+            <div class="gps-dot" id="gps-dot"></div>
+            <span id="speed-val">0</span> <span id="h-kmh">كم/س</span>
+        </div>
+        <button class="icon-btn" id="cam-icon-btn" onclick="openCameraSheet()" title="Camera">📹</button>
+        <button class="icon-btn" onclick="toggleLang()" id="lang-btn" title="Language">EN</button>
+        <a href="/logout" class="icon-btn" title="Logout" style="text-decoration:none;">🚪</a>
+    </div>
+</header>
+
+<!-- ════════════════════ PHASE 1: IDLE ════════════════════ -->
+<section class="phase active" id="phase-idle">
+
+    <div class="bus-badge">
+        <div class="bus-icon">🚌</div>
+        <h2>{{ plate_number }}</h2>
+        <p id="idle-ready">جاهز للرحلة</p>
     </div>
 
-    <div class="status-box">
-        <div id="gps-status">GPS: في الانتظار...</div>
-        <div id="speed-display">0</div>
-        <div class="speed-label">كم/ساعة</div>
+    <div class="idle-list">
+        <p class="idle-list-title" id="idle-list-title">قائمة الطلاب — سجّل الحضور قبل البدء</p>
+        <div id="idle-student-container">
+            <p style="text-align:center; color:var(--muted); padding:16px;" id="idle-loading">جاري التحميل...</p>
+        </div>
     </div>
 
-    <button class="big-btn btn-start" onclick="startTrip()">🟢 بدء الرحلة</button>
-    <button class="big-btn btn-stop" onclick="stopTrip()">🔴 إنهاء الرحلة</button>
-
-    <!-- Optimization Button -->
-    <button id="btn-optimize" class="big-btn" style="background: #3498db; color: white;" onclick="optimizeRoute()">
-        🗺️ احسب المسار الأسرع
+    <button class="btn-start-big" onclick="startTrip()" id="btn-start">
+        🟢 <span id="start-label">بدء الرحلة</span>
     </button>
 
-    <!-- Map Container -->
-    <div id="map" style="height: 350px; margin: 15px; border-radius: 15px; border: 2px solid var(--gold);"></div>
+</section>
 
-    <!-- Camera Streaming Button -->
-    <button class="big-btn btn-camera" id="camera-btn" onclick="toggleCamera()">
-        📹 بدء البث المباشر
-    </button>
+<!-- ════════════════════ PHASE 2: IN-TRIP ════════════════════ -->
+<section class="phase" id="phase-trip">
 
-    <!-- Camera Flip Button -->
-    <button class="big-btn btn-flip" id="flip-btn" onclick="flipCamera()">
-        🔄 تبديل الكاميرا (أمامية/خلفية)
-    </button>
+    <div class="trip-header">
+        <div class="trip-count" id="trip-count">0 / 0 <span id="trip-count-label" style="font-weight:400; color:var(--muted); font-size:.85em;">صعدوا</span></div>
+        <div class="trip-speed"><span id="trip-speed">0</span> <span id="trip-kmh">كم/س</span></div>
+    </div>
 
-    <!-- Camera Preview -->
-    <div class="camera-container" id="camera-container">
+    <div class="student-list" id="trip-student-container">
+        <!-- populated by JS -->
+    </div>
+
+    <div class="trip-actions">
+        <button class="btn-route" onclick="openRouteSheet()" id="btn-route" title="Route">🗺️</button>
+        <button class="btn-stop-big" onclick="stopTrip()" id="btn-stop">
+            🔴 <span id="stop-label">إنهاء الرحلة</span>
+        </button>
+    </div>
+
+</section>
+
+<!-- ════════════════════ MAP SHEET ════════════════════ -->
+<div class="map-sheet-overlay" id="map-sheet-overlay" onclick="closeRouteSheet(event)">
+    <div class="map-sheet">
+        <div class="map-sheet-header">
+            <h3 id="route-title">🗺️ المسار الأمثل</h3>
+            <button class="map-close" onclick="closeRouteSheet()">✕</button>
+        </div>
+        <div id="map"></div>
+        <div class="route-result" id="route-result"></div>
+        <button onclick="optimizeRoute()" id="btn-optimize"
+            style="width:100%;margin-top:12px;padding:14px;background:var(--blue);color:#fff;border:none;border-radius:12px;font-family:'Tajawal',sans-serif;font-weight:700;font-size:1em;cursor:pointer;">
+            <span id="optimize-label">احسب المسار الأسرع</span>
+        </button>
+    </div>
+</div>
+
+<!-- ════════════════════ CAMERA SHEET ════════════════════ -->
+<div class="camera-sheet-overlay" id="camera-sheet-overlay">
+    <div class="camera-sheet">
+        <div class="camera-sheet-header">
+            <h3 id="cam-title">📹 البث المباشر</h3>
+            <button class="cam-btn cam-btn-close" onclick="closeCameraSheet()">✕</button>
+        </div>
         <video id="camera-preview" autoplay playsinline muted></video>
         <canvas id="canvas-capture"></canvas>
-        <div class="camera-status">
-            <span class="live-dot"></span>
-            <span>LIVE</span>
+        <div class="camera-controls">
+            <button class="cam-btn cam-btn-start" id="cam-toggle-btn" onclick="toggleCamera()">
+                <span id="cam-toggle-label">▶ بدء البث</span>
+            </button>
+            <button class="cam-btn cam-btn-flip" id="cam-flip-btn" onclick="flipCamera()" style="display:none;">
+                🔄
+            </button>
         </div>
     </div>
+</div>
 
-    <div class="student-list" id="student-container">
-        <h3 class="section-title">📋 قائمة الطلاب</h3>
-        <p class="no-students">سيظهر الطلاب هنا...</p>
-    </div>
-
-    <!-- Attendance Warning Modal -->
-    <div class="modal-overlay" id="attendance-modal" role="dialog" aria-modal="true" aria-label="تنبيه الحضور">
-        <div class="modal-content">
-            <div class="modal-icon">⚠️</div>
-            <div class="modal-title">تنبيه: طلاب غير موجودين!</div>
-            <div class="modal-message">الطلاب التالية أسماؤهم لم يصعدوا بعد:</div>
-            <div class="missing-list" id="missing-students-list"></div>
-            <div class="modal-buttons">
-                <button class="modal-btn modal-btn-recheck" onclick="recheckAttendance()">
-                    🔄 إعادة الفحص
-                </button>
-                <button class="modal-btn modal-btn-start" onclick="forceStartTrip()">
-                    ▶️ بدء الرحلة على أي حال
-                </button>
-            </div>
+<!-- ════════════════════ ATTENDANCE MODAL ════════════════════ -->
+<div class="modal-overlay" id="attendance-modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title" id="modal-title">طلاب لم يصعدوا!</div>
+        <div class="modal-msg"   id="modal-msg">الطلاب التالية أسماؤهم لم يُسجَّل صعودهم:</div>
+        <div class="missing-list" id="missing-students-list"></div>
+        <div class="modal-buttons">
+            <button class="modal-btn modal-btn-force" onclick="forceStartTrip()" id="modal-force">
+                ▶️ بدء الرحلة على أي حال
+            </button>
+            <button class="modal-btn modal-btn-recheck" onclick="recheckAttendance()" id="modal-recheck">
+                🔄 إعادة الفحص
+            </button>
         </div>
     </div>
+</div>
 
-    <a href="/logout" class="logout-link">← تسجيل الخروج</a>
+<script>
+    // ── CONSTANTS ──────────────────────────────────────────────────────────────
+    const socket = io();
+    const busId  = "{{ bus_id }}";
 
-    <script>
-        const socket = io();
-        let watchId = null;
-        let _allStudents = [];
-        let _routeActive = false;
-        let _driverLat = null;
-        let _driverLng = null;
-        const busId = "{{ bus_id }}";
+    let watchId       = null;
+    let _allStudents  = [];
+    let _routeActive  = false;
+    let _driverLat    = null;
+    let _driverLng    = null;
 
-        // Camera variables
-        let cameraStream = null;
-        let frameInterval = null;
-        let isStreaming = false;
-        let useFrontCamera = false; // false = back camera, true = front camera
-        const FRAME_RATE = 10; // 10 FPS (100ms interval) - smooth streaming
-        const FRAME_QUALITY = 0.6; // JPEG quality (0.6 = 60%)
+    // Camera
+    let cameraStream  = null;
+    let frameInterval = null;
+    let isStreaming   = false;
+    let useFrontCamera = false;
+    const FRAME_RATE    = 10;
+    const FRAME_QUALITY = 0.6;
 
-        // Escapes HTML-special characters to prevent XSS via interpolated values.
-        function escapeHtml(s) {
-            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    // ── LANGUAGE ───────────────────────────────────────────────────────────────
+    const LANG = {
+        ar: {
+            sub: 'لوحة السائق',
+            kmh: 'كم/س',
+            idleReady: 'جاهز للرحلة',
+            idleListTitle: 'قائمة الطلاب — سجّل الحضور قبل البدء',
+            startLabel: 'بدء الرحلة',
+            stopLabel: 'إنهاء الرحلة',
+            tripCountLabel: 'صعدوا',
+            tripKmh: 'كم/س',
+            routeTitle: '🗺️ المسار الأمثل',
+            optimizeLabel: 'احسب المسار الأسرع',
+            optimizingLabel: 'جاري الحساب...',
+            camTitle: '📹 البث المباشر',
+            camStart: '▶ بدء البث',
+            camStop: '■ إيقاف البث',
+            board: 'صعود',
+            drop: 'إنزال',
+            boarded: '✅ على المتن',
+            waiting: '⏳ ينتظر',
+            noStudents: 'لا يوجد طلاب مسجلون في هذه الرحلة',
+            loading: 'جاري التحميل...',
+            errLoad: 'تعذّر تحميل قائمة الطلاب. تحقّق من الاتصال.',
+            modalTitle: 'طلاب لم يصعدوا!',
+            modalMsg: 'الطلاب التالية أسماؤهم لم يُسجَّل صعودهم:',
+            modalForce: '▶️ بدء الرحلة على أي حال',
+            modalRecheck: '🔄 إعادة الفحص',
+            routeEmpty: 'لا يوجد طلاب على متن الحافلة حالياً.',
+            routeStop: 'توقف',
+            gpsWait: 'GPS…',
+            gpsActive: 'GPS يبث',
+            gpsOff: 'GPS متوقف',
+            gpsError: 'GPS خطأ',
+        },
+        en: {
+            sub: 'Driver Dashboard',
+            kmh: 'km/h',
+            idleReady: 'Ready for trip',
+            idleListTitle: 'Students — check attendance before starting',
+            startLabel: 'Start Trip',
+            stopLabel: 'End Trip',
+            tripCountLabel: 'on board',
+            tripKmh: 'km/h',
+            routeTitle: '🗺️ Optimal Route',
+            optimizeLabel: 'Calculate Route',
+            optimizingLabel: 'Calculating...',
+            camTitle: '📹 Live Camera',
+            camStart: '▶ Start Stream',
+            camStop: '■ Stop Stream',
+            board: 'Board',
+            drop: 'Drop',
+            boarded: '✅ On board',
+            waiting: '⏳ Waiting',
+            noStudents: 'No students assigned to this trip',
+            loading: 'Loading...',
+            errLoad: 'Failed to load students. Check connection.',
+            modalTitle: 'Students not boarded!',
+            modalMsg: 'The following students have not been marked as boarded:',
+            modalForce: '▶️ Start Trip Anyway',
+            modalRecheck: '🔄 Recheck',
+            routeEmpty: 'No students are currently on the bus.',
+            routeStop: 'Stop',
+            gpsWait: 'GPS…',
+            gpsActive: 'GPS live',
+            gpsOff: 'GPS off',
+            gpsError: 'GPS error',
+        }
+    };
+    let lang = localStorage.getItem('driver_lang') || 'ar';
+
+    function t(key) { return LANG[lang][key] || key; }
+
+    function applyLang() {
+        document.documentElement.lang = lang;
+        document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
+        document.getElementById('lang-btn').innerText     = lang === 'ar' ? 'EN' : 'ع';
+        document.getElementById('h-sub').innerText        = t('sub');
+        document.getElementById('h-kmh').innerText        = t('kmh');
+        document.getElementById('idle-ready').innerText   = t('idleReady');
+        document.getElementById('idle-list-title').innerText = t('idleListTitle');
+        document.getElementById('start-label').innerText  = t('startLabel');
+        document.getElementById('stop-label').innerText   = t('stopLabel');
+        document.getElementById('trip-count-label').innerText = t('tripCountLabel');
+        document.getElementById('trip-kmh').innerText     = t('tripKmh');
+        document.getElementById('route-title').innerText  = t('routeTitle');
+        document.getElementById('optimize-label').innerText = t('optimizeLabel');
+        document.getElementById('cam-title').innerText    = t('camTitle');
+        document.getElementById('cam-toggle-label').innerText = isStreaming ? t('camStop') : t('camStart');
+        document.getElementById('modal-title').innerText  = t('modalTitle');
+        document.getElementById('modal-msg').innerText    = t('modalMsg');
+        document.getElementById('modal-force').innerText  = t('modalForce');
+        document.getElementById('modal-recheck').innerText = t('modalRecheck');
+        // Re-render student lists
+        renderIdleList();
+        renderTripList();
+    }
+
+    function toggleLang() {
+        lang = lang === 'ar' ? 'en' : 'ar';
+        localStorage.setItem('driver_lang', lang);
+        applyLang();
+    }
+
+    // ── HELPERS ────────────────────────────────────────────────────────────────
+    function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+            ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function setGps(state, speed) {
+        const dot  = document.getElementById('gps-dot');
+        const spd1 = document.getElementById('speed-val');
+        const spd2 = document.getElementById('trip-speed');
+        dot.className = 'gps-dot ' + (state === 'active' ? 'active' : state === 'error' ? 'error' : '');
+        if (speed !== undefined) { spd1.innerText = speed; spd2.innerText = speed; }
+    }
+
+    function updateTripCounter() {
+        const boarded = _allStudents.filter(s => s.status === 'BOARDED').length;
+        document.getElementById('trip-count').innerHTML =
+            `${boarded} / ${_allStudents.length} <span id="trip-count-label" style="font-weight:400;color:var(--muted);font-size:.85em;">${t('tripCountLabel')}</span>`;
+    }
+
+    // ── DATA ───────────────────────────────────────────────────────────────────
+    function loadManifest() {
+        fetch('/api/driver/manifest')
+            .then(r => r.json())
+            .then(students => {
+                _allStudents = students;
+                renderIdleList();
+                renderTripList();
+                updateTripCounter();
+            })
+            .catch(() => {
+                document.getElementById('idle-student-container').innerHTML =
+                    `<p style="text-align:center;color:var(--red);padding:16px;">${t('errLoad')}</p>`;
             });
+    }
+
+    function renderIdleList() {
+        const c = document.getElementById('idle-student-container');
+        if (!_allStudents.length) {
+            c.innerHTML = `<p style="text-align:center;color:var(--muted);padding:16px;">${t('noStudents')}</p>`;
+            return;
         }
+        c.innerHTML = _allStudents.map(s => {
+            const boarded  = s.status === 'BOARDED';
+            const badgeCls = boarded ? 'badge-boarded' : 'badge-waiting';
+            const badge    = boarded ? t('boarded') : t('waiting');
+            const btnCls   = boarded ? 'toggle-drop' : 'toggle-board';
+            const btnTxt   = boarded ? t('drop') : t('board');
+            return `
+            <div class="student-card ${boarded ? 'boarded' : 'missing'}" id="idle-card-${escapeHtml(s.id)}">
+                <div class="student-info">
+                    <div class="student-name">${escapeHtml(s.name)}</div>
+                    <span class="student-badge ${badgeCls}">${badge}</span>
+                </div>
+                <button class="student-toggle ${btnCls}"
+                        onclick="toggleStudent('${escapeHtml(s.id)}')">${btnTxt}</button>
+            </div>`;
+        }).join('');
+    }
 
-        // --- LOAD MANIFEST ---
-        function loadManifest() {
-            fetch('/api/driver/manifest')
-                .then(res => res.json())
-                .then(students => {
-                    _allStudents = students; // Save for client-side routing
-                    const container = document.getElementById('student-container');
-                    if (students.length === 0) {
-                        container.innerHTML = '<h3 class="section-title">📋 قائمة الطلاب</h3><p class="no-students">لا يوجد طلاب مسجلين في هذه الرحلة</p>';
-                        return;
-                    }
-
-                    let html = '<h3 class="section-title">📋 قائمة الطلاب</h3>';
-                    students.forEach(s => {
-                        const isBoarded = s.status === 'BOARDED';
-                        const btnClass = isBoarded ? "btn-drop" : "btn-board";
-                        const btnText = isBoarded ? "إنزال" : "صعود";
-
-                        html += `
-                        <div class="student-row">
-                            <span>${escapeHtml(s.name)}</span>
-                            <button class="toggle-btn ${btnClass}" onclick="toggleStudent(this, '${escapeHtml(s.id)}')">
-                                ${btnText}
-                            </button>
-                        </div>`;
-                    });
-                    container.innerHTML = html;
-                })
-                .catch(err => {
-                    console.error("Error loading manifest:", err);
-                    const c = document.getElementById('student-container');
-                    if (c) c.innerHTML = '<h3 class="section-title">📋 قائمة الطلاب</h3>' +
-                        '<p class="no-students">تعذّر تحميل قائمة الطلاب. تحقّق من الاتصال وحاول مجدداً.</p>';
-                });
+    function renderTripList() {
+        const c = document.getElementById('trip-student-container');
+        if (!_allStudents.length) {
+            c.innerHTML = `<p style="text-align:center;color:var(--muted);padding:24px;">${t('noStudents')}</p>`;
+            return;
         }
+        c.innerHTML = _allStudents.map(s => {
+            const boarded  = s.status === 'BOARDED';
+            const badgeCls = boarded ? 'badge-boarded' : 'badge-waiting';
+            const badge    = boarded ? t('boarded') : t('waiting');
+            const btnCls   = boarded ? 'toggle-drop' : 'toggle-board';
+            const btnTxt   = boarded ? t('drop') : t('board');
+            return `
+            <div class="student-card ${boarded ? 'boarded' : 'missing'}" id="trip-card-${escapeHtml(s.id)}">
+                <div class="student-info">
+                    <div class="student-name">${escapeHtml(s.name)}</div>
+                    <span class="student-badge ${badgeCls}">${badge}</span>
+                </div>
+                <button class="student-toggle ${btnCls}"
+                        onclick="toggleStudent('${escapeHtml(s.id)}')">${btnTxt}</button>
+            </div>`;
+        }).join('');
+    }
 
-        loadManifest();
+    // ── ATTENDANCE ─────────────────────────────────────────────────────────────
+    function toggleStudent(studentId) {
+        const s = _allStudents.find(x => x.id == studentId);
+        if (!s) return;
+        const nowBoarding = s.status !== 'BOARDED';
+        s.status = nowBoarding ? 'BOARDED' : 'DROPPED';
 
-        // --- GPS LOGIC ---
-        function startTrip() {
-            if (!navigator.geolocation) return alert("GPS غير مدعوم على هذا الجهاز");
+        socket.emit('manual_attendance', {
+            student_id: studentId,
+            status: s.status,
+            bus_id: busId
+        });
 
-            // First check if all students are on board
-            fetch('/api/driver/manifest')
-                .then(res => res.json())
-                .then(students => {
-                    const missingStudents = students.filter(s => s.status !== 'BOARDED');
+        if (!nowBoarding && _routeActive) setTimeout(() => _calcRoute(true), 3000);
 
-                    if (missingStudents.length > 0) {
-                        // Show warning modal
-                        const listDiv = document.getElementById('missing-students-list');
-                        listDiv.innerHTML = missingStudents.map(s =>
-                            `<div class="missing-student">❌ ${escapeHtml(s.name)}</div>`
-                        ).join('');
+        // Optimistic UI update on both lists
+        renderIdleList();
+        renderTripList();
+        updateTripCounter();
+    }
 
-                        document.getElementById('attendance-modal').style.display = 'flex';
-                    } else {
-                        // All students boarded, start trip directly
-                        actuallyStartTrip();
-                    }
-                })
-                .catch(err => {
-                    console.error('Error checking attendance:', err);
-                    // On error, just start trip
+    // ── TRIP CONTROL ───────────────────────────────────────────────────────────
+    function startTrip() {
+        if (!navigator.geolocation) return alert(lang === 'ar' ? 'GPS غير مدعوم' : 'GPS not supported');
+        fetch('/api/driver/manifest')
+            .then(r => r.json())
+            .then(students => {
+                _allStudents = students;
+                const missing = students.filter(s => s.status !== 'BOARDED');
+                if (missing.length) {
+                    document.getElementById('missing-students-list').innerHTML =
+                        missing.map(s => `<div class="missing-student">❌ ${escapeHtml(s.name)}</div>`).join('');
+                    document.getElementById('attendance-modal').classList.add('open');
+                } else {
                     actuallyStartTrip();
-                });
-        }
-
-        function recheckAttendance() {
-            // Reload manifest and close modal
-            document.getElementById('attendance-modal').style.display = 'none';
-            loadManifest();
-        }
-
-        function forceStartTrip() {
-            // Close modal and start trip anyway
-            document.getElementById('attendance-modal').style.display = 'none';
-            actuallyStartTrip();
-        }
-
-        function actuallyStartTrip() {
-            _routeActive = true;
-            document.querySelector('.btn-start').style.display = 'none';
-            document.querySelector('.btn-stop').style.display = 'block';
-
-            watchId = navigator.geolocation.watchPosition(
-                (position) => {
-                    const data = {
-                        bus_id: busId,
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                        speed: Math.round(position.coords.speed * 3.6) || 0
-                    };
-
-                    document.getElementById('gps-status').innerText = "GPS: 🟢 يبث الآن";
-                    document.getElementById('gps-status').style.color = "#27ae60";
-                    document.getElementById('speed-display').innerText = data.speed;
-
-                    // Update Map Marker
-                    if (routeMap) {
-                        if (busMarker) {
-                            busMarker.setLatLng([data.lat, data.lng]);
-                        } else {
-                            busMarker = L.marker([data.lat, data.lng], {
-                                icon: L.divIcon({ html: '🚌', className: 'bus-icon', iconSize: [30, 30] })
-                            }).addTo(routeMap).bindPopup('<b>موقعك الحالي</b>');
-                            routeMap.panTo([data.lat, data.lng]);
-                        }
-                    }
-
-                    socket.emit('driver_gps_update', data);
-                },
-                (error) => alert("خطأ GPS: " + error.message),
-                { enableHighAccuracy: true, timeout: 5000 }
-            );
-        }
-
-        function stopTrip() {
-            if (watchId !== null) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
-            }
-            _routeActive = false;
-            document.querySelector('.btn-start').style.display = 'block';
-            document.querySelector('.btn-stop').style.display = 'none';
-            document.getElementById('gps-status').innerText = "GPS: 🔴 متوقف";
-            document.getElementById('gps-status').style.color = "#c0392b";
-
-            if (isStreaming) {
-                stopCamera();
-            }
-        }
-
-        // --- CAMERA STREAMING LOGIC ---
-        async function toggleCamera() {
-            if (isStreaming) {
-                stopCamera();
-            } else {
-                await startCamera();
-            }
-        }
-
-        async function startCamera() {
-            const btn = document.getElementById('camera-btn');
-            const container = document.getElementById('camera-container');
-            const video = document.getElementById('camera-preview');
-
-            try {
-                // Request camera access based on current setting
-                const facingMode = useFrontCamera ? 'user' : 'environment';
-                cameraStream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: facingMode,
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
-                    },
-                    audio: false
-                });
-
-                video.srcObject = cameraStream;
-                await video.play();
-
-                // Update UI
-                container.classList.add('active');
-                btn.classList.add('streaming');
-                btn.innerHTML = '🔴 إيقاف البث';
-                isStreaming = true;
-
-                // Show flip button
-                document.getElementById('flip-btn').classList.add('visible');
-
-                // Notify server that streaming started
-                socket.emit('camera_stream_start', { bus_id: busId });
-
-                // Start capturing and sending frames
-                startFrameCapture();
-
-            } catch (error) {
-                console.error('Camera error:', error);
-                alert('خطأ في تشغيل الكاميرا: ' + error.message);
-            }
-        }
-
-        function stopCamera() {
-            const btn = document.getElementById('camera-btn');
-            const container = document.getElementById('camera-container');
-            const video = document.getElementById('camera-preview');
-
-            // Stop frame capture
-            if (frameInterval) {
-                clearInterval(frameInterval);
-                frameInterval = null;
-            }
-
-            // Stop camera stream
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
-            }
-
-            video.srcObject = null;
-
-            // Update UI
-            container.classList.remove('active');
-            btn.classList.remove('streaming');
-            btn.innerHTML = '📹 بدء البث المباشر';
-            isStreaming = false;
-
-            // Hide flip button
-            document.getElementById('flip-btn').classList.remove('visible');
-
-            // Notify server that streaming stopped
-            socket.emit('camera_stream_stop', { bus_id: busId });
-        }
-
-        function startFrameCapture() {
-            const video = document.getElementById('camera-preview');
-            const canvas = document.getElementById('canvas-capture');
-            const ctx = canvas.getContext('2d');
-
-            // Set canvas size to match video
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-
-            // Capture frames at specified rate
-            frameInterval = setInterval(() => {
-                if (!isStreaming || !video.videoWidth) return;
-
-                // Draw video frame to canvas
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                // Convert to JPEG and send
-                const frameData = canvas.toDataURL('image/jpeg', FRAME_QUALITY);
-
-                socket.emit('camera_frame', {
-                    bus_id: busId,
-                    frame: frameData,
-                    timestamp: Date.now()
-                });
-
-            }, 1000 / FRAME_RATE);
-        }
-
-        // --- CAMERA FLIP LOGIC ---
-        async function flipCamera() {
-            if (!isStreaming) return;
-
-            // Toggle camera direction
-            useFrontCamera = !useFrontCamera;
-
-            // Stop current stream
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-            }
-
-            // Stop frame capture temporarily
-            if (frameInterval) {
-                clearInterval(frameInterval);
-                frameInterval = null;
-            }
-
-            const video = document.getElementById('camera-preview');
-
-            try {
-                // Get new camera
-                const facingMode = useFrontCamera ? 'user' : 'environment';
-                cameraStream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: facingMode,
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
-                    },
-                    audio: false
-                });
-
-                video.srcObject = cameraStream;
-                await video.play();
-
-                // Update flip button text
-                const flipBtn = document.getElementById('flip-btn');
-                flipBtn.innerHTML = useFrontCamera ? '🔄 الكاميرا الخلفية' : '🔄 الكاميرا الأمامية';
-
-                // Restart frame capture
-                startFrameCapture();
-
-            } catch (error) {
-                console.error('Flip camera error:', error);
-                alert('خطأ في تبديل الكاميرا: ' + error.message);
-                useFrontCamera = !useFrontCamera;
-                await startCamera();
-            }
-        }
-
-        // --- ATTENDANCE LOGIC ---
-
-        function toggleStudent(btn, studentId) {
-            const isBoarding = btn.innerText.trim() === "صعود";
-
-            if (isBoarding) {
-                btn.innerText = "إنزال";
-                btn.className = "toggle-btn btn-drop";
-                socket.emit('manual_attendance', { student_id: studentId, status: "BOARDED", bus_id: busId });
-            } else {
-                btn.innerText = "صعود";
-                btn.className = "toggle-btn btn-board";
-                socket.emit('manual_attendance', { student_id: studentId, status: "DROPPED", bus_id: busId });
-
-                // Auto-recalculate route silently 3s after drop-off
-                // This is safe now because we use cached GPS state (no new GPS call)
-                if (_routeActive) {
-                    setTimeout(() => _calcRoute(true), 3000);
                 }
-            }
-        }
+            })
+            .catch(() => actuallyStartTrip());
+    }
 
-        // --- ROUTE OPTIMIZATION ---
-        let routeMap = null;
-        let routeLayer = null;
-        let busMarker = null;
+    function recheckAttendance() {
+        document.getElementById('attendance-modal').classList.remove('open');
+        loadManifest();
+    }
 
-        // Initialize Map on Load
-        document.addEventListener('DOMContentLoaded', () => {
-            initMap();
-        });
+    function forceStartTrip() {
+        document.getElementById('attendance-modal').classList.remove('open');
+        actuallyStartTrip();
+    }
 
-        function initMap() {
-            if (routeMap) return;
-            // Default center (Jeddah/School), will update with GPS
+    function actuallyStartTrip() {
+        _routeActive = true;
+        document.getElementById('phase-idle').classList.remove('active');
+        document.getElementById('phase-trip').classList.add('active');
+
+        watchId = navigator.geolocation.watchPosition(
+            pos => {
+                _driverLat = pos.coords.latitude;
+                _driverLng = pos.coords.longitude;
+                const speed = Math.round((pos.coords.speed || 0) * 3.6);
+                setGps('active', speed);
+
+                if (routeMap) {
+                    if (busMarker) busMarker.setLatLng([_driverLat, _driverLng]);
+                    else {
+                        busMarker = L.marker([_driverLat, _driverLng], {
+                            icon: L.divIcon({ html: '🚌', className: '', iconSize: [30,30] })
+                        }).addTo(routeMap).bindPopup('موقعك الحالي');
+                        routeMap.panTo([_driverLat, _driverLng]);
+                    }
+                }
+
+                socket.emit('driver_gps_update', {
+                    bus_id: busId, lat: _driverLat, lng: _driverLng, speed
+                });
+            },
+            err => setGps('error'),
+            { enableHighAccuracy: true, timeout: 5000 }
+        );
+    }
+
+    function stopTrip() {
+        if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+        _routeActive = false;
+        setGps('', 0);
+        if (isStreaming) stopCamera();
+        document.getElementById('phase-trip').classList.remove('active');
+        document.getElementById('phase-idle').classList.add('active');
+        loadManifest();
+    }
+
+    // ── MAP / ROUTE ────────────────────────────────────────────────────────────
+    let routeMap = null, routeLayer = null, busMarker = null;
+
+    function openRouteSheet() {
+        document.getElementById('map-sheet-overlay').classList.add('open');
+        if (!routeMap) {
             routeMap = L.map('map').setView([21.543333, 39.172778], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap'
-            }).addTo(routeMap);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(routeMap);
         }
+        setTimeout(() => routeMap.invalidateSize(), 100);
+    }
 
-        function optimizeRoute() { _calcRoute(false); }
+    function closeRouteSheet(e) {
+        if (e && e.target !== document.getElementById('map-sheet-overlay')) return;
+        document.getElementById('map-sheet-overlay').classList.remove('open');
+    }
 
-        function _calcRoute(silent) {
-            const btn = document.querySelector('button[onclick="optimizeRoute()"]');
-            const mapContainer = document.getElementById('map');
+    function optimizeRoute() { _calcRoute(false); }
 
-            if (!silent) {
-                btn.innerHTML = "⏳ جاري الحساب...";
-                btn.disabled = true;
-            }
+    function _calcRoute(silent) {
+        const btn = document.getElementById('btn-optimize');
+        if (!silent) { btn.querySelector('span').innerText = t('optimizingLabel'); btn.disabled = true; }
 
-            // Strategy: Use cached GPS if available (trip started), else try one-shot GPS
-            if (_driverLat && _driverLng) {
-                // We have live location, use it directly!
-                _performRouteFetch(_driverLat, _driverLng, btn, mapContainer, silent);
-            } else {
-                // Trip not started, try to get location once
-                if (!silent) btn.innerHTML = "⏳ جاري تحديد الموقع...";
-
-                if (!navigator.geolocation) {
-                    if (!silent) {
-                        alert("المتصفح لا يدعم تحديد الموقع");
-                        btn.innerHTML = "🗺️ احسب المسار الأسرع";
-                        btn.disabled = false;
-                    }
-                    return;
-                }
-
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        const latchLat = pos.coords.latitude;
-                        const latchLng = pos.coords.longitude;
-                        _performRouteFetch(latchLat, latchLng, btn, mapContainer, silent);
-                    },
-                    (err) => {
-                        // GPS failed completely
-                        if (!silent) {
-                            btn.innerHTML = "🗺️ احسب المسار الأسرع";
-                            btn.disabled = false;
-                            alert("تعذر تحديد موقعك: " + err.message);
-                        }
-                    },
-                    { enableHighAccuracy: true, timeout: 5000 }
-                );
-            }
-        }
-
-        function _performRouteFetch(lat, lng, btn, mapContainer, silent) {
-            if (!silent) btn.innerHTML = "⏳ جاري الحساب...";
-            btn.disabled = true;
-
-            // Call Backend to get Sorted List of Students
+        const doFetch = (lat, lng) => {
             fetch(`/api/optimize_route/${busId}?lat=${lat}&lng=${lng}`)
-                .then(res => res.json())
+                .then(r => r.json())
                 .then(data => {
-                    btn.disabled = false;
-                    if (!silent) btn.innerHTML = "🗺️ احسب المسار الأسرع";
-
+                    if (!silent) { btn.querySelector('span').innerText = t('optimizeLabel'); btn.disabled = false; }
                     if (data.status === 'empty') {
-                        if (!silent) alert("لا يوجد طلاب على متن الحافلة حالياً.");
+                        if (!silent) document.getElementById('route-result').innerText = t('routeEmpty');
                         return;
                     }
-
-                    if (data.status !== 'success') {
-                        if (!silent) alert("حدث خطأ: " + (data.message || "Unknown Error"));
-                        return;
-                    }
-
-                    // 1. Generate Google Maps Link
-                    const stops = data.stops;
-                    if (stops && stops.length > 0) {
-                        let gmUrl = "https://www.google.com/maps/dir/?api=1";
-                        gmUrl += `&origin=${lat},${lng}`; // Driver Location
-                        gmUrl += `&travelmode=driving`;
-
-                        // Last stop is the destination
-                        const lastStop = stops[stops.length - 1];
-                        gmUrl += `&destination=${lastStop.lat},${lastStop.lng}`;
-
-                        // Intermediate stops (Waypoints)
-                        if (stops.length > 1) {
-                            const waypoints = stops.slice(0, -1).map(s => `${s.lat},${s.lng}`).join('|');
-                            gmUrl += `&waypoints=${waypoints}`;
-                        }
-
-                        // 2. Add/Update the Button
-                        let oldBtn = document.getElementById('gmaps-btn');
-                        if (oldBtn) oldBtn.remove();
-
-                        const gb = document.createElement('button');
-                        gb.id = 'gmaps-btn';
-                        gb.innerHTML = `🚀 اضغط هنا لبدء الرحلة في Google Maps (${stops.length} محطات)`;
-                        gb.style.cssText = 'width:100%; padding:20px; margin-top:15px; font-size:18px; background:#28a745; color:white; border:none; border-radius:12px; cursor:pointer; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); animation: pulse 2s infinite;';
-                        gb.onclick = () => {
-                            window.open(gmUrl, '_blank');
-                        };
-
-                        // Insert after the Calculate button
-                        btn.parentNode.insertBefore(gb, btn.nextSibling);
-
-                        if (!silent) {
-                            // Auto-scroll to the new button
-                            gb.scrollIntoView({ behavior: "smooth" });
-                            // Optional: Trigger click automatically? No, browser blocks popups. User must click.
-                        }
-                    } else {
-                        if (!silent) alert("لا يوجد محطات صالحة (احداثيات مفقودة).");
+                    if (data.stops) {
+                        // Draw on map
+                        if (routeLayer) routeMap.removeLayer(routeLayer);
+                        const latlngs = [[lat, lng], ...data.stops.map(s => [s.lat, s.lng])];
+                        routeLayer = L.polyline(latlngs, { color:'#2980b9', weight:4 }).addTo(routeMap);
+                        routeMap.fitBounds(routeLayer.getBounds(), { padding:[20,20] });
+                        data.stops.forEach((s, i) =>
+                            L.marker([s.lat, s.lng]).addTo(routeMap)
+                                .bindPopup(`${i+1}. ${s.name}`)
+                        );
+                        document.getElementById('route-result').innerHTML =
+                            data.stops.map((s,i) =>
+                                `<div class="route-stop">${i+1}. ${escapeHtml(s.name)}</div>`
+                            ).join('');
                     }
                 })
-                .catch(err => {
-                    console.error(err);
-                    if (!silent) {
-                        btn.innerHTML = "🗺️ احسب المسار الأسرع";
-                        btn.disabled = false;
-                        alert("خطأ في الاتصال بالسيرفر");
-                    }
+                .catch(() => {
+                    if (!silent) { btn.querySelector('span').innerText = t('optimizeLabel'); btn.disabled = false; }
                 });
+        };
+
+        if (_driverLat && _driverLng) { doFetch(_driverLat, _driverLng); return; }
+        navigator.geolocation.getCurrentPosition(
+            pos => doFetch(pos.coords.latitude, pos.coords.longitude),
+            () => { if (!silent) { btn.querySelector('span').innerText = t('optimizeLabel'); btn.disabled = false; } },
+            { enableHighAccuracy: true, timeout: 5000 }
+        );
+    }
+
+    // ── CAMERA ─────────────────────────────────────────────────────────────────
+    function openCameraSheet()  { document.getElementById('camera-sheet-overlay').classList.add('open'); }
+    function closeCameraSheet() { document.getElementById('camera-sheet-overlay').classList.remove('open'); }
+
+    async function toggleCamera() {
+        isStreaming ? stopCamera() : await startCamera();
+    }
+
+    async function startCamera() {
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: useFrontCamera ? 'user' : 'environment', width:{ideal:640}, height:{ideal:480} },
+                audio: false
+            });
+            const video = document.getElementById('camera-preview');
+            video.srcObject = cameraStream;
+            await video.play();
+            isStreaming = true;
+            document.getElementById('cam-icon-btn').classList.add('cam-live');
+            document.getElementById('cam-toggle-label').innerText = t('camStop');
+            document.getElementById('cam-flip-btn').style.display = '';
+            socket.emit('camera_stream_start', { bus_id: busId });
+            startFrameCapture();
+        } catch (err) {
+            alert((lang==='ar'?'خطأ في الكاميرا: ':'Camera error: ') + err.message);
         }
+    }
 
-        // Clean up on page unload
-        window.addEventListener('beforeunload', () => {
-            if (isStreaming) {
-                stopCamera();
-            }
-        });
-    </script>
-    <!-- ON-SCREEN DEBUG LOG (opt-in only: append ?debug=1 to the URL) -->
-    <div id="debug-console"
-        style="display: none; margin: 20px; padding: 10px; background: #000; color: #0f0; border-radius: 8px; font-family: monospace; max-height: 200px; overflow-y: scroll; direction: ltr; text-align: left; position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;">
-        <strong>Debug Console:</strong><br>
-    </div>
+    function stopCamera() {
+        if (frameInterval) { clearInterval(frameInterval); frameInterval = null; }
+        if (cameraStream)  { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+        const video = document.getElementById('camera-preview');
+        video.srcObject = null;
+        isStreaming = false;
+        document.getElementById('cam-icon-btn').classList.remove('cam-live');
+        document.getElementById('cam-toggle-label').innerText = t('camStart');
+        document.getElementById('cam-flip-btn').style.display = 'none';
+        socket.emit('camera_stream_stop', { bus_id: busId });
+    }
 
-    <script>
-        (function () {
-            // The debug console echoes GPS coordinates, attendance data and error
-            // details on screen, so it is disabled unless explicitly requested.
-            var debugEnabled = new URLSearchParams(window.location.search).get('debug') === '1';
-            if (!debugEnabled) return;
+    function startFrameCapture() {
+        const video  = document.getElementById('camera-preview');
+        const canvas = document.getElementById('canvas-capture');
+        const ctx    = canvas.getContext('2d');
+        canvas.width  = video.videoWidth  || 640;
+        canvas.height = video.videoHeight || 480;
+        frameInterval = setInterval(() => {
+            if (!isStreaming || !video.videoWidth) return;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            socket.emit('camera_frame', {
+                bus_id: busId, frame: canvas.toDataURL('image/jpeg', FRAME_QUALITY), timestamp: Date.now()
+            });
+        }, 1000 / FRAME_RATE);
+    }
 
-            var debugConsole = document.getElementById('debug-console');
-            if (debugConsole) debugConsole.style.display = 'block';
-            var oldLog = console.log;
-            var oldError = console.error;
+    async function flipCamera() {
+        if (!isStreaming) return;
+        useFrontCamera = !useFrontCamera;
+        if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+        if (frameInterval) { clearInterval(frameInterval); frameInterval = null; }
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: useFrontCamera ? 'user' : 'environment', width:{ideal:640}, height:{ideal:480} },
+                audio: false
+            });
+            const video = document.getElementById('camera-preview');
+            video.srcObject = cameraStream;
+            await video.play();
+            startFrameCapture();
+        } catch (err) {
+            useFrontCamera = !useFrontCamera;
+            await startCamera();
+        }
+    }
 
-            function logToScreen(msg, color) {
-                var div = document.createElement('div');
-                div.style.color = color || '#0f0';
-                div.style.borderBottom = '1px solid #333';
-                div.textContent = '> ' + msg;
-                if (debugConsole) {
-                    debugConsole.appendChild(div);
-                    debugConsole.scrollTop = debugConsole.scrollHeight;
-                }
-            }
-
-            console.log = function (message) {
-                oldLog.apply(console, arguments);
-                if (debugConsole) logToScreen(Array.from(arguments).join(' '));
-            };
-
-            console.error = function (message) {
-                oldError.apply(console, arguments);
-                if (debugConsole) logToScreen(Array.from(arguments).join(' '), '#f00');
-            };
-
-            window.onerror = function (msg, url, line) {
-                if (debugConsole) logToScreen("Global Error: " + msg + " line " + line, '#f00');
-            };
-        })();
-    </script>
+    // ── INIT ───────────────────────────────────────────────────────────────────
+    applyLang();
+    loadManifest();
+</script>
 </body>
-
 </html>

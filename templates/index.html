@@ -2,331 +2,348 @@
 <html lang="ar" dir="rtl">
 
 <head>
-    <title>آمن مدرستي - School Bus Tracker</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js" integrity="sha384-DkkWv9oJFWLIydBXXjkBWnG1/fuVhw8YPBq37uvvD6WSYRFRqr21eY5Dg9ZhmWdy" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <title>آمن مدرستي - Safe School Transport</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
-        :root {
-            --sage-green: #9FB8AD;
-            --sage-dark: #7A9A8D;
-            --gold: #F5C518;
-            --gold-dark: #D4A914;
-            --black: #1A1A1A;
-            --cream: #F5F5F0;
-            --white: #FFFFFF;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            margin: 0;
             font-family: 'Tajawal', sans-serif;
-            background: var(--sage-green);
-        }
-
-        #map {
-            height: 100vh;
-            width: 100%;
-        }
-
-        /* The Video Modal (Hidden by default) */
-        #video-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(26, 26, 26, 0.9);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(160deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+            display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
         }
 
-        video {
-            width: 80%;
-            max-width: 800px;
-            background: var(--black);
-            border: 3px solid var(--gold);
+        /* ── Brand ── */
+        .brand {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .brand-icon {
+            font-size: 3.2em;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .brand h1 {
+            color: #ffffff;
+            font-size: 1.7em;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .brand p {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Card ── */
+        .card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 36px 32px 28px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .card-header h2 {
+            font-size: 1.25em;
+            color: #1a1a2e;
+            margin-bottom: 4px;
+        }
+
+        .card-header p {
+            font-size: 0.85em;
+            color: #7f8c8d;
+        }
+
+        /* ── Form ── */
+        .field {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.82em;
+            color: #5d6d7e;
+            margin-bottom: 6px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 13px 16px;
+            border: 2px solid #e0e4e8;
             border-radius: 12px;
-        }
-
-        .close-btn {
-            background: var(--gold);
-            color: var(--black);
-            padding: 12px 30px;
-            border: none;
-            margin-top: 15px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 25px;
-            transition: all 0.3s ease;
+            font-size: 1em;
             font-family: 'Tajawal', sans-serif;
-        }
-
-        .close-btn:hover {
-            background: var(--gold-dark);
-            transform: scale(1.05);
-        }
-
-        /* The Button inside the Map Popup */
-        .watch-btn {
-            background: var(--gold);
-            color: var(--black);
-            border: none;
-            padding: 8px 15px;
-            cursor: pointer;
-            border-radius: 20px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .watch-btn:hover {
-            background: var(--gold-dark);
-        }
-
-        #status-panel {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: var(--cream);
-            padding: 20px;
-            z-index: 1000;
-            border-radius: 20px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-            width: 300px;
-            border: 3px solid var(--sage-dark);
+            color: #1a1a2e;
+            background: #f8f9fa;
+            transition: border-color 0.25s;
             text-align: right;
         }
 
-        #status-panel h3 {
-            margin: 0 0 15px 0;
-            color: var(--black);
-            font-size: 1.3em;
+        input:focus {
+            outline: none;
+            border-color: #2980b9;
+            background: #ffffff;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: #1a1a2e;
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05em;
+            font-weight: 700;
+            font-family: 'Tajawal', sans-serif;
+            cursor: pointer;
+            margin-top: 6px;
+            transition: background 0.25s, transform 0.15s;
+        }
+
+        .login-btn:hover {
+            background: #2c3e6e;
+            transform: translateY(-1px);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        /* ── Error message ── */
+        .error-msg {
+            background: #fdecea;
+            color: #c0392b;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 0.88em;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        /* ── Divider + portal links ── */
+        .divider {
             display: flex;
             align-items: center;
-            justify-content: flex-end;
-            gap: 8px;
+            gap: 10px;
+            margin: 22px 0 18px;
         }
 
-        #bus-list {
-            background: var(--white);
-            padding: 12px;
-            border-radius: 10px;
-            color: var(--black);
-            font-size: 0.95em;
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e0e4e8;
         }
 
-        .nav-link {
-            display: block;
-            text-align: center;
-            padding: 12px;
-            text-decoration: none;
-            border-radius: 12px;
-            margin-top: 10px;
-            font-weight: 600;
-            transition: all 0.3s ease;
+        .divider span {
+            font-size: 0.78em;
+            color: #aab8c2;
+            white-space: nowrap;
         }
 
-        .nav-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .nav-admin {
-            background: var(--sage-green);
-            color: var(--black);
-        }
-
-        .nav-parent {
-            background: var(--gold);
-            color: var(--black);
-        }
-
-        .nav-driver {
-            background: var(--black);
-            color: var(--cream);
-        }
-
-        .nav-school {
-            background: #3498db;
-            color: white;
-        }
-
-        /* Logo styling */
-        .logo-container {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-
-        .logo-container img {
-            width: 80px;
-            height: auto;
-        }
-
-        .app-title {
-            font-size: 1.3em;
-            color: var(--black);
-            margin: 5px 0;
-            font-weight: bold;
-        }
-
-        .app-subtitle {
-            font-size: 0.9em;
-            color: var(--sage-dark);
-        }
-
-        .bilingual {
+        .portal-links {
             display: flex;
-            flex-direction: column;
-            gap: 2px;
+            gap: 10px;
         }
 
-        .ar {
-            font-size: 1em;
+        .portal-btn {
+            flex: 1;
+            text-align: center;
+            padding: 9px 10px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 0.82em;
+            font-family: 'Tajawal', sans-serif;
+            font-weight: 600;
+            transition: all 0.2s;
         }
 
-        .en {
-            font-size: 0.8em;
-            color: var(--sage-dark);
+        .portal-driver {
+            background: #f0f2f5;
+            color: #2c3e50;
+            border: 1px solid #d5dbdb;
+        }
+
+        .portal-admin {
+            background: #f0f2f5;
+            color: #2c3e50;
+            border: 1px solid #d5dbdb;
+        }
+
+        .portal-btn:hover {
+            background: #e0e4e8;
+            transform: translateY(-1px);
+        }
+
+        /* ── Lang toggle ── */
+        .lang-row {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .lang-toggle {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #aab8c2;
+            padding: 5px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 0.82em;
+            transition: all 0.2s;
+        }
+
+        .lang-toggle:hover {
+            border-color: rgba(255,255,255,0.4);
+            color: #fff;
         }
     </style>
 </head>
 
 <body>
 
-    <div id="video-modal" role="dialog" aria-modal="true" aria-label="بث مباشر">
-        <h2 style="color: var(--gold);">🎥 بث مباشر: الباص <span id="modal-bus-id">--</span></h2>
-        <video id="video-player" controls autoplay></video>
-        <button class="close-btn" onclick="closeCamera()">✕ إغلاق البث</button>
+    <div class="brand">
+        <span class="brand-icon">🚌</span>
+        <h1 id="brand-title">آمن مدرستي</h1>
+        <p id="brand-sub">Safe School Transport</p>
     </div>
 
-    <div id="status-panel">
-        <div class="logo-container">
-            <div style="font-size: 2.5em;">🚌</div>
-            <div class="app-title">آمن مدرستي</div>
-            <div class="app-subtitle">Safe School Transport</div>
+    <div class="card">
+        <div class="card-header">
+            <h2 id="card-title">بوابة أولياء الأمور</h2>
+            <p id="card-sub">تابع رحلة أطفالك بأمان</p>
         </div>
 
-        <!-- Tour Link -->
-        <a href="/tour"
-            style="display:block; text-align:center; padding:10px 15px; background:linear-gradient(135deg, var(--gold), var(--gold-dark)); color:var(--black); text-decoration:none; border-radius:20px; margin-bottom:15px; font-weight:bold; font-size:0.9em; transition:all 0.3s ease;"
-            onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-            ✨ اكتشف المزيد | Learn More
-        </a>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="error-msg">{{ messages[0] }}</div>
+        {% endif %}
+        {% endwith %}
 
-        <h3>الأسطول المباشر 📍</h3>
-        <div id="bus-list">في انتظار الإشارة...</div>
-        <hr style="border: none; border-top: 2px solid var(--sage-green); margin: 15px 0;">
+        <form method="POST" action="/parent/login">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-        <a href="/admin" class="nav-link nav-admin">
-            <span class="bilingual">
-                <span class="ar">⚙️ لوحة المشرف العام</span>
-                <span class="en">Super Admin</span>
-            </span>
-        </a>
-        <a href="/admin" class="nav-link nav-school">
-            <span class="bilingual">
-                <span class="ar">🏫 دخول مشرف المدرسة</span>
-                <span class="en">School Admin</span>
-            </span>
-        </a>
-        <a href="/parent/login" class="nav-link nav-parent">
-            <span class="bilingual">
-                <span class="ar">👨‍👩‍👧‍👦 دخول ولي الأمر</span>
-                <span class="en">Parent Login</span>
-            </span>
-        </a>
-        <a href="/driver/login" class="nav-link nav-driver">
-            <span class="bilingual">
-                <span class="ar">🚌 دخول السائق</span>
-                <span class="en">Driver Login</span>
-            </span>
-        </a>
+            <div class="field">
+                <label id="lbl-user">اسم المستخدم</label>
+                <input type="text" name="username" id="inp-user"
+                       placeholder="أدخل اسم المستخدم" required autocomplete="username">
+            </div>
+
+            <div class="field">
+                <label id="lbl-pass">كلمة المرور</label>
+                <input type="password" name="password" id="inp-pass"
+                       placeholder="أدخل كلمة المرور" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="login-btn" id="btn-login">دخول</button>
+        </form>
+
+        <div class="divider">
+            <span id="div-text">بوابات أخرى</span>
+        </div>
+
+        <div class="portal-links">
+            <a href="/driver/login" class="portal-btn portal-driver" id="link-driver">
+                🚌 بوابة السائق
+            </a>
+            <a href="/login" class="portal-btn portal-admin" id="link-admin">
+                ⚙️ الإدارة
+            </a>
+        </div>
     </div>
 
-    <div id="map"></div>
+    <div class="lang-row">
+        <button class="lang-toggle" onclick="toggleLang()" id="lang-btn">English</button>
+    </div>
 
     <script>
-        var map = L.map('map').setView([24.7136, 46.6753], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        var busMarkers = {};
-        var socket = io();
+        const L10N = {
+            ar: {
+                dir: 'rtl', lang: 'ar',
+                brandTitle: 'آمن مدرستي',
+                brandSub: 'Safe School Transport',
+                cardTitle: 'بوابة أولياء الأمور',
+                cardSub: 'تابع رحلة أطفالك بأمان',
+                lblUser: 'اسم المستخدم',
+                lblPass: 'كلمة المرور',
+                phUser: 'أدخل اسم المستخدم',
+                phPass: 'أدخل كلمة المرور',
+                btnLogin: 'دخول',
+                divText: 'بوابات أخرى',
+                linkDriver: '🚌 بوابة السائق',
+                linkAdmin: '⚙️ الإدارة',
+                langBtn: 'English',
+            },
+            en: {
+                dir: 'ltr', lang: 'en',
+                brandTitle: 'Amen Madrasati',
+                brandSub: 'Safe School Transport',
+                cardTitle: 'Parent Portal',
+                cardSub: 'Track your child\'s journey safely',
+                lblUser: 'Username',
+                lblPass: 'Password',
+                phUser: 'Enter username',
+                phPass: 'Enter password',
+                btnLogin: 'Login',
+                divText: 'Other portals',
+                linkDriver: '🚌 Driver Portal',
+                linkAdmin: '⚙️ Admin',
+                langBtn: 'عربي',
+            }
+        };
 
-        // --- A. The Logic to Open Camera ---
-        function openCamera(busId) {
-            console.log("Requesting camera for Bus " + busId);
+        let _lang = localStorage.getItem('main_lang') || 'ar';
 
-            fetch(`/get_camera/${busId}`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('video-modal').style.display = 'flex';
-                    document.getElementById('modal-bus-id').innerText = busId;
-
-                    var video = document.getElementById('video-player');
-                    var streamUrl = data.stream_url;
-
-                    if (Hls.isSupported()) {
-                        var hls = new Hls();
-                        hls.loadSource(streamUrl);
-                        hls.attachMedia(video);
-                        hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                            video.play();
-                        });
-                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                        video.src = streamUrl;
-                        video.addEventListener('loadedmetadata', function () {
-                            video.play();
-                        });
-                    }
-                })
-                .catch(err => console.error("Error fetching camera:", err));
-        }
-
-        function closeCamera() {
-            document.getElementById('video-modal').style.display = 'none';
-            var video = document.getElementById('video-player');
-            video.pause();
-            video.src = "";
-        }
-
-        // Escapes HTML-special characters to prevent XSS via interpolated values.
-        function escapeHtml(s) {
-            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        function applyLang() {
+            const t = L10N[_lang];
+            document.documentElement.dir  = t.dir;
+            document.documentElement.lang = t.lang;
+            document.getElementById('brand-title').textContent  = t.brandTitle;
+            document.getElementById('brand-sub').textContent    = t.brandSub;
+            document.getElementById('card-title').textContent   = t.cardTitle;
+            document.getElementById('card-sub').textContent     = t.cardSub;
+            document.getElementById('lbl-user').textContent     = t.lblUser;
+            document.getElementById('lbl-pass').textContent     = t.lblPass;
+            document.getElementById('inp-user').placeholder     = t.phUser;
+            document.getElementById('inp-pass').placeholder     = t.phPass;
+            document.getElementById('btn-login').textContent    = t.btnLogin;
+            document.getElementById('div-text').textContent     = t.divText;
+            document.getElementById('link-driver').textContent  = t.linkDriver;
+            document.getElementById('link-admin').textContent   = t.linkAdmin;
+            document.getElementById('lang-btn').textContent     = t.langBtn;
+            // inputs align with reading direction
+            ['inp-user','inp-pass'].forEach(id => {
+                document.getElementById(id).style.textAlign = _lang === 'ar' ? 'right' : 'left';
             });
         }
 
-        // --- B. The Map Updates ---
-        socket.on('update_map', function (data) {
-            var busId = data.bus_id;
-            var lat = data.lat;
-            var lng = data.lng;
-            var speed = data.speed;
+        function toggleLang() {
+            _lang = _lang === 'ar' ? 'en' : 'ar';
+            localStorage.setItem('main_lang', _lang);
+            applyLang();
+        }
 
-            var listHtml = `<b>الباص ${escapeHtml(busId)}</b><br>السرعة: ${escapeHtml(speed)} كم/س`;
-            document.getElementById('bus-list').innerHTML = listHtml;
-
-            var popupContent = `
-                <b>الباص ${escapeHtml(busId)}</b><br>
-                السرعة: ${escapeHtml(speed)} كم/س<br><br>
-                <button class="watch-btn" onclick="openCamera('${escapeHtml(busId)}')">🎥 مشاهدة مباشرة</button>
-            `;
-
-            if (busMarkers[busId]) {
-                busMarkers[busId].setLatLng([lat, lng])
-                    .bindPopup(popupContent);
-            } else {
-                busMarkers[busId] = L.marker([lat, lng])
-                    .addTo(map)
-                    .bindPopup(popupContent);
-            }
-        });
+        applyLang();
     </script>
-</body>
 
+</body>
 </html>

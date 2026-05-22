@@ -131,7 +131,7 @@ from flask_limiter.util import get_remote_address
 limiter = Limiter(
     key_func=get_remote_address,
     app=app,
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=["2000 per day", "500 per hour"],
     storage_uri="memory://"
 )
 
@@ -482,7 +482,7 @@ def _verify_and_login(allowed_roles, redirect_endpoint):
 
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("5 per minute", methods=["POST"])
+@limiter.limit("20 per minute", methods=["POST"])
 def login():
     """Admin Login Portal — SUPER_ADMIN and SCHOOL_ADMIN only."""
     if request.method == 'POST':
@@ -491,7 +491,7 @@ def login():
 
 
 @app.route('/driver/login', methods=['GET', 'POST'])
-@limiter.limit("5 per minute", methods=["POST"])
+@limiter.limit("20 per minute", methods=["POST"])
 def driver_login():
     """Driver Login Portal — DRIVER only."""
     if request.method == 'POST':
@@ -500,7 +500,7 @@ def driver_login():
 
 
 @app.route('/parent/login', methods=['GET', 'POST'])
-@limiter.limit("5 per minute", methods=["POST"])
+@limiter.limit("20 per minute", methods=["POST"])
 def parent_login():
     """Parent Login Portal — PARENT only."""
     if request.method == 'POST':
@@ -514,9 +514,11 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/api/csrf-token')
+@limiter.exempt
 def get_csrf_token():
     """Returns a CSRF token for the current session. Must be included as
-    X-CSRFToken header on all state-changing fetch() calls."""
+    X-CSRFToken header on all state-changing fetch() calls.
+    Exempt from rate limits — GET-only, no state mutation."""
     return json.dumps({'token': generate_csrf()})
 
 # --- API: Add Student (SCHOOL_ADMIN & SUPER_ADMIN) ---

@@ -2,8 +2,8 @@
 <html lang="ar" dir="rtl">
 
 <head>
-    <title>آمن مدرستي - لوحة ولي الأمر</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>آمن مدرستي - بوابة ولي الأمر</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
@@ -11,115 +11,156 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
+        * { box-sizing: border-box; }
+
         :root {
-            --sage-green: #9FB8AD;
-            --sage-dark: #7A9A8D;
-            --gold: #F5C518;
-            --gold-dark: #D4A914;
-            --black: #1A1A1A;
-            --cream: #F5F5F0;
-            --white: #FFFFFF;
+            --bg: #f4f6f8;
+            --card: #ffffff;
+            --primary: #1a1a2e;
+            --accent: #2980b9;
+            --green: #27ae60;
+            --amber: #f39c12;
+            --red: #e74c3c;
+            --text: #2c3e50;
+            --muted: #7f8c8d;
+            --border: #e0e4e8;
         }
 
         body {
             font-family: 'Tajawal', sans-serif;
             margin: 0;
-            background: var(--sage-green);
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
         }
 
+        /* ── Header ── */
         .header {
-            background: var(--black);
-            color: var(--cream);
-            padding: 15px 20px;
+            background: var(--primary);
+            color: #fff;
+            padding: 14px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-shrink: 0;
         }
 
-        .header h3 {
+        .header-left h3 {
             margin: 0;
-            color: var(--gold);
-            font-size: 1.2em;
+            font-size: 1.1em;
+            color: #fff;
         }
 
-        .header .subtitle {
+        .header-left span {
             font-size: 0.8em;
-            color: var(--sage-green);
+            color: #aab8c2;
         }
 
-        .header a {
-            color: var(--cream);
-            text-decoration: none;
-            background: #c0392b;
-            padding: 8px 15px;
-            border-radius: 8px;
-            font-size: 0.85em;
-        }
-
-        .card-container {
-            padding: 15px;
+        .header-actions {
             display: flex;
-            gap: 15px;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .lang-btn {
+            background: transparent;
+            color: #aab8c2;
+            border: 1px solid #aab8c2;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 0.8em;
+            width: auto;
+        }
+
+        .logout-btn {
+            background: var(--red);
+            color: #fff;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-family: 'Tajawal', sans-serif;
+            text-decoration: none;
+            width: auto;
+        }
+
+        /* ── Children strip ── */
+        .kids-section {
+            flex-shrink: 0;
+            padding: 16px 16px 8px;
+        }
+
+        .section-label {
+            font-size: 0.8em;
+            color: var(--muted);
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kids-row {
+            display: flex;
+            gap: 12px;
             overflow-x: auto;
+            padding-bottom: 4px;
         }
 
         .child-card {
-            background: var(--cream);
-            padding: 20px;
-            border-radius: 15px;
-            min-width: 240px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-            border-right: 5px solid var(--sage-dark);
+            background: var(--card);
+            border-radius: 14px;
+            padding: 18px 20px;
+            min-width: 200px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            border-right: 4px solid var(--border);
+            transition: border-color 0.3s;
         }
 
-        .child-card h3 {
-            margin: 0 0 10px 0;
-            color: var(--black);
+        .child-card.on-bus {
+            border-right-color: var(--green);
         }
 
-        .status-on {
-            border-right-color: var(--gold);
-            background: linear-gradient(135deg, var(--cream) 0%, rgba(245, 197, 24, 0.1) 100%);
+        .child-card h4 {
+            margin: 0 0 8px 0;
+            font-size: 1.05em;
+            color: var(--text);
         }
 
-        .status-off {
-            border-right-color: var(--sage-dark);
-        }
-
-        .status-badge {
+        .status-pill {
             display: inline-block;
-            padding: 8px 15px;
+            padding: 5px 12px;
             border-radius: 20px;
-            font-size: 0.9em;
-            font-weight: bold;
-        }
-
-        .status-badge.on {
-            background: var(--gold);
-            color: var(--black);
-        }
-
-        .status-badge.off {
-            background: var(--sage-dark);
-            color: var(--white);
-        }
-
-        #map {
-            height: 60vh;
-            width: 100%;
-            border-top: 3px solid var(--gold);
-        }
-
-        .no-children {
-            text-align: center;
-            padding: 30px;
-            color: var(--black);
-        }
-
-        .bus-info {
             font-size: 0.85em;
-            color: var(--sage-dark);
-            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .status-pill.on { background: #eafaf1; color: var(--green); }
+        .status-pill.off { background: #f0f2f5; color: var(--muted); }
+
+        .bus-label {
+            font-size: 0.78em;
+            color: var(--muted);
+            margin-top: 6px;
+        }
+
+        /* ── Map ── */
+        #map {
+            flex: 1;
+            width: 100%;
+            border-top: 2px solid var(--border);
+        }
+
+        /* ── Empty state ── */
+        .empty-state {
+            padding: 24px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.95em;
         }
     </style>
 </head>
@@ -127,26 +168,66 @@
 <body>
 
     <div class="header">
-        <div>
-            <h3>🚸 أطفالي</h3>
-            <span class="subtitle">مرحباً {{ user }}</span>
+        <div class="header-left">
+            <h3 id="h-title">🚸 أطفالي</h3>
+            <span id="h-sub">مرحباً {{ user }}</span>
         </div>
-        <a href="/logout">خروج</a>
+        <div class="header-actions">
+            <button class="lang-btn" onclick="toggleLang()">EN</button>
+            <a href="/logout" class="logout-btn" id="h-logout">خروج</a>
+        </div>
     </div>
 
-    <div class="card-container" id="kids-list">
-        <div style="padding:20px; color: var(--black);">جاري تحميل البيانات...</div>
+    <div class="kids-section">
+        <p class="section-label" id="h-section">حالة الأطفال</p>
+        <div class="kids-row" id="kids-list">
+            <div class="empty-state">جاري التحميل...</div>
+        </div>
     </div>
 
     <div id="map"></div>
 
     <script>
-        function escapeHtml(s) {
-            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-            });
+        // ── Language ──
+        const PLANG = {
+            ar: { title: '🚸 أطفالي', sub: 'مرحباً {{ user }}', logout: 'خروج', section: 'حالة الأطفال',
+                  on: '🚌 في الحافلة', off: '🏫 في المدرسة / المنزل', loading: 'جاري التحميل...',
+                  empty: 'لم يتم تسجيل أطفال بعد', error: 'خطأ في تحميل البيانات' },
+            en: { title: '🚸 My Children', sub: 'Welcome {{ user }}', logout: 'Logout', section: 'Children Status',
+                  on: '🚌 On Bus', off: '🏫 At School / Home', loading: 'Loading...',
+                  empty: 'No children registered yet', error: 'Failed to load data' }
+        };
+        let _lang = localStorage.getItem('parent_lang') || 'ar';
+
+        function t(k) { return PLANG[_lang][k] || k; }
+
+        function applyLang() {
+            const isAr = _lang === 'ar';
+            document.documentElement.lang = _lang;
+            document.documentElement.dir = isAr ? 'rtl' : 'ltr';
+            document.querySelector('.lang-btn').textContent = isAr ? 'EN' : 'ع';
+            document.getElementById('h-title').textContent = t('title');
+            document.getElementById('h-sub').textContent = t('sub');
+            document.getElementById('h-logout').textContent = t('logout');
+            document.getElementById('h-section').textContent = t('section');
         }
 
+        function toggleLang() {
+            _lang = _lang === 'ar' ? 'en' : 'ar';
+            localStorage.setItem('parent_lang', _lang);
+            applyLang();
+            loadMyChildren();
+        }
+
+        applyLang();
+
+        // ── XSS escape ──
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+                ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        // ── Map ──
         var map = L.map('map').setView([21.5433, 39.1728], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -154,71 +235,59 @@
         var trackedBusIds = [];
         var busMarkers = {};
 
+        // ── Children ──
         function loadMyChildren() {
             fetch('/api/get_my_kids')
                 .then(res => res.json())
                 .then(children => {
-                    var html = "";
+                    var html = '';
                     trackedBusIds = [];
 
                     if (children.length === 0) {
-                        html = '<div class="no-children"><p>لم يتم تسجيل أطفال بعد</p><p style="color:var(--sage-dark);">No children registered yet</p></div>';
+                        html = `<div class="empty-state">${t('empty')}</div>`;
                     }
 
                     children.forEach(child => {
-                        var statusClass = child.on_bus ? "status-on" : "status-off";
-                        var badgeClass = child.on_bus ? "on" : "off";
-                        var statusTextAr = child.on_bus ? `🚌 في الحافلة` : "🏫 في المدرسة / المنزل";
-                        var statusTextEn = child.on_bus ? `On Bus` : "At School / Home";
-                        var busInfo = child.on_bus && child.bus_plate ?
-                            `<div class="bus-info">🚌 ${escapeHtml(child.bus_plate)}</div>` : '';
+                        var onBus = child.on_bus;
+                        var busPlate = onBus && child.bus_plate
+                            ? `<div class="bus-label">🚌 ${escapeHtml(child.bus_plate)}</div>` : '';
 
                         html += `
-                    <div class="child-card ${statusClass}">
-                        <h3>${escapeHtml(child.name)}</h3>
-                        <span class="status-badge ${badgeClass}">${statusTextAr}</span>
-                        <div style="font-size:0.8em; color:var(--sage-dark); margin-top:5px;">${statusTextEn}</div>
-                        ${busInfo}
-                    </div>`;
+                        <div class="child-card ${onBus ? 'on-bus' : ''}">
+                            <h4>${escapeHtml(child.name)}</h4>
+                            <span class="status-pill ${onBus ? 'on' : 'off'}">${onBus ? t('on') : t('off')}</span>
+                            ${busPlate}
+                        </div>`;
 
-                        if (child.on_bus && child.bus_id) trackedBusIds.push(child.bus_id.toString());
+                        if (onBus && child.bus_id) trackedBusIds.push(child.bus_id.toString());
                     });
 
                     document.getElementById('kids-list').innerHTML = html;
                 })
-                .catch(err => {
-                    document.getElementById('kids-list').innerHTML = '<div class="no-children"><p style="color:#c0392b;">خطأ في تحميل البيانات</p></div>';
-                    console.error(err);
+                .catch(() => {
+                    document.getElementById('kids-list').innerHTML =
+                        `<div class="empty-state" style="color:#e74c3c;">${t('error')}</div>`;
                 });
         }
 
         loadMyChildren();
 
         socket.on('update_map', function (data) {
-            if (trackedBusIds.includes(data.bus_id.toString())) {
-                var markerPos = [data.lat, data.lng];
-
-                if (busMarkers[data.bus_id]) {
-                    busMarkers[data.bus_id].setLatLng(markerPos);
-                } else {
-                    var icon = L.divIcon({ className: 'bus-icon', html: '🚌', iconSize: [30, 30] });
-                    busMarkers[data.bus_id] = L.marker(markerPos, { icon: icon })
-                        .addTo(map)
-                        .bindPopup(`الباص ${escapeHtml(data.bus_id)}`);
-
-                    map.setView(markerPos, 15);
-                }
+            if (!trackedBusIds.includes(data.bus_id.toString())) return;
+            var pos = [data.lat, data.lng];
+            if (busMarkers[data.bus_id]) {
+                busMarkers[data.bus_id].setLatLng(pos);
+            } else {
+                var icon = L.divIcon({ className: '', html: '🚌', iconSize: [28, 28] });
+                busMarkers[data.bus_id] = L.marker(pos, { icon }).addTo(map)
+                    .bindPopup(`الباص ${escapeHtml(data.bus_id)}`);
+                map.setView(pos, 15);
             }
         });
 
-        socket.on('student_status_update', function (data) {
-            console.log("🔔 Student Update:", data);
-            loadMyChildren();
-        });
+        socket.on('student_status_update', function () { loadMyChildren(); });
 
-        setInterval(() => {
-            loadMyChildren();
-        }, 10000);
+        setInterval(loadMyChildren, 10000);
     </script>
 </body>
 
