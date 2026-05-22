@@ -1,0 +1,248 @@
+/* Msarat — shared UI kit styles
+   loaded after colors_and_type.css */
+
+.app {
+  width: 100%;
+  height: 100%;
+  background: var(--cream);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.app * { box-sizing: border-box; }
+
+/* -------- HEADER -------- */
+.app-header {
+  padding: 70px 20px 12px;  /* 70px clears the iOS status bar / dynamic island */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--cream);
+}
+.app-header .greet { font-size: 13px; color: var(--ink-3); font-weight: 500; }
+.app-header .name  { font-size: 22px; color: var(--ink); font-weight: 800; letter-spacing: -0.01em; }
+.app-header .avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--clay-100); color: var(--clay-700);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 18px;
+  cursor: pointer;
+}
+
+/* -------- SCREEN -------- */
+.screen {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px 110px;  /* clears the bottom nav (~92px) + home indicator */
+}
+.screen h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.015em; margin: 4px 0 16px; }
+.screen .section-h {
+  font-size: 13px; color: var(--ink-3); font-weight: 700; letter-spacing: 0.04em;
+  text-transform: uppercase; margin: 20px 4px 10px;
+}
+
+/* -------- CHILD CARD -------- */
+.child-card {
+  background: white;
+  border-radius: 22px;
+  padding: 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(58, 36, 24, 0.06);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 150ms var(--ease-out);
+}
+.child-card:active { transform: scale(0.98); }
+.child-card::before {
+  content: ''; position: absolute; inset-inline-start: 0; top: 18px; bottom: 18px;
+  width: 4px; border-radius: 2px; background: var(--sand-300);
+}
+.child-card.on-bus::before  { background: var(--clay-400); }
+.child-card.at-school::before { background: var(--info); }
+.child-card.absent::before    { background: var(--danger); }
+.child-card-row { display: flex; align-items: center; gap: 14px; padding-inline-start: 8px; }
+.child-card .avatar {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--clay-100); color: var(--clay-700);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 22px; flex-shrink: 0;
+}
+.child-card .avatar.amber { background: var(--amber-100); color: var(--amber-600); }
+.child-card .avatar.success { background: var(--success-bg); color: var(--success-dark); }
+.child-card .body { flex: 1; min-width: 0; }
+.child-card .name { font-size: 18px; font-weight: 700; color: var(--ink); line-height: 1.1; }
+.child-card .meta { font-size: 13px; color: var(--ink-3); margin-top: 2px; }
+.child-card .chev { color: var(--ink-4); }
+
+.status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  font-size: 13px; font-weight: 700; margin-top: 10px;
+  margin-inline-start: 8px;
+}
+.status-pill .dot { width: 7px; height: 7px; border-radius: 50%; }
+.status-pill.on { background: var(--success-bg); color: var(--success-dark); }
+.status-pill.on .dot { background: var(--success); }
+.status-pill.at { background: var(--info-bg); color: var(--info-dark); }
+.status-pill.at .dot { background: var(--info); }
+.status-pill.absent { background: var(--danger-bg); color: var(--danger-dark); }
+.status-pill.absent .dot { background: var(--danger); }
+.status-pill.arrive { background: var(--warning-bg); color: var(--warning-dark); }
+.status-pill.arrive .dot { background: var(--warning); }
+
+/* -------- BOTTOM NAV -------- */
+.bottom-nav {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: white;
+  padding: 10px 12px 38px;  /* 38px = 10px gap + 28px for home indicator */
+  display: flex;
+  gap: 4px;
+  box-shadow: 0 -4px 24px rgba(58, 36, 24, 0.08);
+  z-index: 5;
+}
+.bottom-nav .tab {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 4px;
+  border-radius: 14px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+}
+.bottom-nav .tab svg { width: 24px; height: 24px; stroke-width: 2; }
+.bottom-nav .tab.active { background: var(--clay-50); color: var(--clay-600); }
+.bottom-nav .tab.active svg { stroke-width: 2.4; }
+.bottom-nav .tab .badge {
+  position: absolute; top: 4px; left: 50%; margin-left: 4px;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  background: var(--clay-400); color: white;
+  border-radius: 999px;
+  font-size: 10px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* -------- BIG BUTTONS -------- */
+.btn-primary, .btn-secondary, .btn-amber {
+  border: none; cursor: pointer;
+  font-family: var(--font-sans); font-weight: 800;
+  font-size: 17px;
+  padding: 18px 22px;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%;
+  transition: all 150ms var(--ease-out);
+}
+.btn-primary { background: var(--clay-400); color: white; box-shadow: 0 4px 14px rgba(168, 80, 30, 0.22); }
+.btn-primary:active { background: var(--clay-600); transform: scale(0.98); box-shadow: none; }
+.btn-secondary { background: white; color: var(--ink); border: 1.5px solid var(--sand-200); }
+.btn-secondary:active { background: var(--sand-100); transform: scale(0.98); }
+.btn-amber { background: var(--amber-400); color: var(--ink); }
+.btn-amber:active { background: var(--amber-500); transform: scale(0.98); }
+
+/* -------- ALERT ROW -------- */
+.alert-row {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 18px;
+  background: white;
+  border-radius: 18px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 16px rgba(58, 36, 24, 0.05);
+}
+.alert-row .icon {
+  width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.alert-row .icon svg { width: 22px; height: 22px; stroke-width: 2.2; }
+.alert-row .icon.success { background: var(--success-bg); color: var(--success-dark); }
+.alert-row .icon.danger  { background: var(--danger-bg); color: var(--danger-dark); }
+.alert-row .icon.info    { background: var(--info-bg); color: var(--info-dark); }
+.alert-row .icon.warning { background: var(--warning-bg); color: var(--warning-dark); }
+.alert-row .body { flex: 1; min-width: 0; }
+.alert-row .ttl { font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+.alert-row .sub { font-size: 13px; color: var(--ink-3); margin-top: 4px; line-height: 1.4; }
+.alert-row .time { font-size: 12px; color: var(--ink-4); margin-top: 6px; font-family: ui-monospace, monospace; }
+
+/* -------- MAP FAKE -------- */
+.map-fake {
+  background-image:
+    radial-gradient(circle at 30% 30%, rgba(210, 107, 60, 0.06), transparent 40%),
+    radial-gradient(circle at 70% 60%, rgba(232, 163, 59, 0.08), transparent 50%),
+    linear-gradient(0deg, #E9DCC2 1px, transparent 1px),
+    linear-gradient(90deg, #E9DCC2 1px, transparent 1px),
+    linear-gradient(180deg, #F3E7D0 0%, #EAD9B8 100%);
+  background-size: auto, auto, 32px 32px, 32px 32px, auto;
+  position: relative;
+}
+.map-fake .road {
+  position: absolute; background: var(--cream); border-radius: 8px;
+  box-shadow: inset 0 0 0 1px var(--sand-300);
+}
+.map-fake .bus-marker {
+  position: absolute;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--clay-400); color: white;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(168, 80, 30, 0.45), 0 0 0 4px white;
+  transition: all 600ms var(--ease-out);
+}
+.map-fake .bus-marker svg { width: 24px; height: 24px; stroke-width: 2.2; }
+.map-fake .pin {
+  position: absolute;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: white; color: var(--clay-500);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(58, 36, 24, 0.18);
+}
+.map-fake .pin svg { width: 18px; height: 18px; stroke-width: 2.4; }
+.map-fake .route-line {
+  position: absolute; height: 4px; background: var(--clay-400);
+  opacity: 0.6; border-radius: 2px;
+}
+
+/* -------- FLOATING CARD over map -------- */
+.float-card {
+  position: absolute;
+  left: 16px; right: 16px;
+  background: white;
+  border-radius: 22px;
+  padding: 16px 18px;
+  box-shadow: 0 12px 32px rgba(58, 36, 24, 0.18);
+}
+.float-card.top { top: 70px; }
+.float-card.bottom { bottom: 110px; }
+
+/* -------- INFO ROW (profile, settings) -------- */
+.info-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 18px;
+  background: white;
+  border-radius: 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.info-row .icon { width: 36px; height: 36px; border-radius: 10px; background: var(--clay-50); color: var(--clay-500); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.info-row .icon svg { width: 20px; height: 20px; stroke-width: 2; }
+.info-row .body { flex: 1; }
+.info-row .ttl { font-size: 15px; font-weight: 700; color: var(--ink); }
+.info-row .sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+.info-row .chev { color: var(--ink-4); }
+
+/* -------- EMPTY STATE -------- */
+.empty {
+  text-align: center; padding: 60px 24px;
+  color: var(--ink-3);
+}
+.empty .icon { width: 64px; height: 64px; margin: 0 auto 16px; background: var(--sand-100); color: var(--clay-500); border-radius: 24px; display: flex; align-items: center; justify-content: center; }
+.empty .icon svg { width: 32px; height: 32px; stroke-width: 1.8; }
+.empty .ttl { font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+.empty .sub { font-size: 14px; color: var(--ink-3); }
+
+/* -------- RTL specifics -------- */
+[dir="rtl"] .chev { transform: scaleX(-1); }

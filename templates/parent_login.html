@@ -2,152 +2,227 @@
 <html lang="ar" dir="rtl">
 
 <head>
-    <title>آمن مدرستي - دخول ولي الأمر</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>مسارات - دخول ولي الأمر</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
     <style>
-        :root {
-            --sage-green: #9FB8AD;
-            --sage-dark: #7A9A8D;
-            --gold: #F5C518;
-            --gold-dark: #D4A914;
-            --black: #1A1A1A;
-            --cream: #F5F5F0;
-            --white: #FFFFFF;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: 'Tajawal', sans-serif;
+            min-height: 100vh;
+            background: #FBF5EC;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+        }
+
+        /* ── Logo above card ── */
+        .brand-logo {
+            margin-bottom: 32px;
             display: flex;
             justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, var(--sage-green) 0%, var(--sage-dark) 100%);
-            margin: 0;
         }
 
-        .login-box {
-            background: var(--cream);
-            padding: 40px;
-            border-radius: 25px;
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
-            width: 340px;
-            border: 3px solid var(--gold);
+        /* ── Card ── */
+        .card {
+            background: #FFFFFF;
+            border-radius: 20px;
+            padding: 40px 36px 32px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 12px 32px rgba(58, 36, 24, 0.12);
         }
 
-        .logo-section {
+        /* ── Card header with icon ── */
+        .card-header {
             text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .logo-section .icon {
-            font-size: 3em;
             margin-bottom: 10px;
         }
 
-        .logo-section h1 {
-            margin: 0;
-            font-size: 1.5em;
-            color: var(--black);
+        .icon-wrap {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: #FBF5EC;
+            border: 1.5px solid #EFE3D0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            color: #D26B3C;
         }
 
-        .logo-section .subtitle {
-            color: var(--sage-dark);
-            margin: 5px 0 0 0;
-            font-size: 0.9em;
+        .card-header h1 {
+            font-size: 1.35em;
+            font-weight: 700;
+            color: #3A2418;
+            margin-bottom: 5px;
         }
 
-        input {
+        .card-header p {
+            font-size: 0.85em;
+            font-weight: 400;
+            color: #8C6A50;
+        }
+
+        /* ── Tagline ── */
+        .tagline {
+            text-align: center;
+            color: #5C3D2A;
+            font-size: 0.92em;
+            font-weight: 500;
+            margin: 16px 0 28px;
+            padding: 10px 16px;
+            background: #FBF5EC;
+            border-radius: 10px;
+            border: 1px solid #EFE3D0;
+            line-height: 1.5;
+        }
+
+        /* ── Form ── */
+        .field {
+            margin-bottom: 18px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 0.82em;
+            font-weight: 500;
+            color: #5C3D2A;
+            margin-bottom: 7px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
             width: 100%;
-            padding: 14px;
-            margin-bottom: 15px;
-            border: 2px solid var(--sage-green);
-            border-radius: 12px;
-            box-sizing: border-box;
+            padding: 13px 16px;
+            border: 1.5px solid #E8D8C4;
+            border-radius: 10px;
             font-size: 1em;
             font-family: 'Tajawal', sans-serif;
-            transition: border-color 0.3s ease;
+            color: #3A2418;
+            background: #FDFAF6;
+            transition: border-color 0.25s, box-shadow 0.25s;
             text-align: right;
         }
 
-        input:focus {
+        input[type="text"]:focus,
+        input[type="password"]:focus {
             outline: none;
-            border-color: var(--gold);
+            border-color: #D26B3C;
+            background: #FFFFFF;
+            box-shadow: 0 0 0 4px rgba(210, 107, 60, 0.18);
         }
 
         input::placeholder {
-            color: var(--sage-dark);
+            color: #B89A82;
         }
 
-        button {
+        /* ── Clay button for parent ── */
+        .login-btn {
             width: 100%;
-            padding: 14px;
-            background: var(--gold);
-            color: var(--black);
+            height: 56px;
+            background: #D26B3C;
+            color: #ffffff;
             border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 1.1em;
-            font-weight: bold;
+            border-radius: 14px;
+            font-size: 1.05em;
+            font-weight: 700;
             font-family: 'Tajawal', sans-serif;
-            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-top: 6px;
+            transition: background 0.25s, transform 0.15s, box-shadow 0.25s;
+            letter-spacing: 0.3px;
         }
 
-        button:hover {
-            background: var(--gold-dark);
-            transform: translateY(-2px);
+        .login-btn:hover {
+            background: #B85A2E;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(210, 107, 60, 0.30);
         }
 
+        .login-btn:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        /* ── Back link ── */
         .back-link {
             display: block;
             text-align: center;
-            margin-top: 20px;
-            color: var(--sage-dark);
+            margin-top: 24px;
+            color: #8C6A50;
             text-decoration: none;
-            font-size: 0.9em;
+            font-size: 0.88em;
+            font-weight: 500;
+            transition: color 0.2s;
         }
 
         .back-link:hover {
-            color: var(--black);
-        }
-
-        .bilingual-label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 0.9em;
-            color: var(--black);
-        }
-
-        .welcome-text {
-            text-align: center;
-            color: var(--sage-dark);
-            font-size: 0.9em;
-            margin-bottom: 20px;
+            color: #D26B3C;
         }
     </style>
 </head>
 
 <body>
-    <div class="login-box">
-        <div class="logo-section">
-            <div class="icon">👨‍👩‍👧‍👦</div>
+
+    <div class="brand-logo">
+        <svg width="220" height="60" viewBox="0 0 220 60" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="مسارات">
+            <!-- Bus mark (clay on cream) -->
+            <rect x="2" y="13" width="44" height="28" rx="7" fill="#D26B3C"/>
+            <rect x="7" y="19" width="14" height="11" rx="3" fill="#FBF5EC" opacity="0.85"/>
+            <rect x="25" y="19" width="14" height="11" rx="3" fill="#FBF5EC" opacity="0.85"/>
+            <rect x="2" y="31" width="44" height="6" rx="2" fill="#B85A2E"/>
+            <circle cx="14" cy="44" r="5" fill="#3A2418"/>
+            <circle cx="14" cy="44" r="2.2" fill="#E8A33B"/>
+            <circle cx="36" cy="44" r="5" fill="#3A2418"/>
+            <circle cx="36" cy="44" r="2.2" fill="#E8A33B"/>
+            <rect x="38" y="16" width="8" height="6" rx="2" fill="#E8A33B"/>
+            <!-- "msarat" wordmark in ink -->
+            <text x="60" y="36" font-family="Tajawal, sans-serif" font-weight="800" font-size="21" fill="#3A2418" letter-spacing="-0.5">msarat</text>
+            <!-- Arabic subtitle -->
+            <text x="60" y="52" font-family="Tajawal, sans-serif" font-weight="500" font-size="13" fill="#8C6A50">مسارات</text>
+        </svg>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="icon-wrap">
+                <i data-lucide="users" style="width:28px;height:28px;"></i>
+            </div>
             <h1>بوابة أولياء الأمور</h1>
-            <p class="subtitle">Parent Portal</p>
+            <p>Parent Portal</p>
         </div>
 
-        <p class="welcome-text">تابع رحلة أطفالك بأمان</p>
+        <p class="tagline">تابع رحلة أطفالك بأمان</p>
 
         <form method="POST" action="/parent/login">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <label class="bilingual-label">اسم المستخدم / Username</label>
-            <input type="text" name="username" placeholder="أدخل اسم المستخدم" required>
 
-            <label class="bilingual-label">كلمة المرور / Password</label>
-            <input type="password" name="password" placeholder="أدخل كلمة المرور" required>
+            <div class="field">
+                <label>اسم المستخدم / Username</label>
+                <input type="text" name="username" placeholder="أدخل اسم المستخدم" required autocomplete="username">
+            </div>
 
-            <button type="submit">🔐 تسجيل الدخول</button>
+            <div class="field">
+                <label>كلمة المرور / Password</label>
+                <input type="password" name="password" placeholder="أدخل كلمة المرور" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="login-btn">تسجيل الدخول</button>
         </form>
-
     </div>
-</body>
 
+    <a href="/" class="back-link">العودة للرئيسية &larr;</a>
+
+    <script>
+        lucide.createIcons();
+    </script>
+
+</body>
 </html>

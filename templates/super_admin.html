@@ -1,1133 +1,1617 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
-    <title>آمن مدرستي - لوحة التحكم</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>آمن مدرستي - لوحة التحكم العليا</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js" integrity="sha384-DkkWv9oJFWLIydBXXjkBWnG1/fuVhw8YPBq37uvvD6WSYRFRqr21eY5Dg9ZhmWdy" crossorigin="anonymous"></script>
     <style>
-        :root {
-            --primary:   #1a1a2e;
-            --accent:    #2980b9;
-            --green:     #27ae60;
-            --red:       #e74c3c;
-            --gold:      #f5c518;
-            --gold-dark: #d4a914;
-            --bg:        #f0f2f5;
-            --card:      #ffffff;
-            --border:    #e0e4ea;
-            --text:      #1a1a2e;
-            --muted:     #7f8c8d;
-            /* legacy aliases */
-            --sage-green: #9FB8AD;
-            --sage-dark:  #7A9A8D;
-            --black:      #1A1A1A;
-            --cream:      #F5F5F0;
-            --white:      #FFFFFF;
-        }
-
         * { box-sizing: border-box; }
+
+        :root {
+            --clay:       #D26B3C;
+            --clay-dark:  #B85A2E;
+            --amber:      #E8A33B;
+            --cream:      #FBF5EC;
+            --ink:        #3A2418;
+            --ink-2:      #5A3D2D;
+            --ink-4:      #A18A78;
+            --sand:       #E8D8C4;
+            --success:    #4A9D7A;
+            --danger:     #D85F4A;
+            --info:       #4A7BA8;
+            --card:       #FFFFFF;
+            --sidebar-w:  248px;
+        }
 
         body {
             font-family: 'Tajawal', sans-serif;
             margin: 0;
-            background: var(--bg);
+            background: var(--cream);
             min-height: 100vh;
-            color: var(--text);
+            color: var(--ink);
+            display: flex;
+            flex-direction: column;
         }
 
-        .header {
-            background: var(--primary);
-            padding: 14px 24px;
+        /* ── TOPBAR ── */
+        .topbar {
+            background: linear-gradient(135deg, #2C1A10 0%, #3A2418 100%);
+            padding: 0 24px;
+            height: 64px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             color: #fff;
-            box-shadow: 0 2px 10px rgba(0,0,0,.2);
-            position: sticky; top: 0; z-index: 100;
-        }
-        .header h1 { margin: 0; font-size: 1.25em; color: var(--gold); }
-        .header .subtitle { font-size: 0.8em; color: #aaa; }
-
-        .header-actions { display: flex; gap: 10px; align-items: center; }
-        .lang-btn {
-            background: rgba(255,255,255,.12); color: #fff; border: none;
-            padding: 7px 14px; border-radius: 8px; cursor: pointer;
-            font-family: 'Tajawal', sans-serif; font-weight: 700; font-size: .85em;
-        }
-        .lang-btn:hover { background: rgba(255,255,255,.22); }
-
-        .logout-btn {
-            background: var(--red);
-            color: white;
-            text-decoration: none;
-            padding: 8px 18px;
-            border-radius: 8px;
-            font-weight: bold;
+            box-shadow: 0 2px 16px rgba(58,36,24,0.25);
+            position: sticky;
+            top: 0;
+            z-index: 200;
         }
 
-        /* ── TABS ── */
-        .tab-nav {
-            background: var(--card);
-            display: flex; gap: 6px;
-            padding: 12px 20px;
-            overflow-x: auto;
-            border-bottom: 1px solid var(--border);
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        .tab-btn {
-            padding: 10px 22px; border: 2px solid transparent;
-            background: var(--bg); color: var(--muted);
-            border-radius: 10px; cursor: pointer;
-            font-family: 'Tajawal', sans-serif; font-size: 0.95em; font-weight: 600;
-            transition: all .2s; white-space: nowrap;
-        }
-        .tab-btn:hover { background: #e8edf2; color: var(--text); }
-        .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-        /* ── STATS ── */
-        .stats-dashboard {
-            display: flex; gap: 12px;
-            padding: 16px 20px;
-            background: var(--card);
-            flex-wrap: wrap;
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--clay) 0%, var(--amber) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
             justify-content: center;
-            border-bottom: 1px solid var(--border);
+            color: #fff;
         }
-        .stat-filter {
-            width: 100%; display: flex; align-items: center;
-            justify-content: center; gap: 10px; margin-bottom: 4px;
-        }
-        .stat-filter label { color: var(--muted); font-size: 0.85em; margin: 0; }
-        .stat-filter select {
-            padding: 8px 16px; border-radius: 8px;
-            border: 1.5px solid var(--border);
-            background: var(--bg); color: var(--text);
-            font-family: 'Tajawal', sans-serif; font-size: 0.9em;
-        }
-        .stat-card {
-            background: var(--bg); padding: 18px 24px;
-            border-radius: 14px; text-align: center; min-width: 120px;
-            border: 1.5px solid var(--border); transition: box-shadow .2s;
-        }
-        .stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
-        .stat-icon   { font-size: 1.6em; margin-bottom: 6px; }
-        .stat-number { font-size: 2em; font-weight: 800; color: var(--primary); }
-        .stat-label  { color: var(--muted); font-size: 0.8em; margin-top: 4px; line-height: 1.4; }
-        .stat-card.active-card  .stat-number { color: var(--accent); }
-        .stat-card.present-card .stat-number { color: var(--green); }
-        .stat-card.absent-card  .stat-number { color: var(--red); }
 
-        /* ── CONTENT ── */
-        .tab-content { display: none; padding: 20px; }
+        .brand-text { display: flex; flex-direction: column; gap: 1px; }
+        .brand-title { font-size: 1em; font-weight: 800; color: var(--amber); }
+        .brand-sub   { font-size: 0.72em; color: rgba(255,255,255,0.5); }
+
+        .topbar-actions { display: flex; gap: 10px; align-items: center; }
+
+        .topbar-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 7px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+            font-weight: 700;
+            font-size: 0.82em;
+            transition: background 0.2s;
+        }
+        .topbar-btn:hover { background: rgba(255,255,255,0.2); }
+
+        .topbar-logout {
+            background: rgba(216,95,74,0.15);
+            border: 1px solid rgba(216,95,74,0.3);
+            color: #ffb3a0;
+            text-decoration: none;
+            padding: 7px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.82em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+        .topbar-logout:hover { background: rgba(216,95,74,0.25); }
+
+        /* ── LAYOUT ── */
+        .app-body {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: var(--sidebar-w);
+            background: var(--card);
+            border-left: 1px solid var(--sand);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 12px;
+            gap: 4px;
+            position: sticky;
+            top: 64px;
+            height: calc(100vh - 64px);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar-section-label {
+            font-size: 0.7em;
+            font-weight: 700;
+            color: var(--ink-4);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            padding: 12px 12px 6px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--ink-2);
+            font-family: 'Tajawal', sans-serif;
+            font-size: 0.9em;
+            font-weight: 600;
+            width: 100%;
+            text-align: right;
+            transition: background 0.2s, color 0.2s;
+        }
+        .nav-item:hover { background: var(--cream); color: var(--ink); }
+        .nav-item.active {
+            background: rgba(210,107,60,0.1);
+            color: var(--clay);
+            font-weight: 700;
+        }
+        .nav-item.active .nav-icon { color: var(--clay); }
+        .nav-icon { color: var(--ink-4); flex-shrink: 0; }
+
+        /* ── MAIN ── */
+        .main-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            min-width: 0;
+        }
+
+        /* ── STATS BAR ── */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 18px 20px;
+            box-shadow: 0 4px 16px rgba(58,36,24,0.06);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .stat-icon-ring {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .stat-icon-clay   { background: rgba(210,107,60,0.1); color: var(--clay); }
+        .stat-icon-info   { background: rgba(74,123,168,0.1); color: var(--info); }
+        .stat-icon-success{ background: rgba(74,157,122,0.1); color: var(--success); }
+        .stat-icon-danger { background: rgba(216,95,74,0.1);  color: var(--danger); }
+        .stat-icon-amber  { background: rgba(232,163,59,0.1); color: var(--amber); }
+
+        .stat-info { display: flex; flex-direction: column; }
+        .stat-number { font-size: 1.8em; font-weight: 800; color: var(--ink); line-height: 1; }
+        .stat-label  { font-size: 0.75em; color: var(--ink-4); margin-top: 2px; }
+
+        .stats-filter-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .stats-filter-row label { font-size: 0.82em; color: var(--ink-4); white-space: nowrap; }
+
+        /* ── CONTENT AREA ── */
+        .tab-content { display: none; }
         .tab-content.active { display: block; }
+
         .content-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            gap: 20px; max-width: 1400px; margin: 0 auto;
+            gap: 20px;
+            max-width: 1200px;
         }
 
+        /* ── CARDS ── */
         .card {
-            background: var(--card); border-radius: 16px; padding: 24px;
-            box-shadow: 0 2px 12px rgba(0,0,0,.07);
-            border-top: 4px solid var(--border);
+            background: var(--card);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 4px 16px rgba(58,36,24,0.06);
         }
-        .card.gold-accent  { border-top-color: var(--gold); }
-        .card.green-accent { border-top-color: var(--green); }
-        .card.blue-accent  { border-top-color: var(--accent); }
-        .card.red-accent   { border-top-color: var(--red); }
 
-        .card h2 { margin: 0 0 4px; font-size: 1.1em; color: var(--text); }
-        .card > p { color: var(--muted); font-size: 0.85em; margin: 0 0 18px; }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .card-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .card-icon-clay   { background: rgba(210,107,60,0.1); color: var(--clay); }
+        .card-icon-amber  { background: rgba(232,163,59,0.1); color: var(--amber); }
+        .card-icon-success{ background: rgba(74,157,122,0.1); color: var(--success); }
+        .card-icon-info   { background: rgba(74,123,168,0.1); color: var(--info); }
+        .card-icon-danger { background: rgba(216,95,74,0.1);  color: var(--danger); }
+
+        .card-title { display: flex; flex-direction: column; }
+        .card-title h2 { margin: 0; font-size: 1em; font-weight: 700; color: var(--ink); }
+        .card-title p  { margin: 2px 0 0; font-size: 0.78em; color: var(--ink-4); }
+
+        /* ── FORM ELEMENTS ── */
+        .form-group { margin-bottom: 14px; }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.82em;
+            color: var(--ink-2);
+            font-weight: 600;
+        }
 
         input, select {
-            width: 100%; padding: 11px 14px; margin-bottom: 12px;
-            border: 1.5px solid var(--border); border-radius: 10px;
-            font-family: 'Tajawal', sans-serif; font-size: 0.95em;
-            background: #fff; color: var(--text); transition: border-color .2s;
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid var(--sand);
+            border-radius: 10px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 0.92em;
+            background: #fff;
+            color: var(--ink);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            appearance: none;
         }
-        input:focus, select:focus { outline: none; border-color: var(--accent); }
-
-        label { display: block; margin-bottom: 5px; font-size: 0.85em; color: var(--text); font-weight: 600; }
-
-        button {
-            width: 100%; padding: 13px; border: none; border-radius: 10px;
-            cursor: pointer; font-family: 'Tajawal', sans-serif;
-            font-size: 0.95em; font-weight: 700;
-            transition: opacity .2s, transform .15s; margin-bottom: 8px;
-        }
-        button:active { transform: scale(.98); }
-        .btn-primary   { background: var(--gold);   color: #1a1a1a; }
-        .btn-success   { background: var(--green);  color: #fff; }
-        .btn-danger    { background: var(--red);    color: #fff; }
-        .btn-secondary { background: var(--accent); color: #fff; }
-
-        .result-box {
-            margin-top: 10px; padding: 12px 14px;
-            background: #f0faf5; border-right: 4px solid var(--green);
-            border-radius: 10px; font-size: 0.9em; display: none;
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--clay);
+            box-shadow: 0 0 0 3px rgba(210,107,60,0.08);
         }
 
         .row { display: flex; gap: 10px; }
         .row > * { flex: 1; }
 
-        hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+        hr { border: none; border-top: 1px solid var(--sand); margin: 18px 0; }
 
-        .section-title { color: var(--muted); font-size: 0.8em; font-weight: 700;
-            text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+        /* ── BUTTONS ── */
+        button {
+            font-family: 'Tajawal', sans-serif;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+        button:active { transform: scale(0.98); }
+
+        .btn {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.92em;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-clay    { background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%); color: #fff; }
+        .btn-amber   { background: linear-gradient(135deg, var(--amber) 0%, #c88a2a 100%); color: var(--ink); }
+        .btn-success { background: linear-gradient(135deg, var(--success) 0%, #3a8a6a 100%); color: #fff; }
+        .btn-info    { background: linear-gradient(135deg, var(--info) 0%, #3a6a96 100%); color: #fff; }
+        .btn-danger  { background: linear-gradient(135deg, var(--danger) 0%, #be4e3b 100%); color: #fff; }
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid var(--sand);
+            color: var(--danger);
+        }
+        .btn-outline:hover { background: rgba(216,95,74,0.06); }
+
+        /* ── RESULT BOX ── */
+        .result-box {
+            margin-top: 10px;
+            padding: 11px 14px;
+            border-radius: 10px;
+            font-size: 0.88em;
+            display: none;
+        }
+        .result-box.success {
+            background: rgba(74,157,122,0.08);
+            border: 1px solid rgba(74,157,122,0.25);
+            color: var(--success);
+        }
+        .result-box.error {
+            background: rgba(216,95,74,0.08);
+            border: 1px solid rgba(216,95,74,0.2);
+            color: var(--danger);
+        }
+
+        /* ── PAGE HEADER ── */
+        .page-header {
+            margin-bottom: 20px;
+        }
+        .page-header h1 { margin: 0 0 4px; font-size: 1.3em; font-weight: 800; color: var(--ink); }
+        .page-header p  { margin: 0; font-size: 0.85em; color: var(--ink-4); }
+
+        /* ── LIVE STREAM VIEWER ── */
+        .stream-viewer {
+            background: #0D0D0D;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 16px rgba(58,36,24,0.06);
+        }
+
+        .stream-live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: rgba(216,95,74,0.15);
+            border: 1px solid rgba(216,95,74,0.3);
+            color: #ff9980;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.78em;
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+            animation: liveblink 1s infinite;
+        }
+        @keyframes liveblink { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+
+        #live-stream-img {
+            width: 100%;
+            border-radius: 12px;
+            background: #111;
+            min-height: 240px;
+            display: block;
+        }
+
+        #waiting-msg {
+            text-align: center;
+            padding: 48px 20px;
+            color: #666;
+        }
+        #waiting-msg h3 { color: #888; margin: 0 0 8px; }
+        #waiting-msg p  { color: #555; margin: 0; font-size: 0.85em; }
+
+        /* responsive */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-content { padding: 16px; }
+        }
     </style>
 </head>
-
 <body>
 
-    <div class="header">
-        <div>
-            <h1 id="sa-h-title">🛡️ لوحة تحكم آمن مدرستي</h1>
-            <span class="subtitle" id="sa-h-sub">مرحباً {{ user }}</span>
+<!-- ── TOPBAR ── -->
+<header class="topbar">
+    <div class="topbar-brand">
+        <div class="brand-icon">
+            <i data-lucide="shield-check" style="width:20px;height:20px;"></i>
         </div>
-        <div class="header-actions">
-            <button class="lang-btn" id="sa-lang-btn" onclick="toggleSuperLang()">EN</button>
-            <a href="/logout" class="logout-btn" id="sa-h-logout">خروج</a>
+        <div class="brand-text">
+            <span class="brand-title" id="sa-h-title">آمن مدرستي</span>
+            <span class="brand-sub" id="sa-h-sub">مرحباً {{ user }}</span>
         </div>
     </div>
-
-    <!-- Tab Navigation -->
-    <div class="tab-nav">
-        <button class="tab-btn active" onclick="showTab('schools')">🏫 المدارس<br><small>Schools</small></button>
-        <button class="tab-btn" onclick="showTab('parents')">👨‍👩‍👧 أولياء الأمور<br><small>Parents</small></button>
-        <button class="tab-btn" onclick="showTab('students')">👨‍🎓 الطلاب<br><small>Students</small></button>
-        <button class="tab-btn" onclick="showTab('buses')">🚌 الحافلات<br><small>Buses</small></button>
-        <button class="tab-btn" onclick="showTab('drivers')">🚗 السائقين<br><small>Drivers</small></button>
-        <button class="tab-btn" onclick="showTab('livestream')">📹 البث المباشر<br><small>Live Stream</small></button>
+    <div class="topbar-actions">
+        <button class="topbar-btn" id="sa-lang-btn" onclick="toggleSuperLang()">EN</button>
+        <a href="/logout" class="topbar-logout" id="sa-h-logout">
+            <i data-lucide="log-out" style="width:14px;height:14px;"></i>
+            خروج
+        </a>
     </div>
+</header>
 
-    <!-- Dashboard Stats Cards -->
-    <div class="stats-dashboard">
-        <!-- School Filter -->
-        <div class="stat-filter">
-            <label>🏫 فلترة حسب المدرسة:</label>
-            <select id="stats-school-filter" onchange="loadDashboardStats()">
-                <option value="all">جميع المدارس (All Schools)</option>
+<div class="app-body">
+
+    <!-- ── SIDEBAR ── -->
+    <nav class="sidebar">
+        <span class="sidebar-section-label">الإدارة</span>
+        <button class="nav-item active" onclick="showTab('schools')" id="nav-schools">
+            <i data-lucide="school" style="width:16px;height:16px;" class="nav-icon"></i>
+            <span>المدارس</span>
+        </button>
+        <button class="nav-item" onclick="showTab('parents')" id="nav-parents">
+            <i data-lucide="users" style="width:16px;height:16px;" class="nav-icon"></i>
+            <span>أولياء الأمور</span>
+        </button>
+        <button class="nav-item" onclick="showTab('students')" id="nav-students">
+            <i data-lucide="graduation-cap" style="width:16px;height:16px;" class="nav-icon"></i>
+            <span>الطلاب</span>
+        </button>
+
+        <span class="sidebar-section-label" style="margin-top:8px;">التشغيل</span>
+        <button class="nav-item" onclick="showTab('buses')" id="nav-buses">
+            <i data-lucide="bus" style="width:16px;height:16px;" class="nav-icon"></i>
+            <span>الحافلات</span>
+        </button>
+        <button class="nav-item" onclick="showTab('drivers')" id="nav-drivers">
+            <i data-lucide="steering-wheel" style="width:16px;height:16px;" class="nav-icon"></i>
+            <span>السائقون</span>
+        </button>
+        <button class="nav-item" onclick="showTab('livestream')" id="nav-livestream">
+            <i data-lucide="video" style="width:16px;height:16px;" class="nav-icon"></i>
+            <span>البث المباشر</span>
+        </button>
+    </nav>
+
+    <!-- ── MAIN CONTENT ── -->
+    <main class="main-content">
+
+        <!-- Stats -->
+        <div class="stats-filter-row">
+            <label for="stats-school-filter">
+                <i data-lucide="filter" style="width:12px;height:12px;vertical-align:middle;"></i>
+                فلترة حسب المدرسة:
+            </label>
+            <select id="stats-school-filter" onchange="loadDashboardStats()" style="width:auto;padding:7px 14px;font-size:0.85em;">
+                <option value="all">جميع المدارس</option>
             </select>
         </div>
 
-        <div class="stat-card">
-            <div class="stat-icon">🚌</div>
-            <div class="stat-number" id="stat-total-buses">--</div>
-            <div class="stat-label">إجمالي الحافلات<br><small>Total Buses</small></div>
-        </div>
-        <div class="stat-card active-card">
-            <div class="stat-icon">📍</div>
-            <div class="stat-number" id="stat-active-buses">--</div>
-            <div class="stat-label">حافلة نشطة<br><small>Active Now</small></div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">👨‍🎓</div>
-            <div class="stat-number" id="stat-total-students">--</div>
-            <div class="stat-label">طالب مسجل<br><small>Total Students</small></div>
-        </div>
-        <div class="stat-card present-card">
-            <div class="stat-icon">✅</div>
-            <div class="stat-number" id="stat-present">--</div>
-            <div class="stat-label">حاضر<br><small>Present</small></div>
-        </div>
-        <div class="stat-card absent-card">
-            <div class="stat-icon">❌</div>
-            <div class="stat-number" id="stat-absent">--</div>
-            <div class="stat-label">غائب<br><small>Absent</small></div>
-        </div>
-    </div>
-
-    <!-- SCHOOLS TAB -->
-    <div id="tab-schools" class="tab-content active">
-        <div class="content-grid">
-            <div class="card gold-accent">
-                <h2>🏫 إنشاء مدرسة جديدة</h2>
-                <p>Create New School & Admin</p>
-
-                <label>اسم المدرسة / School Name:</label>
-                <input type="text" id="new_school_name" placeholder="مثال: مدرسة الأمل">
-
-                <label>كلمة المرور / Password:</label>
-                <input type="password" id="new_admin_pass" placeholder="كلمة مرور المشرف">
-
-                <button class="btn-primary" onclick="createSchoolAdmin()">+ إنشاء المدرسة</button>
-                <div id="res_create_school" class="result-box"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- PARENTS TAB -->
-    <div id="tab-parents" class="tab-content">
-        <div class="content-grid">
-            <div class="card gold-accent">
-                <h2>👨‍👩‍👧 إنشاء حساب ولي أمر</h2>
-                <p>Create Parent Account</p>
-
-                <label>المدرسة / School:</label>
-                <select id="parent_school_id">
-                    <option value="" disabled selected>اختر المدرسة...</option>
-                </select>
-
-                <label>اسم ولي الأمر / Parent Name:</label>
-                <input type="text" id="parent_name" placeholder="مثال: أحمد محمد">
-
-                <label>اسم المستخدم / Username:</label>
-                <input type="text" id="parent_username" placeholder="للدخول">
-
-                <label>كلمة المرور / Password:</label>
-                <input type="password" id="parent_password" placeholder="كلمة المرور">
-
-                <button class="btn-primary" onclick="createParent()">+ إنشاء الحساب</button>
-                <div id="res_parent" class="result-box"></div>
-            </div>
-
-            <div class="card">
-                <h2>🔑 تفعيل حساب ولي أمر</h2>
-                <p>Activate Parent Account</p>
-
-                <label>المدرسة / School:</label>
-                <select id="activate_school_id" onchange="loadParentsForActivation()">
-                    <option value="" disabled selected>اختر المدرسة...</option>
-                </select>
-
-                <label>ولي الأمر / Parent:</label>
-                <select id="activate_parent_id">
-                    <option value="" disabled selected>اختر المدرسة أولاً</option>
-                </select>
-
-                <label>اسم المستخدم الجديد:</label>
-                <input type="text" id="activate_username" placeholder="اسم المستخدم">
-
-                <label>كلمة المرور الجديدة:</label>
-                <input type="password" id="activate_password" placeholder="كلمة المرور">
-
-                <button class="btn-success" onclick="activateParentAccount()">تحديث البيانات</button>
-                <div id="res_activate" class="result-box"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- STUDENTS TAB -->
-    <div id="tab-students" class="tab-content">
-        <div class="content-grid">
-            <div class="card gold-accent">
-                <h2>👨‍🎓 تسجيل طالب جديد</h2>
-                <p>Register New Student</p>
-
-                <label>المدرسة / School: *</label>
-                <select id="student_school_id">
-                    <option value="" disabled selected>اختر المدرسة...</option>
-                </select>
-
-                <label>اسم الطالب / Student Name:</label>
-                <input type="text" id="s_name" placeholder="اسم الطالب">
-
-                <label>ولي الأمر / Parent:</label>
-                <select id="p_id">
-                    <option value="" disabled selected>اختر ولي الأمر...</option>
-                </select>
-
-                <label>NFC Tag:</label>
-                <input type="text" id="nfc_id" placeholder="TAG_ID">
-
-                <label>الموقع (خط العرض/الطول):</label>
-                <div class="row">
-                    <input type="text" id="lat" placeholder="Lat">
-                    <input type="text" id="lng" placeholder="Lng">
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-icon-ring stat-icon-clay">
+                    <i data-lucide="bus" style="width:22px;height:22px;"></i>
                 </div>
-
-                <input type="text" id="address_text" placeholder="ملاحظة الموقع">
-
-                <button class="btn-primary" onclick="addStudent()">+ تسجيل الطالب</button>
-                <div id="res_student" class="result-box"></div>
-            </div>
-
-            <div class="card">
-                <h2>📍 تحديث موقع الطالب</h2>
-                <p>Update Student Location</p>
-
-                <label>اختر ولي الأمر:</label>
-                <select id="upd_parent_filter" onchange="filterStudentsByParent()">
-                    <option value="" disabled selected>اختر ولي الأمر...</option>
-                </select>
-
-                <label>اختر الطالب:</label>
-                <select id="upd_student_id">
-                    <option value="" disabled selected>اختر ولي الأمر أولاً</option>
-                </select>
-
-                <div class="row">
-                    <input type="text" id="upd_lat" placeholder="Lat جديد">
-                    <input type="text" id="upd_lng" placeholder="Lng جديد">
+                <div class="stat-info">
+                    <span class="stat-number" id="stat-total-buses">--</span>
+                    <span class="stat-label">إجمالي الحافلات</span>
                 </div>
-                <input type="text" id="upd_address_text" placeholder="ملاحظة الموقع">
-
-                <button class="btn-secondary" onclick="updateLocation()">تحديث الموقع</button>
-                <div id="res_upd_loc" class="result-box"></div>
             </div>
-
-            <div class="card">
-                <h2>🗑️ حذف طالب</h2>
-                <p>Remove Student</p>
-
-                <label>اختر ولي الأمر:</label>
-                <select id="del_parent_filter" onchange="filterStudentsToDelete()">
-                    <option value="" disabled selected>اختر ولي الأمر...</option>
-                </select>
-
-                <label>اختر الطالب:</label>
-                <select id="del_student_id">
-                    <option value="" disabled selected>اختر ولي الأمر أولاً</option>
-                </select>
-
-                <button class="btn-danger" onclick="deleteStudent()">حذف الطالب</button>
-                <div id="res_del_student" class="result-box"></div>
+            <div class="stat-card">
+                <div class="stat-icon-ring stat-icon-info">
+                    <i data-lucide="map-pin" style="width:22px;height:22px;"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-number" id="stat-active-buses">--</span>
+                    <span class="stat-label">نشطة الآن</span>
+                </div>
             </div>
-
-            <div class="card">
-                <h2>🚌 تعيين باص للطالب</h2>
-                <p>Assign Bus to Student</p>
-
-                <label>اختر ولي الأمر:</label>
-                <select id="assign_parent_filter" onchange="filterStudentsForAssignment()">
-                    <option value="" disabled selected>اختر ولي الأمر...</option>
-                </select>
-
-                <label>اختر الطالب:</label>
-                <select id="assign_student_id">
-                    <option value="" disabled selected>اختر ولي الأمر أولاً</option>
-                </select>
-
-                <label>اختر الباص:</label>
-                <select id="assign_bus_id">
-                    <option value="" disabled selected>جاري التحميل...</option>
-                </select>
-
-                <button class="btn-primary" onclick="assignBus()">تعيين الباص</button>
-                <div id="res_bus_assign" class="result-box"></div>
+            <div class="stat-card">
+                <div class="stat-icon-ring stat-icon-amber">
+                    <i data-lucide="graduation-cap" style="width:22px;height:22px;"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-number" id="stat-total-students">--</span>
+                    <span class="stat-label">طالب مسجل</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon-ring stat-icon-success">
+                    <i data-lucide="check-circle" style="width:22px;height:22px;"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-number" id="stat-present">--</span>
+                    <span class="stat-label">حاضر</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon-ring stat-icon-danger">
+                    <i data-lucide="x-circle" style="width:22px;height:22px;"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-number" id="stat-absent">--</span>
+                    <span class="stat-label">غائب</span>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- BUSES TAB -->
-    <div id="tab-buses" class="tab-content">
-        <div class="content-grid">
-            <div class="card gold-accent">
-                <h2>🚌 إضافة باص جديد</h2>
-                <p>Add New Bus</p>
-
-                <label>رقم اللوحة / Plate Number:</label>
-                <input type="text" id="new_bus_plate" placeholder="مثال: ABC-123">
-
-                <label>المدرسة / School:</label>
-                <select id="bus_school_id">
-                    <option value="" disabled selected>اختر المدرسة...</option>
-                </select>
-
-                <button class="btn-primary" onclick="addBus()">+ إضافة الباص</button>
-                <div id="res_add_bus" class="result-box"></div>
+        <!-- ══════════════ SCHOOLS TAB ══════════════ -->
+        <div id="tab-schools" class="tab-content active">
+            <div class="page-header">
+                <h1>المدارس</h1>
+                <p>إدارة المدارس وحسابات المشرفين</p>
             </div>
-
-            <div class="card">
-                <h2>🗑️ حذف باص</h2>
-                <p>Remove Bus</p>
-
-                <label>اختر الباص:</label>
-                <select id="delete_bus_id">
-                    <option value="" disabled selected>جاري التحميل...</option>
-                </select>
-
-                <button class="btn-danger" onclick="deleteBus()">حذف الباص</button>
-                <div id="res_del_bus" class="result-box"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- DRIVERS TAB -->
-    <div id="tab-drivers" class="tab-content">
-        <div class="content-grid">
-            <div class="card gold-accent">
-                <h2>🚗 إنشاء حساب سائق</h2>
-                <p>Create Driver Account</p>
-
-                <label>المدرسة / School:</label>
-                <select id="driver_school_id">
-                    <option value="" disabled selected>اختر المدرسة...</option>
-                </select>
-
-                <label>اسم المستخدم / Username:</label>
-                <input type="text" id="driver_user" placeholder="اسم المستخدم">
-
-                <label>كلمة المرور / Password:</label>
-                <input type="password" id="driver_pass" placeholder="كلمة المرور">
-
-                <button class="btn-primary" onclick="createDriver()">+ إنشاء حساب السائق</button>
-                <div id="res_driver" class="result-box"></div>
-            </div>
-
-            <div class="card">
-                <h2>🔗 تعيين سائق للباص</h2>
-                <p>Assign Driver to Bus</p>
-
-                <label>المدرسة / School:</label>
-                <select id="assign_filter_school" onchange="filterAssignmentOptions()">
-                    <option value="" disabled selected>اختر المدرسة...</option>
-                    <option value="ALL">عرض الكل</option>
-                </select>
-
-                <label>اختر السائق:</label>
-                <select id="assign_driver_id">
-                    <option value="" disabled selected>اختر المدرسة أولاً</option>
-                </select>
-
-                <label>اختر الباص:</label>
-                <select id="assign_driver_bus_id">
-                    <option value="" disabled selected>جاري التحميل...</option>
-                </select>
-
-                <button class="btn-success" onclick="assignDriverToBus()">تعيين السائق</button>
-                <div id="res_assign_driver" class="result-box"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- LIVESTREAM TAB -->
-    <div id="tab-livestream" class="tab-content">
-        <div class="content-grid">
-            <div class="card gold-accent">
-                <h2>📹 مشاهدة البث المباشر</h2>
-                <p>View Live Stream</p>
-
-                <label>عرض حسب / View by:</label>
-                <select id="stream_mode" onchange="toggleStreamMode()">
-                    <option value="bus">🚌 حسب الحافلة / By Bus</option>
-                    <option value="driver">🚗 حسب السائق / By Driver</option>
-                </select>
-
-                <div id="bus-select-group">
-                    <label>اختر الحافلة / Select Bus:</label>
-                    <select id="stream_bus_id">
-                        <option value="" disabled selected>جاري التحميل...</option>
-                    </select>
-                </div>
-
-                <div id="driver-select-group" style="display:none;">
-                    <label>اختر السائق / Select Driver:</label>
-                    <select id="stream_driver_id" onchange="onDriverSelect()">
-                        <option value="" disabled selected>جاري التحميل...</option>
-                    </select>
-                </div>
-
-                <button class="btn-primary" onclick="openLiveStream()">📺 فتح البث / Open Stream</button>
-                <button class="btn-danger" onclick="closeLiveStream()" style="display:none;" id="close-stream-btn">✕
-                    إغلاق / Close</button>
-            </div>
-
-            <!-- Live Stream Viewer -->
-            <div class="card" id="stream-viewer" style="display:none;">
-                <div style="position:relative;">
-                    <div id="stream-status"
-                        style="background:#e74c3c; color:white; padding:8px 15px; border-radius:20px; display:inline-block; margin-bottom:15px;">
-                        <span
-                            style="display:inline-block; width:10px; height:10px; background:white; border-radius:50%; animation:blink 1s infinite;"></span>
-                        <span>بث مباشر - LIVE</span>
+            <div class="content-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon card-icon-amber">
+                            <i data-lucide="plus-circle" style="width:20px;height:20px;"></i>
+                        </div>
+                        <div class="card-title">
+                            <h2>إنشاء مدرسة جديدة</h2>
+                            <p>Create New School &amp; Admin</p>
+                        </div>
                     </div>
-                    <img id="live-stream-img" style="width:100%; border-radius:12px; background:#000; min-height:300px;"
-                        alt="Live Stream">
-                    <div id="waiting-msg" style="text-align:center; padding:50px; color:#666;">
-                        <h3>⏳ في انتظار البث...</h3>
+
+                    <div class="form-group">
+                        <label>اسم المدرسة / School Name</label>
+                        <input type="text" id="new_school_name" placeholder="مثال: مدرسة الأمل">
+                    </div>
+                    <div class="form-group">
+                        <label>كلمة المرور / Password</label>
+                        <input type="password" id="new_admin_pass" placeholder="كلمة مرور المشرف">
+                    </div>
+
+                    <button class="btn btn-clay" onclick="createSchoolAdmin()">
+                        <i data-lucide="plus" style="width:16px;height:16px;"></i>
+                        إنشاء المدرسة
+                    </button>
+                    <div id="res_create_school" class="result-box"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════ PARENTS TAB ══════════════ -->
+        <div id="tab-parents" class="tab-content">
+            <div class="page-header">
+                <h1>أولياء الأمور</h1>
+                <p>إنشاء وتفعيل حسابات أولياء الأمور</p>
+            </div>
+            <div class="content-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon card-icon-amber">
+                            <i data-lucide="user-plus" style="width:20px;height:20px;"></i>
+                        </div>
+                        <div class="card-title">
+                            <h2>إنشاء حساب ولي أمر</h2>
+                            <p>Create Parent Account</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>المدرسة / School</label>
+                        <select id="parent_school_id">
+                            <option value="" disabled selected>اختر المدرسة...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>اسم ولي الأمر / Parent Name</label>
+                        <input type="text" id="parent_name" placeholder="مثال: أحمد محمد">
+                    </div>
+                    <div class="form-group">
+                        <label>اسم المستخدم / Username</label>
+                        <input type="text" id="parent_username" placeholder="للدخول">
+                    </div>
+                    <div class="form-group">
+                        <label>كلمة المرور / Password</label>
+                        <input type="password" id="parent_password" placeholder="كلمة المرور">
+                    </div>
+
+                    <button class="btn btn-clay" onclick="createParent()">
+                        <i data-lucide="plus" style="width:16px;height:16px;"></i>
+                        إنشاء الحساب
+                    </button>
+                    <div id="res_parent" class="result-box"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon card-icon-success">
+                            <i data-lucide="key" style="width:20px;height:20px;"></i>
+                        </div>
+                        <div class="card-title">
+                            <h2>تفعيل حساب ولي أمر</h2>
+                            <p>Activate Parent Account</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>المدرسة / School</label>
+                        <select id="activate_school_id" onchange="loadParentsForActivation()">
+                            <option value="" disabled selected>اختر المدرسة...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>ولي الأمر / Parent</label>
+                        <select id="activate_parent_id">
+                            <option value="" disabled selected>اختر المدرسة أولاً</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>اسم المستخدم الجديد</label>
+                        <input type="text" id="activate_username" placeholder="اسم المستخدم">
+                    </div>
+                    <div class="form-group">
+                        <label>كلمة المرور الجديدة</label>
+                        <input type="password" id="activate_password" placeholder="كلمة المرور">
+                    </div>
+
+                    <button class="btn btn-success" onclick="activateParentAccount()">
+                        <i data-lucide="check" style="width:16px;height:16px;"></i>
+                        تحديث البيانات
+                    </button>
+                    <div id="res_activate" class="result-box"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════ STUDENTS TAB ══════════════ -->
+        <div id="tab-students" class="tab-content">
+            <div class="page-header">
+                <h1>الطلاب</h1>
+                <p>تسجيل الطلاب وإدارة بياناتهم ومواقعهم</p>
+            </div>
+            <div class="content-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon card-icon-amber">
+                            <i data-lucide="user-plus" style="width:20px;height:20px;"></i>
+                        </div>
+                        <div class="card-title">
+                            <h2>تسجيل طالب جديد</h2>
+                            <p>Register New Student</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>المدرسة / School *</label>
+                        <select id="student_school_id">
+                            <option value="" disabled selected>اختر المدرسة...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>اسم الطالب / Student Name</label>
+                        <input type="text" id="s_name" placeholder="اسم الطالب">
+                    </div>
+                    <div class="form-group">
+                        <label>ولي الأمر / Parent</label>
+                        <select id="p_id">
+                            <option value="" disabled selected>اختر ولي الأمر...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>NFC Tag</label>
+                        <input type="text" id="nfc_id" placeholder="TAG_ID">
+                    </div>
+                    <div class="form-group">
+                        <label>الموقع (خط العرض / الطول)</label>
+                        <div class="row">
+                            <input type="text" id="lat" placeholder="Lat">
+                            <input type="text" id="lng" placeholder="Lng">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="address_text" placeholder="ملاحظة الموقع">
+                    </div>
+
+                    <button class="btn btn-clay" onclick="addStudent()">
+                        <i data-lucide="plus" style="width:16px;height:16px;"></i>
+                        تسجيل الطالب
+                    </button>
+                    <div id="res_student" class="result-box"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon card-icon-info">
+                            <i data-lucide="map-pin" style="width:20px;height:20px;"></i>
+                        </div>
+                        <div class="card-title">
+                            <h2>تحديث موقع الطالب</h2>
+                            <p>Update Student Location</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>اختر ولي الأمر</label>
+                        <select id="upd_parent_filter" onchange="filterStudentsByParent()">
+                            <option value="" disabled selected>اختر ولي الأمر...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>اختر الطالب</label>
+                        <select id="upd_student_id">
+                            <option value="" disabled selected>اختر ولي الأمر أولاً</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <input type="text" id="upd_lat" placeholder="Lat جديد">
+                            <input type="text" id="upd_lng" placeholder="Lng جديد">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="upd_address_text" placeholder="ملاحظة الموقع">
+                    </div>
+
+                    <button class="btn btn-info" onclick="updateLocation()">
+                        <i data-lucide="map-pin" style="width:16px;height:16px;"></i>
+                        تحديث الموقع
+                    </button>
+                    <div id="res_upd_loc" class="result-box"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon card-icon-danger">
+                            <i data-lucide="trash-2" style="width:20px;height:20px;"></i>
+                        </div>
+                        <div class="card-title">
+                            <h2>حذف طالب</h2>
+                            <p>Remove Student</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>اختر ولي الأمر</label>
+                        <select id="del_parent_filter" onchange="filterStudentsToDelete()">
+                            <option value="" disabled selected>اختر ولي الأمر...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>اختر الطالب</label>
+                        <select id="del_student_id">
+                            <option value="" disabled selected>اختر ولي الأمر أولاً</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-danger" onclick="deleteStudent()">
+                        <i data-lucide="trash-2" style="width:16px;height:16px;"></i>
+                        حذف الطالب
+                    </button>
+                    <div id="res_del_student" class="result-box"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon card-icon-clay">
+                            <i data-lucide="link" style="width:20px;height:20px;"></i>
+                        </div>
+                        <div class="card-title">
+                            <h2>تعيين باص للطالب</h2>
+                            <p>Assign Bus to Student</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>اختر ولي الأمر</label>
+                        <select id="assign_parent_filter" onchange="filterStudentsForAssignment()">
+                            <option value="" disabled selected>اختر ولي الأمر...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>اختر الطالب</label>
+                        <select id="assign_student_id">
+                            <option value="" disabled selected>اختر ولي الأمر أولاً</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>اختر الباص</label>
+                        <select id="assign_bus_id">
+                            <option value="" disabled selected>جاري التحميل...</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-clay" onclick="assignBus()">
+                        <i data-lucide="link" style="width:16px;height:16px;"></i>
+                        تعيين الباص
+                    </button>
+                    <div id="res_bus_assign" class="result-box"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════ BUSES TAB ══════════════ -->
+        <div id="tab-buses" class="tab-content">
+            <div class="page-header">
+                <h1>الحافلات</h1>
+                <p>إضافة وإدارة أسطول الحافلات</p>
+            </div>
+            <div class="content-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon card-icon-amber">
+                            <i data-lucide="plus-circle" style="width:20px;height:20px;"></i>
+                        </div>
+                        <div class="card-title">
+                            <h2>إضافة باص جديد</h2>
+                            <p>Add New Bus</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>رقم اللوحة / Plate Number</label>
+                        <input type="text" id="new_bus_plate" placeholder="مثال: ABC-123">
+                    </div>
+                    <div class="form-group">
+                        <label>المدرسة / School</label>
+                        <select id="bus_school_id">
+                            <option value="" disabled selected>اختر المدرسة...</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-clay" onclick="addBus()">
+                        <i data-lucide="plus" style="width:16px;height:16px;"></i>
+                        إضافة الباص
+                    </button>
+                    <div id="res_add_bus" class="result-box"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon card-icon-danger">
+                            <i data-lucide="trash-2" style="width:20px;height:20px;"></i>
+                        </div>
+                        <div class="card-title">
+                            <h2>حذف باص</h2>
+                            <p>Remove Bus</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>اختر الباص</label>
+                        <select id="delete_bus_id">
+                            <option value="" disabled selected>جاري التحميل...</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-danger" onclick="deleteBus()">
+                        <i data-lucide="trash-2" style="width:16px;height:16px;"></i>
+                        حذف الباص
+                    </button>
+                    <div id="res_del_bus" class="result-box"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════ DRIVERS TAB ══════════════ -->
+        <div id="tab-drivers" class="tab-content">
+            <div class="page-header">
+                <h1>السائقون</h1>
+                <p>إنشاء حسابات السائقين وتعيينهم على الحافلات</p>
+            </div>
+            <div class="content-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon card-icon-amber">
+                            <i data-lucide="user-plus" style="width:20px;height:20px;"></i>
+                        </div>
+                        <div class="card-title">
+                            <h2>إنشاء حساب سائق</h2>
+                            <p>Create Driver Account</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>المدرسة / School</label>
+                        <select id="driver_school_id">
+                            <option value="" disabled selected>اختر المدرسة...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>اسم المستخدم / Username</label>
+                        <input type="text" id="driver_user" placeholder="اسم المستخدم">
+                    </div>
+                    <div class="form-group">
+                        <label>كلمة المرور / Password</label>
+                        <input type="password" id="driver_pass" placeholder="كلمة المرور">
+                    </div>
+
+                    <button class="btn btn-clay" onclick="createDriver()">
+                        <i data-lucide="plus" style="width:16px;height:16px;"></i>
+                        إنشاء حساب السائق
+                    </button>
+                    <div id="res_driver" class="result-box"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon card-icon-success">
+                            <i data-lucide="link-2" style="width:20px;height:20px;"></i>
+                        </div>
+                        <div class="card-title">
+                            <h2>تعيين سائق للباص</h2>
+                            <p>Assign Driver to Bus</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>المدرسة / School</label>
+                        <select id="assign_filter_school" onchange="filterAssignmentOptions()">
+                            <option value="" disabled selected>اختر المدرسة...</option>
+                            <option value="ALL">عرض الكل</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>اختر السائق</label>
+                        <select id="assign_driver_id">
+                            <option value="" disabled selected>اختر المدرسة أولاً</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>اختر الباص</label>
+                        <select id="assign_driver_bus_id">
+                            <option value="" disabled selected>جاري التحميل...</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-success" onclick="assignDriverToBus()">
+                        <i data-lucide="check" style="width:16px;height:16px;"></i>
+                        تعيين السائق
+                    </button>
+                    <div id="res_assign_driver" class="result-box"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════ LIVESTREAM TAB ══════════════ -->
+        <div id="tab-livestream" class="tab-content">
+            <div class="page-header">
+                <h1>البث المباشر</h1>
+                <p>مشاهدة كاميرات الحافلات لحظة بلحظة</p>
+            </div>
+            <div class="content-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon card-icon-danger">
+                            <i data-lucide="video" style="width:20px;height:20px;"></i>
+                        </div>
+                        <div class="card-title">
+                            <h2>مشاهدة البث المباشر</h2>
+                            <p>View Live Stream</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>عرض حسب / View by</label>
+                        <select id="stream_mode" onchange="toggleStreamMode()">
+                            <option value="bus">حسب الحافلة / By Bus</option>
+                            <option value="driver">حسب السائق / By Driver</option>
+                        </select>
+                    </div>
+
+                    <div id="bus-select-group" class="form-group">
+                        <label>اختر الحافلة / Select Bus</label>
+                        <select id="stream_bus_id">
+                            <option value="" disabled selected>جاري التحميل...</option>
+                        </select>
+                    </div>
+
+                    <div id="driver-select-group" class="form-group" style="display:none;">
+                        <label>اختر السائق / Select Driver</label>
+                        <select id="stream_driver_id" onchange="onDriverSelect()">
+                            <option value="" disabled selected>جاري التحميل...</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-clay" onclick="openLiveStream()">
+                        <i data-lucide="play-circle" style="width:16px;height:16px;"></i>
+                        فتح البث
+                    </button>
+                    <button class="btn btn-outline" onclick="closeLiveStream()" style="display:none;" id="close-stream-btn">
+                        <i data-lucide="x-circle" style="width:16px;height:16px;"></i>
+                        إغلاق البث
+                    </button>
+                </div>
+
+                <div class="stream-viewer" id="stream-viewer" style="display:none;">
+                    <div class="stream-live-badge" id="stream-status" style="display:none;">
+                        <div class="live-dot"></div>
+                        بث مباشر — LIVE
+                    </div>
+                    <img id="live-stream-img" alt="Live Stream" style="display:none;">
+                    <div id="waiting-msg">
+                        <h3>في انتظار البث...</h3>
                         <p>Waiting for driver to start streaming</p>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js" integrity="sha384-DkkWv9oJFWLIydBXXjkBWnG1/fuVhw8YPBq37uvvD6WSYRFRqr21eY5Dg9ZhmWdy" crossorigin="anonymous"></script>
-    <script>
-        // Fetch CSRF token once on page load; included in all POST requests.
-        let _csrfToken = '';
-        fetch('/api/csrf-token').then(r => r.json()).then(d => { _csrfToken = d.token; });
+    </main>
+</div>
 
-        // ── LANGUAGE TOGGLE ─────────────────────────────────────────────────────
-        const SA_LANG = {
-            ar: { title: '🛡️ لوحة تحكم آمن مدرستي', sub: 'مرحباً {{ user }}', logout: 'خروج',
-                  tabs: ['🏫 المدارس','👨‍👩‍👧 أولياء الأمور','👨‍🎓 الطلاب','🚌 الحافلات','🚗 السائقين','📹 البث المباشر'] },
-            en: { title: '🛡️ Super Admin Console', sub: 'Welcome {{ user }}', logout: 'Logout',
-                  tabs: ['🏫 Schools','👨‍👩‍👧 Parents','👨‍🎓 Students','🚌 Buses','🚗 Drivers','📹 Live Stream'] }
-        };
-        let _superLang = localStorage.getItem('super_lang') || 'ar';
-        function applySuperLang() {
-            const L = SA_LANG[_superLang];
-            document.documentElement.lang = _superLang;
-            document.documentElement.dir  = _superLang === 'ar' ? 'rtl' : 'ltr';
-            document.getElementById('sa-h-title').innerText  = L.title;
-            document.getElementById('sa-h-sub').innerText    = L.sub;
-            document.getElementById('sa-h-logout').innerText = L.logout;
-            document.getElementById('sa-lang-btn').innerText = _superLang === 'ar' ? 'EN' : 'ع';
-            document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-                if (L.tabs[i]) btn.innerHTML = L.tabs[i];
-            });
+<script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // ── CSRF TOKEN ──────────────────────────────────────────────────────────────
+    let _csrfToken = '';
+    fetch('/api/csrf-token').then(r => r.json()).then(d => { _csrfToken = d.token; });
+
+    // ── LANGUAGE TOGGLE ─────────────────────────────────────────────────────────
+    const SA_LANG = {
+        ar: {
+            title: 'آمن مدرستي',
+            sub: 'مرحباً {{ user }}',
+            logout: 'خروج',
+            tabs: {
+                schools: 'المدارس', parents: 'أولياء الأمور', students: 'الطلاب',
+                buses: 'الحافلات', drivers: 'السائقون', livestream: 'البث المباشر'
+            }
+        },
+        en: {
+            title: 'Amen Madrasati',
+            sub: 'Welcome {{ user }}',
+            logout: 'Logout',
+            tabs: {
+                schools: 'Schools', parents: 'Parents', students: 'Students',
+                buses: 'Buses', drivers: 'Drivers', livestream: 'Live Stream'
+            }
         }
-        function toggleSuperLang() {
-            _superLang = _superLang === 'ar' ? 'en' : 'ar';
-            localStorage.setItem('super_lang', _superLang);
-            applySuperLang();
-        }
+    };
+    let _superLang = localStorage.getItem('super_lang') || 'ar';
+
+    function applySuperLang() {
+        const L = SA_LANG[_superLang];
+        document.documentElement.lang = _superLang;
+        document.documentElement.dir  = _superLang === 'ar' ? 'rtl' : 'ltr';
+        document.getElementById('sa-h-title').innerText  = L.title;
+        document.getElementById('sa-h-sub').innerText    = L.sub;
+        document.getElementById('sa-h-logout').innerHTML =
+            `<i data-lucide="log-out" style="width:14px;height:14px;"></i> ${L.logout}`;
+        document.getElementById('sa-lang-btn').innerText = _superLang === 'ar' ? 'EN' : 'ع';
+        lucide.createIcons();
+    }
+
+    function toggleSuperLang() {
+        _superLang = _superLang === 'ar' ? 'en' : 'ar';
+        localStorage.setItem('super_lang', _superLang);
         applySuperLang();
+    }
 
-        // Tab Navigation
-        function showTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    applySuperLang();
 
-            // Show selected tab
-            document.getElementById('tab-' + tabName).classList.add('active');
-            event.target.closest('.tab-btn').classList.add('active');
-        }
+    // ── TAB NAVIGATION ──────────────────────────────────────────────────────────
+    function showTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('tab-' + tabName).classList.add('active');
+        const navEl = document.getElementById('nav-' + tabName);
+        if (navEl) navEl.classList.add('active');
+    }
 
-        function showResult(elementId, msg) {
-            const el = document.getElementById(elementId);
-            el.style.display = 'block';
-            el.innerText = msg;
-        }
+    // ── RESULT HELPER ───────────────────────────────────────────────────────────
+    function showResult(elementId, msg) {
+        const el = document.getElementById(elementId);
+        el.style.display = 'block';
+        el.innerText = msg;
+        const isSuccess = msg.startsWith('✅') || msg.toLowerCase().includes('success') || msg.includes('تم');
+        el.className = 'result-box ' + (isSuccess ? 'success' : 'error');
+    }
 
-        // --- SCHOOLS ---
-        function createSchoolAdmin() {
-            const sName = document.getElementById('new_school_name').value;
-            const pPass = document.getElementById('new_admin_pass').value;
+    // ── ESCAPE HTML ─────────────────────────────────────────────────────────────
+    // Escapes HTML-special characters to prevent stored XSS when database
+    // values are interpolated into innerHTML.
+    function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
 
-            if (!sName || !pPass) { alert("يرجى ملء جميع الحقول"); return; }
+    // ── SCHOOLS ────────────────────────────────────────────────────────────────
+    let ALL_SCHOOLS = [];
 
-            fetch('/api/create_school_admin', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
-                body: JSON.stringify({ school_name: sName, username: sName, password: pPass })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        showResult('res_create_school', `✅ تم إنشاء المدرسة! (ID: ${data.school_id})`);
-                        document.getElementById('new_school_name').value = "";
-                        document.getElementById('new_admin_pass').value = "";
-                        loadSchools();
-                    } else {
-                        showResult('res_create_school', "❌ فشل الإنشاء");
-                    }
-                });
-        }
+    function createSchoolAdmin() {
+        const sName = document.getElementById('new_school_name').value;
+        const pPass = document.getElementById('new_admin_pass').value;
+        if (!sName || !pPass) { alert("يرجى ملء جميع الحقول"); return; }
 
-        // --- PARENTS ---
-        function createParent() {
-            const name = document.getElementById('parent_name').value;
-            const username = document.getElementById('parent_username').value;
-            const password = document.getElementById('parent_password').value;
-            const sid = document.getElementById('parent_school_id').value;
-
-            if (!name || !username || !password) { alert("يرجى ملء جميع الحقول"); return; }
-
-            fetch('/api/create_parent', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
-                body: JSON.stringify({ name, school_id: sid, username, password })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        showResult('res_parent', '✅ تم الإنشاء! UUID: ' + data.id);
-                        loadParents();
-                        document.getElementById('parent_name').value = '';
-                        document.getElementById('parent_username').value = '';
-                        document.getElementById('parent_password').value = '';
-                    } else showResult('res_parent', '❌ خطأ: ' + (data.message || ''));
-                });
-        }
-
-        // Escapes HTML-special characters to prevent stored XSS when database
-        // values are interpolated into innerHTML.
-        function escapeHtml(s) {
-            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        fetch('/api/create_school_admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+            body: JSON.stringify({ school_name: sName, username: sName, password: pPass })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showResult('res_create_school', `✅ تم إنشاء المدرسة! (ID: ${data.school_id})`);
+                    document.getElementById('new_school_name').value = '';
+                    document.getElementById('new_admin_pass').value = '';
+                    loadSchools();
+                } else {
+                    showResult('res_create_school', '❌ فشل الإنشاء');
+                }
             });
-        }
+    }
 
-        function loadParentsForActivation() {
-            const schoolId = document.getElementById('activate_school_id').value;
-            const parentSel = document.getElementById('activate_parent_id');
-            parentSel.innerHTML = '<option>جاري التحميل...</option>';
+    function loadSchools() {
+        fetch('/api/get_schools')
+            .then(res => res.json())
+            .then(data => {
+                ALL_SCHOOLS = data;
+                const html = '<option value="" disabled selected>اختر المدرسة</option>' +
+                    data.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
 
-            fetch(`/api/get_parents?school_id=${schoolId}`)
-                .then(res => res.json())
-                .then(data => {
-                    parentSel.innerHTML = '<option value="" disabled selected>اختر ولي الأمر</option>' +
-                        data.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
+                ['bus_school_id', 'activate_school_id', 'parent_school_id',
+                 'driver_school_id', 'student_school_id'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerHTML = html;
                 });
-        }
 
-        function activateParentAccount() {
-            const pid = document.getElementById('activate_parent_id').value;
-            const user = document.getElementById('activate_username').value;
-            const pass = document.getElementById('activate_password').value;
-
-            if (!pid || !user || !pass) { alert("يرجى ملء جميع الحقول"); return; }
-
-            fetch('/api/update_parent_credentials', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
-                body: JSON.stringify({ parent_id: pid, username: user, password: pass })
-            })
-                .then(res => {
-                    if (res.status === 200) showResult('res_activate', "✅ تم التحديث!");
-                    else res.text().then(t => showResult('res_activate', "❌ " + t));
-                });
-        }
-
-        // --- STUDENTS ---
-        let ALL_STUDENTS = [];
-        let ALL_PARENTS = [];
-
-        function addStudent() {
-            const schoolId = document.getElementById('student_school_id').value;
-            if (!schoolId) { alert("يرجى اختيار المدرسة أولاً"); return; }
-
-            const data = {
-                name: document.getElementById('s_name').value,
-                parent_id: document.getElementById('p_id').value,
-                nfc_id: document.getElementById('nfc_id').value,
-                lat: document.getElementById('lat').value,
-                lng: document.getElementById('lng').value,
-                address_text: document.getElementById('address_text').value,
-                school_id: schoolId
-            };
-
-            fetch('/api/add_student', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
-                body: JSON.stringify(data)
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        showResult('res_student', "✅ تم التسجيل! ID: " + data.id);
-                        loadStudents();
-                    } else showResult('res_student', "❌ خطأ: " + (data.message || ''));
-                });
-        }
-
-        function loadStudents() {
-            fetch('/api/get_students')
-                .then(res => res.json())
-                .then(data => { ALL_STUDENTS = data; });
-        }
-
-        function loadParents() {
-            fetch('/api/get_parents')
-                .then(res => res.json())
-                .then(data => {
-                    ALL_PARENTS = data;
-                    const html = '<option value="" disabled selected>اختر ولي الأمر</option>' +
-                        data.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
-
-                    ['p_id', 'upd_parent_filter', 'del_parent_filter', 'assign_parent_filter'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.innerHTML = html;
-                    });
-                });
-        }
-
-        function filterStudentsByParent() {
-            const pid = document.getElementById('upd_parent_filter').value;
-            const sel = document.getElementById('upd_student_id');
-            const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
-            sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
-                filtered.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
-        }
-
-        function filterStudentsToDelete() {
-            const pid = document.getElementById('del_parent_filter').value;
-            const sel = document.getElementById('del_student_id');
-            const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
-            sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
-                filtered.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
-        }
-
-        function filterStudentsForAssignment() {
-            const pid = document.getElementById('assign_parent_filter').value;
-            const sel = document.getElementById('assign_student_id');
-            const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
-            sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
-                filtered.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
-        }
-
-        function updateLocation() {
-            const sid = document.getElementById('upd_student_id').value;
-            const lat = document.getElementById('upd_lat').value;
-            const lng = document.getElementById('upd_lng').value;
-            const addr = document.getElementById('upd_address_text').value;
-
-            if (!sid || !lat || !lng) { alert("يرجى ملء البيانات"); return; }
-
-            fetch('/api/update_student_location', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
-                body: JSON.stringify({ student_id: sid, lat, lng, address_text: addr })
-            })
-                .then(res => {
-                    if (res.status === 200) showResult('res_upd_loc', "✅ تم التحديث");
-                    else res.text().then(t => showResult('res_upd_loc', "❌ " + t));
-                });
-        }
-
-        function deleteStudent() {
-            const sid = document.getElementById('del_student_id').value;
-            if (!sid) { alert("اختر طالباً"); return; }
-            if (!confirm("⚠️ هل أنت متأكد من حذف هذا الطالب؟")) return;
-
-            fetch('/api/delete_student', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
-                body: JSON.stringify({ student_id: sid })
-            })
-                .then(res => {
-                    if (res.status === 200) {
-                        showResult('res_del_student', "✅ تم الحذف");
-                        loadStudents();
-                    }
-                    else res.text().then(t => showResult('res_del_student', "❌ " + t));
-                });
-        }
-
-        function assignBus() {
-            const sid = document.getElementById('assign_student_id').value;
-            const bid = document.getElementById('assign_bus_id').value;
-
-            if (!sid) { alert("اختر طالباً"); return; }
-            if (!bid) { alert("اختر باصاً"); return; }
-
-            fetch('/api/assign_bus', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
-                body: JSON.stringify({ student_id: sid, bus_id: bid })
-            })
-                .then(res => {
-                    if (res.status === 200) showResult('res_bus_assign', "✅ تم التعيين");
-                    else res.text().then(t => showResult('res_bus_assign', "❌ " + t));
-                });
-        }
-
-        // --- BUSES ---
-        let ALL_BUSES_DATA = [];
-
-        function addBus() {
-            const plate = document.getElementById('new_bus_plate').value;
-            const sid = document.getElementById('bus_school_id').value;
-
-            fetch('/api/add_bus', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
-                body: JSON.stringify({ plate, school_id: sid })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        showResult('res_add_bus', '✅ تمت الإضافة! ID: ' + data.id);
-                        document.getElementById('new_bus_plate').value = '';
-                        loadBuses();
-                    } else showResult('res_add_bus', '❌ فشل');
-                });
-        }
-
-        function loadBuses() {
-            fetch('/api/get_buses')
-                .then(res => res.json())
-                .then(data => {
-                    ALL_BUSES_DATA = data;
-
-                    const selDel = document.getElementById('delete_bus_id');
-                    selDel.innerHTML = '<option value="" disabled selected>اختر الباص</option>' +
-                        data.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.plate)}</option>`).join('');
-
-                    const selAssign = document.getElementById('assign_bus_id');
-                    selAssign.innerHTML = '<option value="" disabled selected>اختر الباص</option>' +
-                        data.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.plate)}</option>`).join('');
-
-                    filterAssignmentOptions();
-                });
-        }
-
-        function deleteBus() {
-            const busId = document.getElementById('delete_bus_id').value;
-            if (!busId) { alert("اختر باصاً"); return; }
-            if (!confirm("⚠️ هل أنت متأكد؟")) return;
-
-            fetch('/api/delete_bus', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
-                body: JSON.stringify({ bus_id: busId })
-            })
-                .then(res => {
-                    if (res.status === 200) {
-                        showResult('res_del_bus', "✅ تم الحذف");
-                        loadBuses();
-                    }
-                    else showResult('res_del_bus', "❌ فشل");
-                });
-        }
-
-        // --- DRIVERS ---
-        let ALL_DRIVERS = [];
-
-        function createDriver() {
-            const sid = document.getElementById('driver_school_id').value;
-            const u = document.getElementById('driver_user').value;
-            const p = document.getElementById('driver_pass').value;
-
-            if (!sid) { alert("اختر المدرسة"); return; }
-            if (!u || !p) { alert("أدخل بيانات الدخول"); return; }
-
-            fetch('/api/create_driver', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
-                body: JSON.stringify({ school_id: sid, username: u, password: p })
-            })
-                .then(async res => {
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data.status === 'success') {
-                            showResult('res_driver', '✅ تم الإنشاء!');
-                            loadDrivers();
-                            document.getElementById('driver_user').value = '';
-                            document.getElementById('driver_pass').value = '';
-                        } else showResult('res_driver', '❌ ' + data.message);
-                    } else {
-                        const text = await res.text();
-                        showResult('res_driver', '❌ ' + text);
-                    }
-                });
-        }
-
-        function loadDrivers() {
-            fetch('/api/get_drivers')
-                .then(res => res.json())
-                .then(data => {
-                    ALL_DRIVERS = data;
-                    filterAssignmentOptions();
-                });
-        }
-
-        function filterAssignmentOptions() {
-            const schoolId = document.getElementById('assign_filter_school')?.value || "";
-
-            const drvSel = document.getElementById('assign_driver_id');
-            if (drvSel) {
-                let filtered = schoolId && schoolId !== "ALL"
-                    ? ALL_DRIVERS.filter(d => d.school_id == schoolId)
-                    : ALL_DRIVERS;
-
-                drvSel.innerHTML = filtered.length === 0
-                    ? '<option disabled selected>لا يوجد سائقين</option>'
-                    : '<option value="" disabled selected>اختر السائق</option>' +
-                    filtered.map(d => `<option value="${escapeHtml(d.id)}">${escapeHtml(d.name)}</option>`).join('');
-            }
-
-            const busSel = document.getElementById('assign_driver_bus_id');
-            if (busSel) {
-                let filtered = schoolId && schoolId !== "ALL"
-                    ? ALL_BUSES_DATA.filter(b => b.school_id == schoolId)
-                    : ALL_BUSES_DATA;
-
-                busSel.innerHTML = filtered.length === 0
-                    ? '<option disabled selected>لا يوجد باصات</option>'
-                    : '<option value="" disabled selected>اختر الباص</option>' +
-                    filtered.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.plate)}</option>`).join('');
-            }
-        }
-
-        function assignDriverToBus() {
-            const did = document.getElementById('assign_driver_id').value;
-            const bid = document.getElementById('assign_driver_bus_id').value;
-
-            fetch('/api/assign_driver', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
-                body: JSON.stringify({ driver_id: did, bus_id: bid })
-            })
-                .then(res => {
-                    if (res.status === 200) showResult('res_assign_driver', "✅ تم التعيين!");
-                    else res.text().then(t => showResult('res_assign_driver', "❌ " + t));
-                });
-        }
-
-        // --- SCHOOLS ---
-        let ALL_SCHOOLS = [];
-
-        function loadSchools() {
-            fetch('/api/get_schools')
-                .then(res => res.json())
-                .then(data => {
-                    ALL_SCHOOLS = data;
-                    const html = '<option value="" disabled selected>اختر المدرسة</option>' +
+                const filterEl = document.getElementById('assign_filter_school');
+                if (filterEl) {
+                    filterEl.innerHTML = '<option value="" disabled selected>اختر المدرسة</option>' +
+                        '<option value="ALL">عرض الكل</option>' +
                         data.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+                }
+            });
+    }
 
-                    ['bus_school_id', 'activate_school_id', 'parent_school_id',
-                        'driver_school_id', 'student_school_id'].forEach(id => {
-                            const el = document.getElementById(id);
-                            if (el) el.innerHTML = html;
-                        });
+    // ── PARENTS ────────────────────────────────────────────────────────────────
+    function createParent() {
+        const name     = document.getElementById('parent_name').value;
+        const username = document.getElementById('parent_username').value;
+        const password = document.getElementById('parent_password').value;
+        const sid      = document.getElementById('parent_school_id').value;
+        if (!name || !username || !password) { alert("يرجى ملء جميع الحقول"); return; }
 
-                    const filterEl = document.getElementById('assign_filter_school');
-                    if (filterEl) {
-                        filterEl.innerHTML = '<option value="" disabled selected>اختر المدرسة</option>' +
-                            '<option value="ALL">عرض الكل</option>' +
-                            data.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
-                    }
+        fetch('/api/create_parent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+            body: JSON.stringify({ name, school_id: sid, username, password })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showResult('res_parent', '✅ تم الإنشاء! UUID: ' + data.id);
+                    loadParents();
+                    document.getElementById('parent_name').value     = '';
+                    document.getElementById('parent_username').value = '';
+                    document.getElementById('parent_password').value = '';
+                } else showResult('res_parent', '❌ خطأ: ' + (data.message || ''));
+            });
+    }
+
+    function loadParentsForActivation() {
+        const schoolId  = document.getElementById('activate_school_id').value;
+        const parentSel = document.getElementById('activate_parent_id');
+        parentSel.innerHTML = '<option>جاري التحميل...</option>';
+
+        fetch(`/api/get_parents?school_id=${schoolId}`)
+            .then(res => res.json())
+            .then(data => {
+                parentSel.innerHTML = '<option value="" disabled selected>اختر ولي الأمر</option>' +
+                    data.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
+            });
+    }
+
+    function activateParentAccount() {
+        const pid  = document.getElementById('activate_parent_id').value;
+        const user = document.getElementById('activate_username').value;
+        const pass = document.getElementById('activate_password').value;
+        if (!pid || !user || !pass) { alert("يرجى ملء جميع الحقول"); return; }
+
+        fetch('/api/update_parent_credentials', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+            body: JSON.stringify({ parent_id: pid, username: user, password: pass })
+        })
+            .then(res => {
+                if (res.status === 200) showResult('res_activate', "✅ تم التحديث!");
+                else res.text().then(t => showResult('res_activate', "❌ " + t));
+            });
+    }
+
+    // ── STUDENTS ───────────────────────────────────────────────────────────────
+    let ALL_STUDENTS = [];
+    let ALL_PARENTS  = [];
+
+    function addStudent() {
+        const schoolId = document.getElementById('student_school_id').value;
+        if (!schoolId) { alert("يرجى اختيار المدرسة أولاً"); return; }
+
+        const data = {
+            name:         document.getElementById('s_name').value,
+            parent_id:    document.getElementById('p_id').value,
+            nfc_id:       document.getElementById('nfc_id').value,
+            lat:          document.getElementById('lat').value,
+            lng:          document.getElementById('lng').value,
+            address_text: document.getElementById('address_text').value,
+            school_id:    schoolId
+        };
+
+        fetch('/api/add_student', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+            body: JSON.stringify(data)
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showResult('res_student', "✅ تم التسجيل! ID: " + data.id);
+                    loadStudents();
+                } else showResult('res_student', "❌ خطأ: " + (data.message || ''));
+            });
+    }
+
+    function loadStudents() {
+        fetch('/api/get_students')
+            .then(res => res.json())
+            .then(data => { ALL_STUDENTS = data; });
+    }
+
+    function loadParents() {
+        fetch('/api/get_parents')
+            .then(res => res.json())
+            .then(data => {
+                ALL_PARENTS = data;
+                const html = '<option value="" disabled selected>اختر ولي الأمر</option>' +
+                    data.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
+
+                ['p_id', 'upd_parent_filter', 'del_parent_filter', 'assign_parent_filter'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerHTML = html;
                 });
+            });
+    }
+
+    function filterStudentsByParent() {
+        const pid      = document.getElementById('upd_parent_filter').value;
+        const sel      = document.getElementById('upd_student_id');
+        const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
+        sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
+            filtered.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+    }
+
+    function filterStudentsToDelete() {
+        const pid      = document.getElementById('del_parent_filter').value;
+        const sel      = document.getElementById('del_student_id');
+        const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
+        sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
+            filtered.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+    }
+
+    function filterStudentsForAssignment() {
+        const pid      = document.getElementById('assign_parent_filter').value;
+        const sel      = document.getElementById('assign_student_id');
+        const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
+        sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
+            filtered.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+    }
+
+    function updateLocation() {
+        const sid  = document.getElementById('upd_student_id').value;
+        const lat  = document.getElementById('upd_lat').value;
+        const lng  = document.getElementById('upd_lng').value;
+        const addr = document.getElementById('upd_address_text').value;
+        if (!sid || !lat || !lng) { alert("يرجى ملء البيانات"); return; }
+
+        fetch('/api/update_student_location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+            body: JSON.stringify({ student_id: sid, lat, lng, address_text: addr })
+        })
+            .then(res => {
+                if (res.status === 200) showResult('res_upd_loc', "✅ تم التحديث");
+                else res.text().then(t => showResult('res_upd_loc', "❌ " + t));
+            });
+    }
+
+    function deleteStudent() {
+        const sid = document.getElementById('del_student_id').value;
+        if (!sid) { alert("اختر طالباً"); return; }
+        if (!confirm("هل أنت متأكد من حذف هذا الطالب؟")) return;
+
+        fetch('/api/delete_student', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+            body: JSON.stringify({ student_id: sid })
+        })
+            .then(res => {
+                if (res.status === 200) {
+                    showResult('res_del_student', "✅ تم الحذف");
+                    loadStudents();
+                } else res.text().then(t => showResult('res_del_student', "❌ " + t));
+            });
+    }
+
+    function assignBus() {
+        const sid = document.getElementById('assign_student_id').value;
+        const bid = document.getElementById('assign_bus_id').value;
+        if (!sid) { alert("اختر طالباً"); return; }
+        if (!bid) { alert("اختر باصاً"); return; }
+
+        fetch('/api/assign_bus', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+            body: JSON.stringify({ student_id: sid, bus_id: bid })
+        })
+            .then(res => {
+                if (res.status === 200) showResult('res_bus_assign', "✅ تم التعيين");
+                else res.text().then(t => showResult('res_bus_assign', "❌ " + t));
+            });
+    }
+
+    // ── BUSES ──────────────────────────────────────────────────────────────────
+    let ALL_BUSES_DATA = [];
+
+    function addBus() {
+        const plate = document.getElementById('new_bus_plate').value;
+        const sid   = document.getElementById('bus_school_id').value;
+
+        fetch('/api/add_bus', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+            body: JSON.stringify({ plate, school_id: sid })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showResult('res_add_bus', '✅ تمت الإضافة! ID: ' + data.id);
+                    document.getElementById('new_bus_plate').value = '';
+                    loadBuses();
+                } else showResult('res_add_bus', '❌ فشل');
+            });
+    }
+
+    function loadBuses() {
+        fetch('/api/get_buses')
+            .then(res => res.json())
+            .then(data => {
+                ALL_BUSES_DATA = data;
+
+                const selDel = document.getElementById('delete_bus_id');
+                selDel.innerHTML = '<option value="" disabled selected>اختر الباص</option>' +
+                    data.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.plate)}</option>`).join('');
+
+                const selAssign = document.getElementById('assign_bus_id');
+                selAssign.innerHTML = '<option value="" disabled selected>اختر الباص</option>' +
+                    data.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.plate)}</option>`).join('');
+
+                filterAssignmentOptions();
+            });
+    }
+
+    function deleteBus() {
+        const busId = document.getElementById('delete_bus_id').value;
+        if (!busId) { alert("اختر باصاً"); return; }
+        if (!confirm("هل أنت متأكد؟")) return;
+
+        fetch('/api/delete_bus', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+            body: JSON.stringify({ bus_id: busId })
+        })
+            .then(res => {
+                if (res.status === 200) { showResult('res_del_bus', "✅ تم الحذف"); loadBuses(); }
+                else showResult('res_del_bus', "❌ فشل");
+            });
+    }
+
+    // ── DRIVERS ────────────────────────────────────────────────────────────────
+    let ALL_DRIVERS = [];
+
+    function createDriver() {
+        const sid = document.getElementById('driver_school_id').value;
+        const u   = document.getElementById('driver_user').value;
+        const p   = document.getElementById('driver_pass').value;
+        if (!sid) { alert("اختر المدرسة"); return; }
+        if (!u || !p) { alert("أدخل بيانات الدخول"); return; }
+
+        fetch('/api/create_driver', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+            body: JSON.stringify({ school_id: sid, username: u, password: p })
+        })
+            .then(async res => {
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        showResult('res_driver', '✅ تم الإنشاء!');
+                        loadDrivers();
+                        document.getElementById('driver_user').value = '';
+                        document.getElementById('driver_pass').value = '';
+                    } else showResult('res_driver', '❌ ' + data.message);
+                } else {
+                    const text = await res.text();
+                    showResult('res_driver', '❌ ' + text);
+                }
+            });
+    }
+
+    function loadDrivers() {
+        fetch('/api/get_drivers')
+            .then(res => res.json())
+            .then(data => {
+                ALL_DRIVERS = data;
+                filterAssignmentOptions();
+            });
+    }
+
+    function filterAssignmentOptions() {
+        const schoolId = document.getElementById('assign_filter_school')?.value || '';
+
+        const drvSel = document.getElementById('assign_driver_id');
+        if (drvSel) {
+            let filtered = schoolId && schoolId !== 'ALL'
+                ? ALL_DRIVERS.filter(d => d.school_id == schoolId)
+                : ALL_DRIVERS;
+
+            drvSel.innerHTML = filtered.length === 0
+                ? '<option disabled selected>لا يوجد سائقين</option>'
+                : '<option value="" disabled selected>اختر السائق</option>' +
+                  filtered.map(d => `<option value="${escapeHtml(d.id)}">${escapeHtml(d.name)}</option>`).join('');
         }
 
-        // Initialize
-        loadSchools();
-        loadParents();
-        loadStudents();
-        loadBuses();
-        loadDrivers();
-        loadStreamBuses();
-        loadStreamDrivers();
+        const busSel = document.getElementById('assign_driver_bus_id');
+        if (busSel) {
+            let filtered = schoolId && schoolId !== 'ALL'
+                ? ALL_BUSES_DATA.filter(b => b.school_id == schoolId)
+                : ALL_BUSES_DATA;
 
-        // --- LIVESTREAM ---
-        const socket = io();
-        let currentStreamBusId = null;
+            busSel.innerHTML = filtered.length === 0
+                ? '<option disabled selected>لا يوجد باصات</option>'
+                : '<option value="" disabled selected>اختر الباص</option>' +
+                  filtered.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.plate)}</option>`).join('');
+        }
+    }
 
-        function loadStreamBuses() {
-            fetch('/api/get_buses')
-                .then(res => res.json())
-                .then(buses => {
-                    const sel = document.getElementById('stream_bus_id');
-                    sel.innerHTML = '<option value="" disabled selected>اختر الحافلة...</option>';
-                    buses.forEach(b => {
-                        sel.innerHTML += `<option value="${escapeHtml(b.id)}">${escapeHtml(b.plate_number)} (ID: ${escapeHtml(b.id)})</option>`;
-                    });
+    function assignDriverToBus() {
+        const did = document.getElementById('assign_driver_id').value;
+        const bid = document.getElementById('assign_driver_bus_id').value;
+
+        fetch('/api/assign_driver', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+            body: JSON.stringify({ driver_id: did, bus_id: bid })
+        })
+            .then(res => {
+                if (res.status === 200) showResult('res_assign_driver', "✅ تم التعيين!");
+                else res.text().then(t => showResult('res_assign_driver', "❌ " + t));
+            });
+    }
+
+    // ── LIVESTREAM ─────────────────────────────────────────────────────────────
+    const socket = io();
+    let currentStreamBusId = null;
+
+    function loadStreamBuses() {
+        fetch('/api/get_buses')
+            .then(res => res.json())
+            .then(buses => {
+                const sel = document.getElementById('stream_bus_id');
+                sel.innerHTML = '<option value="" disabled selected>اختر الحافلة...</option>';
+                buses.forEach(b => {
+                    sel.innerHTML += `<option value="${escapeHtml(b.id)}">${escapeHtml(b.plate_number)} (ID: ${escapeHtml(b.id)})</option>`;
                 });
-        }
+            });
+    }
 
-        function loadStreamDrivers() {
-            fetch('/api/get_drivers')
-                .then(res => res.json())
-                .then(drivers => {
-                    const sel = document.getElementById('stream_driver_id');
-                    sel.innerHTML = '<option value="" disabled selected>اختر السائق...</option>';
-                    drivers.forEach(d => {
-                        const busInfo = d.bus_id ? ` - 🚌 ${d.bus_id}` : ' - لا يوجد باص';
-                        sel.innerHTML += `<option value="${escapeHtml(d.id)}" data-bus="${escapeHtml(d.bus_id || '')}">${escapeHtml(d.name)}${escapeHtml(busInfo)}</option>`;
-                    });
+    function loadStreamDrivers() {
+        fetch('/api/get_drivers')
+            .then(res => res.json())
+            .then(drivers => {
+                const sel = document.getElementById('stream_driver_id');
+                sel.innerHTML = '<option value="" disabled selected>اختر السائق...</option>';
+                drivers.forEach(d => {
+                    const busInfo = d.bus_id ? ` - ${d.bus_id}` : ' - لا يوجد باص';
+                    sel.innerHTML += `<option value="${escapeHtml(d.id)}" data-bus="${escapeHtml(d.bus_id || '')}">${escapeHtml(d.name)}${escapeHtml(busInfo)}</option>`;
                 });
-        }
+            });
+    }
 
-        function toggleStreamMode() {
-            const mode = document.getElementById('stream_mode').value;
-            document.getElementById('bus-select-group').style.display = mode === 'bus' ? 'block' : 'none';
-            document.getElementById('driver-select-group').style.display = mode === 'driver' ? 'block' : 'none';
-        }
+    function toggleStreamMode() {
+        const mode = document.getElementById('stream_mode').value;
+        document.getElementById('bus-select-group').style.display    = mode === 'bus'    ? 'block' : 'none';
+        document.getElementById('driver-select-group').style.display = mode === 'driver' ? 'block' : 'none';
+    }
 
-        function onDriverSelect() {
+    function onDriverSelect() {
+        const sel   = document.getElementById('stream_driver_id');
+        const opt   = sel.options[sel.selectedIndex];
+        const busId = opt.getAttribute('data-bus');
+        if (busId) document.getElementById('stream_bus_id').value = busId;
+    }
+
+    function openLiveStream() {
+        const mode = document.getElementById('stream_mode').value;
+        let busId;
+
+        if (mode === 'bus') {
+            busId = document.getElementById('stream_bus_id').value;
+        } else {
             const sel = document.getElementById('stream_driver_id');
             const opt = sel.options[sel.selectedIndex];
-            const busId = opt.getAttribute('data-bus');
-            if (busId) {
-                document.getElementById('stream_bus_id').value = busId;
-            }
+            busId = opt.getAttribute('data-bus');
         }
 
-        function openLiveStream() {
-            const mode = document.getElementById('stream_mode').value;
-            let busId;
+        if (!busId) { alert('يرجى اختيار الحافلة أو السائق'); return; }
 
-            if (mode === 'bus') {
-                busId = document.getElementById('stream_bus_id').value;
+        currentStreamBusId = busId;
+        document.getElementById('stream-viewer').style.display        = 'block';
+        document.getElementById('close-stream-btn').style.display     = 'flex';
+        document.getElementById('waiting-msg').style.display          = 'block';
+        document.getElementById('live-stream-img').style.display      = 'none';
+        document.getElementById('stream-status').style.display        = 'none';
+
+        socket.emit('join_bus_stream', { bus_id: busId });
+    }
+
+    function closeLiveStream() {
+        currentStreamBusId = null;
+        document.getElementById('stream-viewer').style.display    = 'none';
+        document.getElementById('close-stream-btn').style.display = 'none';
+        document.getElementById('live-stream-img').src = '';
+    }
+
+    socket.on('bus_camera_frame', function(data) {
+        if (currentStreamBusId && data.bus_id == currentStreamBusId) {
+            const img = document.getElementById('live-stream-img');
+            img.src = data.frame;
+            img.style.display = 'block';
+            document.getElementById('stream-status').style.display = 'inline-flex';
+            document.getElementById('waiting-msg').style.display   = 'none';
+        }
+    });
+
+    socket.on('bus_stream_status', function(data) {
+        if (currentStreamBusId && data.bus_id == currentStreamBusId) {
+            if (data.streaming) {
+                document.getElementById('stream-status').style.display  = 'inline-flex';
+                document.getElementById('waiting-msg').style.display    = 'none';
             } else {
-                const sel = document.getElementById('stream_driver_id');
-                const opt = sel.options[sel.selectedIndex];
-                busId = opt.getAttribute('data-bus');
+                document.getElementById('stream-status').style.display  = 'none';
+                document.getElementById('waiting-msg').style.display    = 'block';
+                document.getElementById('live-stream-img').style.display = 'none';
             }
-
-            if (!busId) {
-                alert('يرجى اختيار الحافلة أو السائق');
-                return;
-            }
-
-            currentStreamBusId = busId;
-            document.getElementById('stream-viewer').style.display = 'block';
-            document.getElementById('close-stream-btn').style.display = 'inline-block';
-            document.getElementById('waiting-msg').style.display = 'block';
-            document.getElementById('live-stream-img').style.display = 'none';
-            document.getElementById('stream-status').style.display = 'none';
-
-            socket.emit('join_bus_stream', { bus_id: busId });
         }
+    });
 
-        function closeLiveStream() {
-            currentStreamBusId = null;
-            document.getElementById('stream-viewer').style.display = 'none';
-            document.getElementById('close-stream-btn').style.display = 'none';
-            document.getElementById('live-stream-img').src = '';
-        }
+    // ── DASHBOARD STATISTICS ───────────────────────────────────────────────────
+    function loadDashboardStats() {
+        const filter   = document.getElementById('stats-school-filter');
+        const schoolId = filter ? filter.value : 'all';
+        fetch('/api/dashboard/stats?school_id=' + schoolId)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('stat-total-buses').textContent    = data.total_buses    || 0;
+                document.getElementById('stat-active-buses').textContent   = data.active_buses   || 0;
+                document.getElementById('stat-total-students').textContent = data.total_students || 0;
+                document.getElementById('stat-present').textContent        = data.present_students || 0;
+                document.getElementById('stat-absent').textContent         = data.absent_students  || 0;
+            })
+            .catch(err => console.error('Failed to load stats:', err));
+    }
 
-        // Handle incoming camera frames
-        socket.on('bus_camera_frame', function (data) {
-            if (currentStreamBusId && data.bus_id == currentStreamBusId) {
-                const img = document.getElementById('live-stream-img');
-                img.src = data.frame;
-                img.style.display = 'block';
-                document.getElementById('stream-status').style.display = 'inline-block';
-                document.getElementById('waiting-msg').style.display = 'none';
-            }
-        });
-
-        // Handle stream status updates
-        socket.on('bus_stream_status', function (data) {
-            if (currentStreamBusId && data.bus_id == currentStreamBusId) {
-                if (data.streaming) {
-                    document.getElementById('stream-status').style.display = 'inline-block';
-                    document.getElementById('waiting-msg').style.display = 'none';
-                } else {
-                    document.getElementById('stream-status').style.display = 'none';
-                    document.getElementById('waiting-msg').style.display = 'block';
-                    document.getElementById('live-stream-img').style.display = 'none';
+    function loadSchoolsForFilter() {
+        fetch('/api/schools')
+            .then(r => r.json())
+            .then(schools => {
+                const select = document.getElementById('stats-school-filter');
+                if (select) {
+                    schools.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value       = s.id;
+                        opt.textContent = s.name;
+                        select.appendChild(opt);
+                    });
                 }
-            }
-        });
+            })
+            .catch(err => console.error('Failed to load schools for filter:', err));
+    }
 
-        // --- DASHBOARD STATISTICS ---
-        function loadDashboardStats() {
-            const filter = document.getElementById('stats-school-filter');
-            const schoolId = filter ? filter.value : 'all';
-            fetch('/api/dashboard/stats?school_id=' + schoolId)
-                .then(r => r.json())
-                .then(data => {
-                    document.getElementById('stat-total-buses').textContent = data.total_buses || 0;
-                    document.getElementById('stat-active-buses').textContent = data.active_buses || 0;
-                    document.getElementById('stat-total-students').textContent = data.total_students || 0;
-                    document.getElementById('stat-present').textContent = data.present_students || 0;
-                    document.getElementById('stat-absent').textContent = data.absent_students || 0;
-                })
-                .catch(err => {
-                    console.error('Failed to load stats:', err);
-                });
-        }
+    // ── INIT ───────────────────────────────────────────────────────────────────
+    loadSchools();
+    loadParents();
+    loadStudents();
+    loadBuses();
+    loadDrivers();
+    loadStreamBuses();
+    loadStreamDrivers();
+    loadSchoolsForFilter();
+    loadDashboardStats();
 
-        // Load schools for filter dropdown
-        function loadSchoolsForFilter() {
-            fetch('/api/schools')
-                .then(r => r.json())
-                .then(schools => {
-                    const select = document.getElementById('stats-school-filter');
-                    if (select) {
-                        schools.forEach(s => {
-                            const opt = document.createElement('option');
-                            opt.value = s.id;
-                            opt.textContent = s.name;
-                            select.appendChild(opt);
-                        });
-                    }
-                })
-                .catch(err => console.error('Failed to load schools for filter:', err));
-        }
-
-        // Load stats on page load
-        loadSchoolsForFilter();
-        loadDashboardStats();
-
-        // Refresh stats every 30 seconds
-        setInterval(loadDashboardStats, 30000);
-    </script>
+    setInterval(loadDashboardStats, 30000);
+</script>
 </body>
-
 </html>

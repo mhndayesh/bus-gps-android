@@ -1,0 +1,164 @@
+/* Msarat — Driver Mobile App styles */
+
+.driver-app {
+  width: 100%; height: 100%;
+  background: var(--cream);
+  display: flex; flex-direction: column;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  position: relative;
+  overflow: hidden;
+}
+
+.driver-app * { box-sizing: border-box; }
+
+/* HEADER */
+.d-header {
+  padding: 48px 22px 16px;  /* clears Android status bar */
+  display: flex; align-items: center; gap: 14px;
+  background: var(--cream);
+}
+.d-header .bus-tag {
+  width: 56px; height: 56px; border-radius: 16px;
+  background: var(--clay-100); color: var(--clay-700);
+  display: flex; align-items: center; justify-content: center;
+}
+.d-header .bus-tag svg { width: 30px; height: 30px; stroke-width: 2.2; }
+.d-header .info { flex: 1; min-width: 0; }
+.d-header .plate { font-size: 20px; font-weight: 800; color: var(--ink); line-height: 1.1; }
+.d-header .driver { font-size: 13px; color: var(--ink-3); margin-top: 2px; }
+.d-header .menu { width: 44px; height: 44px; border-radius: 14px; background: white; border: 1.5px solid var(--sand-200); display: flex; align-items: center; justify-content: center; color: var(--ink-2); }
+.d-header .menu svg { width: 20px; height: 20px; stroke-width: 2; }
+
+.d-scroll {
+  flex: 1; overflow-y: auto;
+  padding: 0 18px 32px;
+}
+
+/* GPS / SPEED HERO */
+.gps-hero {
+  background: linear-gradient(180deg, #1F140C 0%, #3A2418 100%);
+  color: var(--cream);
+  border-radius: 24px;
+  padding: 24px 22px;
+  margin-bottom: 14px;
+  display: flex; gap: 18px; align-items: center;
+}
+.gps-hero .speed-num {
+  font-size: 76px; font-weight: 800; line-height: 0.9;
+  letter-spacing: -0.04em; color: var(--cream);
+}
+.gps-hero .speed-unit { font-size: 14px; color: var(--amber-300); font-weight: 600; }
+.gps-hero .ok {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 999px;
+  background: rgba(74, 157, 122, 0.2); color: #8FD3B5;
+  font-size: 12px; font-weight: 700; margin-bottom: 10px;
+}
+.gps-hero .ok .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); animation: blink 1.4s infinite; }
+.gps-hero .meta { font-size: 12px; color: rgba(251, 245, 236, 0.55); font-family: ui-monospace, monospace; margin-top: 4px; }
+
+@keyframes blink { 50% { opacity: 0.3; } }
+
+/* TRIP STATE */
+.trip-state {
+  background: white;
+  border-radius: 22px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 4px 16px rgba(58, 36, 24, 0.05);
+}
+.trip-state .ico { width: 48px; height: 48px; border-radius: 14px; background: var(--clay-50); color: var(--clay-500); display: flex; align-items: center; justify-content: center; }
+.trip-state .ico svg { width: 24px; height: 24px; stroke-width: 2.2; }
+.trip-state.live .ico { background: var(--success-bg); color: var(--success-dark); }
+.trip-state .body { flex: 1; }
+.trip-state .ttl { font-size: 16px; font-weight: 800; color: var(--ink); }
+.trip-state .sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+.trip-state .count { font-size: 24px; font-weight: 800; color: var(--clay-500); }
+.trip-state.live .count { color: var(--success); }
+
+/* BIG BUTTONS */
+.d-btn {
+  width: 100%; min-height: 64px;
+  font-family: var(--font-sans);
+  font-weight: 800; font-size: 18px;
+  border: none; border-radius: 18px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  cursor: pointer; margin-bottom: 10px;
+  transition: all 150ms var(--ease-out);
+}
+.d-btn:active { transform: scale(0.98); }
+.d-btn.start { background: var(--clay-400); color: white; box-shadow: 0 6px 18px rgba(168, 80, 30, 0.3); }
+.d-btn.stop  { background: var(--danger); color: white; }
+.d-btn.amber { background: var(--amber-400); color: var(--ink); }
+.d-btn.info  { background: var(--info); color: white; }
+.d-btn.sec   { background: white; color: var(--ink); border: 1.5px solid var(--sand-200); min-height: 56px; font-size: 16px; }
+.d-btn svg { width: 24px; height: 24px; stroke-width: 2.4; }
+
+/* INLINE ROW */
+.row-inline { display: flex; gap: 10px; margin-bottom: 14px; }
+.row-inline .d-btn { margin-bottom: 0; flex: 1; min-height: 56px; font-size: 15px; }
+
+/* SECTION */
+.d-section-h {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 18px 4px 10px;
+}
+.d-section-h .ttl { font-size: 16px; font-weight: 800; color: var(--ink); }
+.d-section-h .sub { font-size: 12px; color: var(--ink-3); font-weight: 600; }
+
+/* MANIFEST ROW */
+.manifest-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  background: white;
+  border-radius: 18px;
+  margin-bottom: 8px;
+  box-shadow: 0 4px 16px rgba(58, 36, 24, 0.04);
+}
+.manifest-row .avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--clay-100); color: var(--clay-700);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 18px; flex-shrink: 0;
+}
+.manifest-row.boarded .avatar { background: var(--success-bg); color: var(--success-dark); }
+.manifest-row .body { flex: 1; min-width: 0; }
+.manifest-row .name { font-size: 16px; font-weight: 700; color: var(--ink); line-height: 1.1; }
+.manifest-row .meta { font-size: 12px; color: var(--ink-3); margin-top: 3px; }
+.manifest-row .toggle {
+  min-width: 76px; height: 40px;
+  border: none; border-radius: 999px;
+  font-family: var(--font-sans); font-weight: 800; font-size: 13px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 150ms var(--ease-out);
+}
+.manifest-row .toggle.board { background: var(--clay-50); color: var(--clay-600); border: 1.5px solid var(--clay-100); }
+.manifest-row .toggle.board:active { transform: scale(0.95); }
+.manifest-row .toggle.drop  { background: var(--success); color: white; }
+.manifest-row .toggle svg { width: 14px; height: 14px; stroke-width: 2.6; }
+
+/* CAMERA PREVIEW */
+.cam-preview {
+  background: #1F140C;
+  border-radius: 20px;
+  height: 200px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid var(--amber-400);
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(251, 245, 236, 0.4);
+}
+.cam-preview .live-tag {
+  position: absolute; top: 12px; right: 12px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px; border-radius: 999px;
+  background: rgba(224, 74, 58, 0.9); color: white;
+  font-weight: 800; font-size: 11px;
+}
+.cam-preview .live-tag .dot { width: 7px; height: 7px; border-radius: 50%; background: white; animation: blink 1.4s infinite; }
+.cam-preview .placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.cam-preview .placeholder svg { width: 36px; height: 36px; opacity: 0.5; }

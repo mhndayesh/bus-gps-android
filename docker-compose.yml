@@ -36,6 +36,8 @@ services:
       DB_NAME: bus_tracker_db
       DB_PORT: 5432
       MQTT_BROKER: mqtt
+      FLASK_SECRET_KEY: demo-secret-key-change-in-prod
+      INITIAL_ADMIN_PASSWORD: Admin123!
 
   # 4. The Listener (Background Worker)
   listener:

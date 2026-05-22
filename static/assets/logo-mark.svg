@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="Msarat mark">
+  <rect x="0" y="0" width="48" height="48" rx="12" fill="#FBF5EC"></rect>
+  <g transform="translate(8, 6)">
+    <path d="M 4 18 C 4 6, 20 0, 26 14 C 32 28, 18 32, 18 36" stroke="#D26B3C" stroke-width="3.5" stroke-linecap="round" fill="none"></path>
+    <circle cx="4" cy="18" r="3.5" fill="#3A2418"></circle>
+    <g transform="translate(10, 30)">
+      <rect x="0" y="0" width="16" height="10" rx="2.5" fill="#E8A33B"></rect>
+      <rect x="2" y="2" width="4" height="3" rx="0.6" fill="#FBF5EC"></rect>
+      <rect x="8" y="2" width="6" height="3" rx="0.6" fill="#FBF5EC"></rect>
+      <circle cx="4" cy="11" r="1.6" fill="#3A2418"></circle>
+      <circle cx="12" cy="11" r="1.6" fill="#3A2418"></circle>
+    </g>
+  </g>
+</svg>

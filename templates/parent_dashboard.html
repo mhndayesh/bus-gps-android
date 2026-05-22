@@ -8,54 +8,111 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js" integrity="sha384-DkkWv9oJFWLIydBXXjkBWnG1/fuVhw8YPBq37uvvD6WSYRFRqr21eY5Dg9ZhmWdy" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --bg: #f4f6f8;
-            --card: #ffffff;
-            --primary: #1a1a2e;
-            --accent: #2980b9;
-            --green: #27ae60;
-            --amber: #f39c12;
-            --red: #e74c3c;
-            --text: #2c3e50;
-            --muted: #7f8c8d;
-            --border: #e0e4e8;
+            --bg:       #FBF5EC;
+            --card:     #ffffff;
+            --clay:     #D26B3C;
+            --clay-bg:  #F2E5DB;
+            --amber:    #E8A33B;
+            --info:     #4A7BA8;
+            --info-bg:  #E4ECF5;
+            --ink:      #3A2418;
+            --ink-4:    #A18A78;
+            --border:   #EDE3D6;
+            --shadow:   0 4px 16px rgba(58,36,24,0.06);
+        }
+
+        html, body {
+            height: 100%;
         }
 
         body {
             font-family: 'Tajawal', sans-serif;
-            margin: 0;
             background: var(--bg);
             display: flex;
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
+            color: var(--ink);
         }
+
+        /* ── Flash messages ── */
+        .flash-list {
+            list-style: none;
+            padding: 0 16px;
+        }
+
+        .flash-item {
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 0.88em;
+            margin-bottom: 6px;
+        }
+
+        .flash-item.danger  { background: #fdecea; color: #c0392b; }
+        .flash-item.success { background: #eaf7ef; color: #1e7e45; }
+        .flash-item.warning { background: #fef9ec; color: #9a6e00; }
+        .flash-item.info    { background: var(--info-bg); color: var(--info); }
 
         /* ── Header ── */
         .header {
-            background: var(--primary);
-            color: #fff;
-            padding: 14px 20px;
+            background: var(--card);
+            border-bottom: 2px solid var(--clay);
+            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .header-left h3 {
-            margin: 0;
-            font-size: 1.1em;
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-logo-icon {
+            width: 38px;
+            height: 38px;
+            background: var(--clay);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: #fff;
+            flex-shrink: 0;
         }
 
-        .header-left span {
-            font-size: 0.8em;
-            color: #aab8c2;
+        .header-logo-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .header-title-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-title-group h3 {
+            font-size: 1.05em;
+            font-weight: 700;
+            color: var(--ink);
+            line-height: 1.2;
+        }
+
+        .header-title-group span {
+            font-size: 0.78em;
+            color: var(--ink-4);
+            line-height: 1.3;
         }
 
         .header-actions {
@@ -66,41 +123,61 @@
 
         .lang-btn {
             background: transparent;
-            color: #aab8c2;
-            border: 1px solid #aab8c2;
-            padding: 5px 10px;
-            border-radius: 6px;
+            color: var(--ink-4);
+            border: 1.5px solid var(--border);
+            padding: 5px 12px;
+            border-radius: 8px;
             cursor: pointer;
             font-family: 'Tajawal', sans-serif;
             font-size: 0.8em;
-            width: auto;
+            font-weight: 500;
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        .lang-btn:hover {
+            border-color: var(--clay);
+            color: var(--clay);
         }
 
         .logout-btn {
-            background: var(--red);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--clay);
             color: #fff;
             border: none;
             padding: 7px 14px;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 0.85em;
+            font-size: 0.83em;
             font-family: 'Tajawal', sans-serif;
+            font-weight: 600;
             text-decoration: none;
-            width: auto;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #ba5a2e;
+        }
+
+        .logout-btn svg {
+            width: 14px;
+            height: 14px;
         }
 
         /* ── Children strip ── */
         .kids-section {
             flex-shrink: 0;
-            padding: 16px 16px 8px;
+            padding: 14px 16px 10px;
         }
 
         .section-label {
-            font-size: 0.8em;
-            color: var(--muted);
+            font-size: 0.75em;
+            font-weight: 700;
+            color: var(--ink-4);
             margin: 0 0 10px 0;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
         }
 
         .kids-row {
@@ -108,44 +185,122 @@
             gap: 12px;
             overflow-x: auto;
             padding-bottom: 4px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
         }
 
+        .kids-row::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .kids-row::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .kids-row::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        /* ── Child card ── */
         .child-card {
             background: var(--card);
-            border-radius: 14px;
-            padding: 18px 20px;
-            min-width: 200px;
+            border-radius: 20px;
+            padding: 14px 16px;
+            min-width: 190px;
             flex-shrink: 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            box-shadow: var(--shadow);
             border-right: 4px solid var(--border);
-            transition: border-color 0.3s;
+            transition: border-color 0.3s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        [dir="ltr"] .child-card {
+            border-right: none;
+            border-left: 4px solid var(--border);
         }
 
         .child-card.on-bus {
-            border-right-color: var(--green);
+            border-right-color: var(--clay);
         }
 
-        .child-card h4 {
-            margin: 0 0 8px 0;
+        [dir="ltr"] .child-card.on-bus {
+            border-left-color: var(--clay);
+        }
+
+        .child-card.at-school {
+            border-right-color: var(--info);
+        }
+
+        [dir="ltr"] .child-card.at-school {
+            border-left-color: var(--info);
+        }
+
+        .child-card:hover {
+            box-shadow: 0 6px 20px rgba(58,36,24,0.10);
+        }
+
+        .child-card-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .child-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--clay-bg);
+            color: var(--clay);
+            font-weight: 700;
             font-size: 1.05em;
-            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .child-card.at-school .child-avatar {
+            background: var(--info-bg);
+            color: var(--info);
+        }
+
+        .child-name {
+            font-size: 0.95em;
+            font-weight: 700;
+            color: var(--ink);
+            line-height: 1.3;
         }
 
         .status-pill {
-            display: inline-block;
-            padding: 5px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
             border-radius: 20px;
-            font-size: 0.85em;
+            font-size: 0.78em;
             font-weight: 600;
+            line-height: 1.4;
+            width: fit-content;
         }
 
-        .status-pill.on { background: #eafaf1; color: var(--green); }
-        .status-pill.off { background: #f0f2f5; color: var(--muted); }
+        .status-pill.on  { background: var(--clay-bg); color: var(--clay); }
+        .status-pill.off { background: var(--info-bg); color: var(--info); }
 
         .bus-label {
-            font-size: 0.78em;
-            color: var(--muted);
-            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75em;
+            color: var(--ink-4);
+        }
+
+        .bus-label svg {
+            width: 13px;
+            height: 13px;
+            flex-shrink: 0;
         }
 
         /* ── Map ── */
@@ -155,29 +310,66 @@
             border-top: 2px solid var(--border);
         }
 
-        /* ── Empty state ── */
+        /* ── Empty / error state ── */
         .empty-state {
-            padding: 24px;
+            padding: 20px 24px;
             text-align: center;
-            color: var(--muted);
-            font-size: 0.95em;
+            color: var(--ink-4);
+            font-size: 0.92em;
+        }
+
+        .empty-state.error {
+            color: #c0392b;
         }
     </style>
 </head>
 
 <body>
 
-    <div class="header">
-        <div class="header-left">
-            <h3 id="h-title">🚸 أطفالي</h3>
-            <span id="h-sub">مرحباً {{ user }}</span>
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flash-list">
+        {% for category, message in messages %}
+        <li class="flash-item {{ category }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-logo">
+            <div class="header-logo-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 6v6"/>
+                    <path d="M15 6v6"/>
+                    <path d="M2 12h19.6"/>
+                    <path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/>
+                    <circle cx="7" cy="18" r="2"/>
+                    <path d="M9 18h5"/>
+                    <circle cx="16" cy="18" r="2"/>
+                </svg>
+            </div>
+            <div class="header-title-group">
+                <h3 id="h-title">أطفالي</h3>
+                <span id="h-sub">مرحباً {{ user }}</span>
+            </div>
         </div>
         <div class="header-actions">
             <button class="lang-btn" onclick="toggleLang()">EN</button>
-            <a href="/logout" class="logout-btn" id="h-logout">خروج</a>
+            <a href="/logout" class="logout-btn" id="h-logout">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                خروج
+            </a>
         </div>
-    </div>
+    </header>
 
+    <!-- Children strip -->
     <div class="kids-section">
         <p class="section-label" id="h-section">حالة الأطفال</p>
         <div class="kids-row" id="kids-list">
@@ -185,16 +377,17 @@
         </div>
     </div>
 
+    <!-- Map -->
     <div id="map"></div>
 
     <script>
         // ── Language ──
         const PLANG = {
-            ar: { title: '🚸 أطفالي', sub: 'مرحباً {{ user }}', logout: 'خروج', section: 'حالة الأطفال',
-                  on: '🚌 في الحافلة', off: '🏫 في المدرسة / المنزل', loading: 'جاري التحميل...',
+            ar: { title: 'أطفالي', sub: 'مرحباً {{ user }}', logout: 'خروج', section: 'حالة الأطفال',
+                  on: 'في الحافلة', off: 'في المدرسة / المنزل', loading: 'جاري التحميل...',
                   empty: 'لم يتم تسجيل أطفال بعد', error: 'خطأ في تحميل البيانات' },
-            en: { title: '🚸 My Children', sub: 'Welcome {{ user }}', logout: 'Logout', section: 'Children Status',
-                  on: '🚌 On Bus', off: '🏫 At School / Home', loading: 'Loading...',
+            en: { title: 'My Children', sub: 'Welcome {{ user }}', logout: 'Logout', section: 'Children Status',
+                  on: 'On Bus', off: 'At School / Home', loading: 'Loading...',
                   empty: 'No children registered yet', error: 'Failed to load data' }
         };
         let _lang = localStorage.getItem('parent_lang') || 'ar';
@@ -208,7 +401,7 @@
             document.querySelector('.lang-btn').textContent = isAr ? 'EN' : 'ع';
             document.getElementById('h-title').textContent = t('title');
             document.getElementById('h-sub').textContent = t('sub');
-            document.getElementById('h-logout').textContent = t('logout');
+            document.getElementById('h-logout').childNodes[document.getElementById('h-logout').childNodes.length - 1].textContent = ' ' + t('logout');
             document.getElementById('h-section').textContent = t('section');
         }
 
@@ -249,12 +442,19 @@
 
                     children.forEach(child => {
                         var onBus = child.on_bus;
+                        var initial = escapeHtml((child.name || '?').charAt(0));
                         var busPlate = onBus && child.bus_plate
-                            ? `<div class="bus-label">🚌 ${escapeHtml(child.bus_plate)}</div>` : '';
+                            ? `<div class="bus-label">
+                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/></svg>
+                                 ${escapeHtml(child.bus_plate)}
+                               </div>` : '';
 
                         html += `
-                        <div class="child-card ${onBus ? 'on-bus' : ''}">
-                            <h4>${escapeHtml(child.name)}</h4>
+                        <div class="child-card ${onBus ? 'on-bus' : 'at-school'}">
+                            <div class="child-card-top">
+                                <div class="child-avatar">${initial}</div>
+                                <div class="child-name">${escapeHtml(child.name)}</div>
+                            </div>
                             <span class="status-pill ${onBus ? 'on' : 'off'}">${onBus ? t('on') : t('off')}</span>
                             ${busPlate}
                         </div>`;
@@ -266,7 +466,7 @@
                 })
                 .catch(() => {
                     document.getElementById('kids-list').innerHTML =
-                        `<div class="empty-state" style="color:#e74c3c;">${t('error')}</div>`;
+                        `<div class="empty-state error">${t('error')}</div>`;
                 });
         }
 

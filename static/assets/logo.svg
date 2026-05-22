@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" width="240" height="64" role="img" aria-label="Msarat">
+  
+  <g transform="translate(8, 12)">
+    
+    <path d="M 4 30 C 4 12, 20 4, 28 18 C 36 32, 22 36, 22 48" stroke="#D26B3C" stroke-width="4" stroke-linecap="round" fill="none"></path>
+    
+    <circle cx="4" cy="30" r="4.5" fill="#3A2418"></circle>
+    
+    <g transform="translate(14, 42)">
+      <rect x="0" y="0" width="16" height="10" rx="2.5" fill="#E8A33B"></rect>
+      <rect x="2" y="2" width="4" height="3" rx="0.6" fill="#FBF5EC"></rect>
+      <rect x="8" y="2" width="6" height="3" rx="0.6" fill="#FBF5EC"></rect>
+      <circle cx="4" cy="11" r="1.6" fill="#3A2418"></circle>
+      <circle cx="12" cy="11" r="1.6" fill="#3A2418"></circle>
+    </g>
+  </g>
+
+  
+  <text x="62" y="34" font-family="Tajawal, system-ui, sans-serif" font-size="28" font-weight="800" fill="#3A2418" letter-spacing="-0.5">msarat</text>
+
+  
+  <text x="62" y="54" font-family="Tajawal, system-ui, sans-serif" font-size="14" font-weight="500" fill="#7A5F4F" letter-spacing="0">مسارات</text>
+</svg>
