@@ -3,12 +3,8 @@ import json
 import os
 import datetime
 
-# Credentials (Hardcoded for Backup Script Ease)
-DB_HOST = "yamabiko.proxy.rlwy.net"
-DB_NAME = "railway"
-DB_USER = "postgres"
-DB_PASS = "yskvrNocmTymfEkzyhpHXTKdKHIcxvDN"
-DB_PORT = "27535"
+# Credentials are loaded from the environment (see db_config.py)
+from db_config import DB_HOST, DB_NAME, DB_USER, DB_PASS, DB_PORT
 
 TABLES = ['schools', 'users', 'buses', 'students', 'route_stops', 'bus_manifest', 'trip_logs']
 

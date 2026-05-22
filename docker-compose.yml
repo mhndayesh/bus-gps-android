@@ -31,6 +31,10 @@ services:
       - mqtt
     environment:
       DB_HOST: db
+      DB_USER: postgres
+      DB_PASS: password
+      DB_NAME: bus_tracker_db
+      DB_PORT: 5432
       MQTT_BROKER: mqtt
 
   # 4. The Listener (Background Worker)
@@ -42,6 +46,10 @@ services:
       - mqtt
     environment:
       DB_HOST: db
+      DB_USER: postgres
+      DB_PASS: password
+      DB_NAME: bus_tracker_db
+      DB_PORT: 5432
       MQTT_BROKER: mqtt
 
 volumes:

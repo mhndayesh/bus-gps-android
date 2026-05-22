@@ -3,9 +3,9 @@
 
 <head>
     <title>آمن مدرستي - School Bus Tracker</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js" integrity="sha384-DkkWv9oJFWLIydBXXjkBWnG1/fuVhw8YPBq37uvvD6WSYRFRqr21eY5Dg9ZhmWdy" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 
@@ -199,7 +199,7 @@
 
 <body>
 
-    <div id="video-modal">
+    <div id="video-modal" role="dialog" aria-modal="true" aria-label="بث مباشر">
         <h2 style="color: var(--gold);">🎥 بث مباشر: الباص <span id="modal-bus-id">--</span></h2>
         <video id="video-player" controls autoplay></video>
         <button class="close-btn" onclick="closeCamera()">✕ إغلاق البث</button>
@@ -294,6 +294,13 @@
             video.src = "";
         }
 
+        // Escapes HTML-special characters to prevent XSS via interpolated values.
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
         // --- B. The Map Updates ---
         socket.on('update_map', function (data) {
             var busId = data.bus_id;
@@ -301,13 +308,13 @@
             var lng = data.lng;
             var speed = data.speed;
 
-            var listHtml = `<b>الباص ${busId}</b><br>السرعة: ${speed} كم/س`;
+            var listHtml = `<b>الباص ${escapeHtml(busId)}</b><br>السرعة: ${escapeHtml(speed)} كم/س`;
             document.getElementById('bus-list').innerHTML = listHtml;
 
             var popupContent = `
-                <b>الباص ${busId}</b><br>
-                السرعة: ${speed} كم/س<br><br>
-                <button class="watch-btn" onclick="openCamera('${busId}')">🎥 مشاهدة مباشرة</button>
+                <b>الباص ${escapeHtml(busId)}</b><br>
+                السرعة: ${escapeHtml(speed)} كم/س<br><br>
+                <button class="watch-btn" onclick="openCamera('${escapeHtml(busId)}')">🎥 مشاهدة مباشرة</button>
             `;
 
             if (busMarkers[busId]) {

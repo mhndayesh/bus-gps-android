@@ -137,6 +137,7 @@
         <p class="welcome-text">تابع رحلة أطفالك بأمان</p>
 
         <form method="POST" action="/parent/login">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label class="bilingual-label">اسم المستخدم / Username</label>
             <input type="text" name="username" placeholder="أدخل اسم المستخدم" required>
 

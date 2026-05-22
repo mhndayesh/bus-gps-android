@@ -1,12 +1,10 @@
-import psycopg2
 import os
+import secrets
+import psycopg2
+from werkzeug.security import generate_password_hash
 
-# --- CONFIGURATION: ENV VARS > HARDCODED ---
-DB_HOST = os.environ.get("DB_HOST", "yamabiko.proxy.rlwy.net")
-DB_NAME = os.environ.get("DB_NAME", "railway")
-DB_USER = os.environ.get("DB_USER", "postgres")
-DB_PASS = os.environ.get("DB_PASS", "yskvrNocmTymfEkzyhpHXTKdKHIcxvDN")
-DB_PORT = os.environ.get("DB_PORT", "27535")
+# --- CONFIGURATION: credentials are loaded from the environment (see db_config.py) ---
+from db_config import DB_HOST, DB_NAME, DB_USER, DB_PASS, DB_PORT, PUBLIC_PROXY_HOST
 
 def create_tables():
     """Connect to DB and run migrations. No retries - caller handles that."""
@@ -26,7 +24,7 @@ def create_tables():
         # Fallback to public proxy
         try:
             conn = psycopg2.connect(
-                host="yamabiko.proxy.rlwy.net",
+                host=PUBLIC_PROXY_HOST,
                 database=DB_NAME,
                 user=DB_USER,
                 password=DB_PASS,
@@ -55,12 +53,20 @@ def create_tables():
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
+            name TEXT NOT NULL UNIQUE,
             role TEXT NOT NULL,
             school_id INTEGER REFERENCES schools(id),
             password_hash TEXT
         );
     """)
+    # MIGRATION: add UNIQUE constraint if it doesn't already exist
+    try:
+        cur.execute("""
+            ALTER TABLE users ADD CONSTRAINT users_name_unique UNIQUE (name)
+        """)
+        conn.commit()
+    except Exception:
+        conn.rollback()
 
     # 3. Buses
     cur.execute("""
@@ -78,8 +84,9 @@ def create_tables():
     try:
         cur.execute("ALTER TABLE buses ADD COLUMN IF NOT EXISTS driver_id TEXT REFERENCES users(id);")
         conn.commit()
-    except:
+    except Exception as e:
         conn.rollback()
+        print(f"⚠️ Migration step skipped: {e}")
 
     # 4. Students (Lat/Lng instead of PostGIS)
     cur.execute("""
@@ -100,8 +107,9 @@ def create_tables():
     try:
         cur.execute("ALTER TABLE students ADD COLUMN IF NOT EXISTS home_address_text TEXT;")
         conn.commit()
-    except:
+    except Exception as e:
         conn.rollback()
+        print(f"⚠️ Migration step skipped: {e}")
 
     try:
         print("🔄 Migrating students table...")
@@ -120,8 +128,9 @@ def create_tables():
         cur.execute("ALTER TABLE buses ADD COLUMN IF NOT EXISTS current_speed FLOAT;")
         cur.execute("ALTER TABLE buses ADD COLUMN IF NOT EXISTS last_updated TIMESTAMP;")
         conn.commit()
-    except:
+    except Exception as e:
         conn.rollback()
+        print(f"⚠️ Migration step skipped: {e}")
 
     # 4.5 Route Stops
     cur.execute("""
@@ -199,7 +208,27 @@ def create_tables():
     # 7. Seed Data
     print("🌱 Seeding Data...")
     cur.execute("INSERT INTO schools (name) VALUES ('Happy Valley School') ON CONFLICT DO NOTHING;")
-    cur.execute("INSERT INTO users (id, name, role, school_id, password_hash) VALUES ('admin', 'Super Admin', 'SUPER_ADMIN', 1, 'admin') ON CONFLICT DO NOTHING;")
+
+    # Seed the super-admin with a HASHED password. The password comes from
+    # INITIAL_ADMIN_PASSWORD; if unset, a random one is generated and printed once.
+    admin_password = os.environ.get("INITIAL_ADMIN_PASSWORD")
+    generated = False
+    if not admin_password:
+        admin_password = secrets.token_urlsafe(12)
+        generated = True
+
+    cur.execute(
+        "INSERT INTO users (id, name, role, school_id, password_hash) "
+        "VALUES ('admin', 'Super Admin', 'SUPER_ADMIN', 1, %s) ON CONFLICT DO NOTHING;",
+        (generate_password_hash(admin_password),),
+    )
+    if generated and cur.rowcount:
+        print("=" * 60)
+        print("🔑 INITIAL SUPER ADMIN CREATED")
+        print("   Username: Super Admin")
+        print(f"   Password: {admin_password}")
+        print("   ^ Save this now — it will not be shown again.")
+        print("=" * 60)
 
     conn.commit()
     cur.close()

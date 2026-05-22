@@ -6,33 +6,18 @@ from psycogreen.eventlet import patch_psycopg
 patch_psycopg()
 
 import json
-import paho.mqtt.client as mqtt
 from flask import Flask, render_template, request, abort, session, redirect, url_for
 from flask_socketio import SocketIO
 from functools import wraps
 import psycopg2
 
-# --- CONFIGURATION (Universal - Uses ENV VARS with fallbacks) ---
+# --- CONFIGURATION ---
 import os
-import ssl
 
-# Database: Always use ENV VARS (Railway sets these automatically)
-DB_HOST = os.environ.get("DB_HOST", "yamabiko.proxy.rlwy.net")
-DB_NAME = os.environ.get("DB_NAME", "railway")
-DB_USER = os.environ.get("DB_USER", "postgres")
-DB_PASS = os.environ.get("DB_PASS", "yskvrNocmTymfEkzyhpHXTKdKHIcxvDN")
-DB_PORT = os.environ.get("DB_PORT", "27535")
-
-# MQTT: Always use ENV VARS
-MQTT_BROKER = os.environ.get("MQTT_BROKER", "localhost")
-MQTT_PORT = int(os.environ.get("MQTT_PORT", "8883"))
-MQTT_USER = os.environ.get("MQTT_USER")
-MQTT_PASS = os.environ.get("MQTT_PASS")
-USE_SSL = bool(MQTT_USER)  # Use SSL if credentials are provided
+# Database: credentials are loaded from the environment (see db_config.py)
+from db_config import DB_HOST, DB_NAME, DB_USER, DB_PASS, DB_PORT
 
 print(f"🔌 DB Config: {DB_HOST}:{DB_PORT}/{DB_NAME} (User: {DB_USER})")
-
-MQTT_TOPIC = "bus/+/telemetry"
 
 # Mock User Session REMOVED - Using Flask Session now
 
@@ -121,18 +106,24 @@ def role_required(allowed_roles):
 app = Flask(__name__)
 
 # SECURITY: Secret key from environment variable (CRITICAL!)
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
+_secret_key = os.environ.get('FLASK_SECRET_KEY')
+if not _secret_key:
+    _secret_key = os.urandom(24)
+    print("⚠️  WARNING: FLASK_SECRET_KEY not set — using a random key. All sessions will be invalidated on restart.")
+app.config['SECRET_KEY'] = _secret_key
 
 # SECURITY: Session cookie settings
-app.config['SESSION_COOKIE_SECURE'] = True        # HTTPS only
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('RENDER') is not None  # HTTPS-only in production
 app.config['SESSION_COOKIE_HTTPONLY'] = True      # No JavaScript access
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'     # CSRF protection
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600   # 1 hour session expiry
 
-# SECURITY: CORS - Restrict to allowed origins
-ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', '*').split(',')
-# In production, set CORS_ORIGINS=https://your-app.railway.app
-socketio = SocketIO(app, cors_allowed_origins=ALLOWED_ORIGINS if ALLOWED_ORIGINS != ['*'] else "*")
+# SECURITY: CORS - restrict to explicitly allowed origins.
+# Default (empty list) allows same-origin requests only. Set CORS_ORIGINS to a
+# comma-separated list of trusted origins, e.g. CORS_ORIGINS=https://your-app.railway.app
+_cors_env = os.environ.get('CORS_ORIGINS', '').strip()
+ALLOWED_ORIGINS = [o.strip() for o in _cors_env.split(',') if o.strip()]
+socketio = SocketIO(app, cors_allowed_origins=ALLOWED_ORIGINS)
 
 # SECURITY: Rate limiting to prevent brute-force attacks
 from flask_limiter import Limiter
@@ -146,6 +137,58 @@ limiter = Limiter(
 
 # Password hashing utilities
 from werkzeug.security import generate_password_hash, check_password_hash
+
+# SECURITY: CSRF protection for all state-changing requests
+from flask_wtf.csrf import CSRFProtect, generate_csrf
+csrf = CSRFProtect(app)
+
+import time
+
+
+# --- SECURITY HEADERS (applied to every response) ---
+@app.after_request
+def _set_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.socket.io https://unpkg.com https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+        "img-src 'self' data: https:; "
+        "font-src 'self' data: https://fonts.gstatic.com; "
+        "connect-src 'self' ws: wss: https:; "
+        "media-src 'self' blob: https:; "
+        "frame-ancestors 'none'"
+    )
+    return response
+
+
+def _valid_coords(lat, lng):
+    """True if lat/lng are numeric and within Earth's bounds."""
+    try:
+        lat, lng = float(lat), float(lng)
+    except (TypeError, ValueError):
+        return False
+    return -90 <= lat <= 90 and -180 <= lng <= 180
+
+
+# --- SOCKET EVENT RATE LIMITING (throttles high-frequency events per client) ---
+_socket_rate = {}  # sid -> { event_name: last_monotonic_time }
+
+def _socket_allow(event, min_interval):
+    """Return False if this client sent `event` again within min_interval seconds."""
+    sid = getattr(request, 'sid', None)
+    if sid is None:
+        return True
+    now = time.monotonic()
+    bucket = _socket_rate.setdefault(sid, {})
+    if now - bucket.get(event, 0.0) < min_interval:
+        return False
+    bucket[event] = now
+    return True
+
 
 # --- LAZY MIGRATION (Runs on first HTTP request, not during import) ---
 _migration_done = False
@@ -291,99 +334,6 @@ def dashboard_stats():
         return json.dumps({"error": str(e)}), 500
 
 
-# --- MQTT LISTENER (Background Task) ---
-# This runs separately so it doesn't block the website
-# --- SOCKET EVENTS (The Bridge) ---
-
-@socketio.on('driver_gps_update')
-def handle_driver_gps(data):
-    # 1. Receive Data from Driver Phone
-    print(f"📍 Bus {data.get('bus_id')} moved to {data.get('lat')}, {data.get('lng')}")
-    
-    # 2. Broadcast Data to Parent Phones
-    socketio.emit('update_map', data)
-
-@socketio.on('manual_attendance')
-def handle_attendance(data):
-    sid = data['student_id']
-    status = data['status'] # BOARDED or DROPPED
-    bus_id = data['bus_id']
-    
-    print(f"📝 Attendance: Student {sid} is {status}")
-    
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        if status == "BOARDED":
-            # Add to Manifest
-            cur.execute("""
-                INSERT INTO bus_manifest (bus_id, student_id) 
-                VALUES (%s, %s) 
-                ON CONFLICT DO NOTHING
-            """, (bus_id, sid))
-        else:
-            # Remove from Manifest
-            cur.execute("DELETE FROM bus_manifest WHERE bus_id = %s AND student_id = %s", (bus_id, sid))
-            
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        # Notify Parents Live
-        socketio.emit('student_status_update', {
-            "student_id": sid,
-            "status": status,
-            "bus_id": bus_id if status == "BOARDED" else None
-        })
-        
-    except Exception as e:
-        print(f"❌ Attendance Error: {e}")
-
-# --- CAMERA STREAMING EVENTS ---
-# Track which buses are currently streaming
-active_streams = {}
-
-@socketio.on('camera_stream_start')
-def handle_camera_start(data):
-    bus_id = data.get('bus_id')
-    active_streams[bus_id] = True
-    print(f"📹 Camera stream STARTED for bus {bus_id}")
-    # Notify all clients that this bus is now streaming
-    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': True})
-
-@socketio.on('camera_stream_stop')
-def handle_camera_stop(data):
-    bus_id = data.get('bus_id')
-    if bus_id in active_streams:
-        del active_streams[bus_id]
-    print(f"📹 Camera stream STOPPED for bus {bus_id}")
-    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': False})
-
-@socketio.on('camera_frame')
-def handle_camera_frame(data):
-    bus_id = data.get('bus_id')
-    frame = data.get('frame')  # Base64 JPEG
-    timestamp = data.get('timestamp')
-    
-    # Broadcast frame to all connected clients watching this bus
-    socketio.emit('bus_camera_frame', {
-        'bus_id': bus_id,
-        'frame': frame,
-        'timestamp': timestamp
-    })
-
-@socketio.on('join_bus_stream')
-def handle_join_stream(data):
-    """Parent joins a specific bus's stream room"""
-    bus_id = data.get('bus_id')
-    print(f"👁️ Parent joined stream for bus {bus_id}")
-    # Check if bus is currently streaming
-    is_streaming = bus_id in active_streams
-    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': is_streaming})
-
-
-
 # --- WEB ROUTES ---
 @app.route('/driver')
 @role_required(['DRIVER'])
@@ -470,40 +420,6 @@ def get_my_kids():
         traceback.print_exc()
         return json.dumps({"status": "error", "message": str(e)}), 500
 
-# --- DEBUG: Check Parent Session ---
-@app.route('/api/debug/parent_session')
-@role_required(['PARENT'])
-def debug_parent_session():
-    """Debug endpoint to see parent session and their linked children"""
-    try:
-        parent_id = session.get('user_id')
-        parent_name = session.get('user_name')
-        
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        # Get all students linked to this parent
-        cur.execute("SELECT id, name, parent_id FROM students WHERE parent_id = %s", (parent_id,))
-        linked_students = cur.fetchall()
-        
-        # Get all parents in system to compare
-        cur.execute("SELECT id, name FROM users WHERE role = 'PARENT' LIMIT 10")
-        all_parents = cur.fetchall()
-        
-        cur.close()
-        conn.close()
-        
-        return json.dumps({
-            "your_session": {
-                "user_id": parent_id,
-                "user_name": parent_name
-            },
-            "linked_students": [{"id": str(s[0]), "name": s[1], "parent_id": str(s[2])} for s in linked_students],
-            "sample_parents": [{"id": str(p[0]), "name": p[1]} for p in all_parents]
-        }, indent=2), 200
-    except Exception as e:
-        return json.dumps({"error": str(e)}), 500
-
 @app.route('/admin')
 @role_required(['SUPER_ADMIN', 'SCHOOL_ADMIN'])
 def admin():
@@ -517,129 +433,78 @@ def admin():
     else:
         return "Unknown Role", 403
 
+def _upgrade_password_hash(user_id, plaintext):
+    """Re-hash a legacy plain-text password after a successful login."""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET password_hash = %s WHERE id = %s",
+                    (generate_password_hash(plaintext), user_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"⚠️ Password hash upgrade failed for {user_id}: {e}")
+
+
+def _verify_and_login(allowed_roles, redirect_endpoint):
+    """Shared login handler: verify credentials, enforce role, start a session."""
+    username = request.form['username']
+    password = request.form['password']
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, name, role, school_id, password_hash FROM users WHERE name = %s", (username,))
+    user = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if user and user[4]:
+        user_id, user_name, role, school_id, stored_hash = user
+        if stored_hash.startswith('pbkdf2:') or stored_hash.startswith('scrypt:'):
+            password_valid = check_password_hash(stored_hash, password)
+        else:
+            # Legacy plain-text password: verify, then transparently upgrade to a hash.
+            password_valid = (stored_hash == password)
+            if password_valid:
+                _upgrade_password_hash(user_id, password)
+
+        if password_valid:
+            if role not in allowed_roles:
+                return "❌ Access Denied: Use the correct portal for your role.", 403
+            session['user_id'] = user_id
+            session['user_name'] = user_name
+            session['user_role'] = role
+            session['school_id'] = school_id
+            return redirect(url_for(redirect_endpoint))
+
+    return "❌ Invalid Login", 401
+
+
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("5 per minute", methods=["POST"])
 def login():
-    """Admin Login Portal - Only for SUPER_ADMIN and SCHOOL_ADMIN"""
+    """Admin Login Portal — SUPER_ADMIN and SCHOOL_ADMIN only."""
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
-        conn = get_db_connection()
-        cur = conn.cursor()
-        # Get user with password hash for verification
-        cur.execute("SELECT id, name, role, school_id, password_hash FROM users WHERE name = %s", (username,))
-        user = cur.fetchone()
-        cur.close()
-        conn.close()
-        
-        if user and user[4]:  # user[4] is password_hash
-            # SECURITY: Verify password using hash
-            # Support both old plain-text (temporary) and new hashed passwords
-            stored_hash = user[4]
-            password_valid = False
-            
-            if stored_hash.startswith('pbkdf2:') or stored_hash.startswith('scrypt:'):
-                # New hashed password
-                password_valid = check_password_hash(stored_hash, password)
-            else:
-                # Legacy plain-text (will be migrated)
-                password_valid = (stored_hash == password)
-            
-            if password_valid:
-                role = user[2]
-                # Validate: Only Admins allowed here
-                if role not in ['SUPER_ADMIN', 'SCHOOL_ADMIN']:
-                    return "❌ Access Denied: Use the correct portal for your role.", 403
-                
-                session['user_id'] = user[0]
-                session['user_name'] = user[1]
-                session['user_role'] = role
-                session['school_id'] = user[3]
-                return redirect(url_for('admin'))
-        
-        return "❌ Invalid Login", 401
-    
+        return _verify_and_login(['SUPER_ADMIN', 'SCHOOL_ADMIN'], 'admin')
     return render_template('login.html')
 
 
 @app.route('/driver/login', methods=['GET', 'POST'])
 @limiter.limit("5 per minute", methods=["POST"])
 def driver_login():
-    """Driver Login Portal - Only for DRIVER"""
+    """Driver Login Portal — DRIVER only."""
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT id, name, role, school_id, password_hash FROM users WHERE name = %s", (username,))
-        user = cur.fetchone()
-        cur.close()
-        conn.close()
-        
-        if user and user[4]:
-            stored_hash = user[4]
-            password_valid = False
-            
-            if stored_hash.startswith('pbkdf2:') or stored_hash.startswith('scrypt:'):
-                password_valid = check_password_hash(stored_hash, password)
-            else:
-                password_valid = (stored_hash == password)
-            
-            if password_valid:
-                role = user[2]
-                if role != 'DRIVER':
-                    return "❌ Access Denied: This portal is for Drivers only.", 403
-                
-                session['user_id'] = user[0]
-                session['user_name'] = user[1]
-                session['user_role'] = role
-                session['school_id'] = user[3]
-                return redirect(url_for('driver_ui'))
-        
-        return "❌ Invalid Login", 401
-    
+        return _verify_and_login(['DRIVER'], 'driver_ui')
     return render_template('driver_login.html')
 
 
 @app.route('/parent/login', methods=['GET', 'POST'])
 @limiter.limit("5 per minute", methods=["POST"])
 def parent_login():
-    """Parent Login Portal - Only for PARENT"""
+    """Parent Login Portal — PARENT only."""
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT id, name, role, school_id, password_hash FROM users WHERE name = %s", (username,))
-        user = cur.fetchone()
-        cur.close()
-        conn.close()
-        
-        if user and user[4]:
-            stored_hash = user[4]
-            password_valid = False
-            
-            if stored_hash.startswith('pbkdf2:') or stored_hash.startswith('scrypt:'):
-                password_valid = check_password_hash(stored_hash, password)
-            else:
-                password_valid = (stored_hash == password)
-            
-            if password_valid:
-                role = user[2]
-                if role != 'PARENT':
-                    return "❌ Access Denied: This portal is for Parents only.", 403
-                
-                session['user_id'] = user[0]
-                session['user_name'] = user[1]
-                session['user_role'] = role
-                session['school_id'] = user[3]
-                return redirect(url_for('parent_dashboard'))
-        
-        return "❌ Invalid Login", 401
-    
+        return _verify_and_login(['PARENT'], 'parent_dashboard')
     return render_template('parent_login.html')
 
 
@@ -648,8 +513,15 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+@app.route('/api/csrf-token')
+def get_csrf_token():
+    """Returns a CSRF token for the current session. Must be included as
+    X-CSRFToken header on all state-changing fetch() calls."""
+    return json.dumps({'token': generate_csrf()})
+
 # --- API: Add Student (SCHOOL_ADMIN & SUPER_ADMIN) ---
 @app.route('/api/add_student', methods=['POST'])
+@limiter.limit("30 per minute")
 @role_required(['SUPER_ADMIN', 'SCHOOL_ADMIN'])
 def add_student():
     data = request.json
@@ -677,30 +549,29 @@ def add_student():
             if not school_target:
                 return json.dumps({"status": "error", "message": "School required"}), 400
 
+    student_name = data.get('name', '').strip()
+    parent_id = data.get('parent_id', '').strip()
+    nfc_id = data.get('nfc_id', '').strip()
+
+    if not student_name or not parent_id or not nfc_id:
+        cur.close(); conn.close()
+        return "Missing required fields: name, parent_id, nfc_id", 400
+
     # VALIDATION: Check if parent_id is a valid UUID
     import uuid
     try:
-        uuid.UUID(str(data['parent_id']))
+        uuid.UUID(parent_id)
     except ValueError:
-        return f"❌ Error: Parent ID '{data['parent_id']}' is not a valid UUID. Please use the pre-filled value.", 400
+        cur.close(); conn.close()
+        return "Invalid parent_id format", 400
 
     try:
-        # Insert into DB
-        # conn = get_db_connection() # Moved up
-        # cur = conn.cursor() # Moved up
-        
-        # We need a parent_id (User ID). For now, assume provided or create dummy.
-        # Ensure parent exists or handle error. 
-        # For this demo, let's assume the user passes a valid parent_id or we insert NULL if allowed (it's FK though).
-        # We will wrap in try/catch.
-        
-        # Universal Mode: Use Lat/Lng Columns (No PostGIS)
         cur.execute("""
             INSERT INTO students (name, parent_id, school_id, nfc_tag_id, lat, lng, home_address_text, student_code)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
-        """, (data['name'], data['parent_id'], school_target, data['nfc_id'], data.get('lat'), data.get('lng'), data.get('address_text', ''), data.get('student_code')))
-            
+        """, (student_name, parent_id, school_target, nfc_id, data.get('lat'), data.get('lng'), data.get('address_text', ''), data.get('student_code')))
+
         new_student_id = cur.fetchone()[0]
         conn.commit()
         cur.close()
@@ -708,49 +579,49 @@ def add_student():
         return json.dumps({"status": "success", "id": new_student_id}), 200
     except Exception as e:
         print(f"Error adding student: {e}")
-        return str(e), 500
+        return "Internal server error", 500
 
 # --- API: Create Parent (SCHOOL_ADMIN ONLY) ---
 @app.route('/api/create_parent', methods=['POST'])
+@limiter.limit("30 per minute")
 @role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
 def create_parent():
-    data = request.json
+    data = request.json or {}
+    parent_name = data.get('name', '').strip()
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+
+    if not parent_name or not username or not password:
+        return json.dumps({"status": "error", "message": "Missing required fields: name, username, password"}), 400
+
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        
-        # Generator for ID (Simple UUID for prototype)
+
         import uuid
         new_id = str(uuid.uuid4())
-        
-        # Get username/password from request (or use defaults)
-        username = data.get('username', data['name'])  # Default to name if no username
-        password = data.get('password', 'parent123')   # Default password
-        
-        # SECURITY: Hash the password before storing
+
         hashed_password = generate_password_hash(password)
-        
-        # School ID Logic
+
         if session['user_role'] == 'SCHOOL_ADMIN':
-             school_id = session['school_id']
+            school_id = session['school_id']
         else:
-             # SUPER_ADMIN: Must provide school_id
-             school_id = data.get('school_id')
-             if not school_id:
-                 return json.dumps({"status": "error", "message": "Missing School ID"}), 400
+            school_id = data.get('school_id')
+            if not school_id:
+                return json.dumps({"status": "error", "message": "Missing School ID"}), 400
 
         cur.execute("""
             INSERT INTO users (id, name, role, school_id, password_hash)
             VALUES (%s, %s, 'PARENT', %s, %s)
         """, (new_id, username, school_id, hashed_password))
-        
+
         conn.commit()
         cur.close()
         conn.close()
         return json.dumps({"status": "success", "id": new_id}), 200
     except Exception as e:
         print(f"Error creating parent: {e}")
-        return json.dumps({"status": "error", "message": str(e)}), 500
+        return json.dumps({"status": "error", "message": "Internal server error"}), 500
 
 # --- API: Get Driver Manifest ---
 @app.route('/api/driver/manifest')
@@ -827,7 +698,7 @@ def get_parents():
         return json.dumps(parents), 200
     except Exception as e:
         print(f"Error fetching parents: {e}")
-        return str(e), 500
+        return "Internal server error", 500
 
 # --- API: Get Students (Helper for Dropdown) ---
 @app.route('/api/get_students', methods=['GET'])
@@ -839,23 +710,24 @@ def get_students():
         
         # Filter by school if School Admin
         if session['user_role'] == 'SCHOOL_ADMIN':
-             cur.execute("SELECT id, name, student_code, parent_id FROM students WHERE school_id = %s", (session['school_id'],))
+             cur.execute("SELECT id, name, student_code, parent_id, lat, lng, home_address_text FROM students WHERE school_id = %s", (session['school_id'],))
         else:
-             cur.execute("SELECT id, name, student_code, parent_id FROM students")
+             cur.execute("SELECT id, name, student_code, parent_id, lat, lng, home_address_text FROM students")
              
         rows = cur.fetchall()
-        # Handle cases where student_code might be None
-        students = [{"id": str(r[0]), "name": r[1], "code": r[2] if r[2] else "", "parent_id": str(r[3])} for r in rows]
+        students = [{"id": str(r[0]), "name": r[1], "code": r[2] if r[2] else "", "parent_id": str(r[3]),
+                     "lat": r[4], "lng": r[5], "address_text": r[6] if r[6] else ""} for r in rows]
         
         cur.close()
         conn.close()
         return json.dumps(students), 200
     except Exception as e:
         print(f"Error fetching students: {e}")
-        return str(e), 500
+        return "Internal server error", 500
 
 # --- API: Delete Student (SCHOOL_ADMIN & SUPER_ADMIN) ---
 @app.route('/api/delete_student', methods=['POST'])
+@limiter.limit("30 per minute")
 @role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
 def delete_student():
     data = request.json
@@ -879,10 +751,11 @@ def delete_student():
         return "Student Deleted", 200
     except Exception as e:
         print(f"Error deleting student: {e}")
-        return str(e), 500
+        return "Internal server error", 500
 
 # --- API: Update Student Location (SCHOOL_ADMIN & SUPER_ADMIN) ---
 @app.route('/api/update_student_location', methods=['POST'])
+@limiter.limit("30 per minute")
 @role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
 def update_student_location():
     data = request.json
@@ -891,8 +764,10 @@ def update_student_location():
     lng = data.get('lng')
     address_text = data.get('address_text', '') # Optional
 
-    if not student_id or not lat or not lng:
+    if not student_id or lat is None or lng is None:
         return "Missing ID, Lat, or Lng", 400
+    if not _valid_coords(lat, lng):
+        return "Invalid coordinates", 400
 
     try:
         conn = get_db_connection()
@@ -928,10 +803,11 @@ def update_student_location():
         return "Location Updated", 200
     except Exception as e:
         print(f"Error updating location: {e}")
-        return str(e), 500
+        return "Internal server error", 500
 
 # --- API: Assign Bus / Create Stop (SCHOOL_ADMIN ONLY) ---
 @app.route('/api/assign_bus', methods=['POST'])
+@limiter.limit("30 per minute")
 @role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
 def assign_bus():
     data = request.json
@@ -950,10 +826,11 @@ def assign_bus():
         
         student_name = student[0]
         
-        # Create Stop in route_stops (Copy lat/lng from student)
+        # Remove any existing stop for this student on this bus, then insert fresh
+        cur.execute("DELETE FROM route_stops WHERE bus_id = %s AND assigned_student_id = %s::text", (bus_id, student_id))
         cur.execute("""
             INSERT INTO route_stops (stop_name, assigned_student_id, bus_id, lat, lng)
-            SELECT %s, id, %s, lat, lng FROM students WHERE id = %s
+            SELECT %s, id::text, %s, lat, lng FROM students WHERE id = %s
         """, (f"{student_name}'s Home", bus_id, student_id))
         
         conn.commit()
@@ -962,7 +839,7 @@ def assign_bus():
         return "Bus Assigned (Stop Created)", 200
     except Exception as e:
         print(f"Error assigning bus: {e}")
-        return str(e), 500
+        return "Internal server error", 500
 
 # --- API: Get Buses (Helper for Dropdown) ---
 @app.route('/api/get_buses', methods=['GET'])
@@ -993,10 +870,11 @@ def get_buses():
         return json.dumps(buses), 200
     except Exception as e:
         print(f"Error fetching buses: {e}")
-        return str(e), 500
+        return "Internal server error", 500
 
 # --- API: Delete Bus (SUPER_ADMIN ONLY) ---
 @app.route('/api/delete_bus', methods=['POST'])
+@limiter.limit("30 per minute")
 @role_required(['SUPER_ADMIN'])
 def delete_bus():
     data = request.json
@@ -1005,11 +883,12 @@ def delete_bus():
     conn = get_db_connection()
     cur = conn.cursor()
     
-    if bus_id:
-        cur.execute("DELETE FROM buses WHERE id = %s", (bus_id,))
-    else:
-        cur.execute("DELETE FROM buses WHERE id = (SELECT id FROM buses ORDER BY created_at DESC LIMIT 1)")
-        
+    if not bus_id:
+        cur.close()
+        conn.close()
+        return "Bus ID required", 400
+
+    cur.execute("DELETE FROM buses WHERE id = %s", (bus_id,))
     conn.commit()
     cur.close()
     conn.close()
@@ -1017,6 +896,7 @@ def delete_bus():
 
 # --- API: Add Bus (SUPER_ADMIN ONLY) ---
 @app.route('/api/add_bus', methods=['POST'])
+@limiter.limit("30 per minute")
 @role_required(['SUPER_ADMIN'])
 def add_bus():
     data = request.json
@@ -1041,7 +921,7 @@ def add_bus():
         return json.dumps({"status": "success", "id": new_id}), 200
     except Exception as e:
         print(f"Error adding bus: {e}")
-        return str(e), 500
+        return "Internal server error", 500
 
 # --- API: Get Schools (Helper) ---
 @app.route('/api/get_schools', methods=['GET'])
@@ -1058,10 +938,11 @@ def get_schools():
         return json.dumps(schools), 200
     except Exception as e:
         print(f"Error fetching schools: {e}")
-        return str(e), 500
+        return "Internal server error", 500
 
 # --- NEW: Create School Admin (SUPER_ADMIN ONLY) ---
 @app.route('/api/create_school_admin', methods=['POST'])
+@limiter.limit("30 per minute")
 @role_required(['SUPER_ADMIN'])
 def create_school_admin():
     data = request.json
@@ -1098,10 +979,11 @@ def create_school_admin():
         return json.dumps({"status": "success", "school_id": new_school_id, "admin_id": new_user_id}), 200
     except Exception as e:
         print(f"Error creating school admin: {e}")
-        return str(e), 500
+        return "Internal server error", 500
 
 # --- NEW: Update Parent Credentials (SUPER_ADMIN ONLY) ---
 @app.route('/api/update_parent_credentials', methods=['POST'])
+@limiter.limit("30 per minute")
 @role_required(['SUPER_ADMIN'])
 def update_parent_credentials():
     data = request.json
@@ -1135,10 +1017,11 @@ def update_parent_credentials():
         return "Parent Credentials Updated", 200
     except Exception as e:
         print(f"Error updating credentials: {e}")
-        return str(e), 500
+        return "Internal server error", 500
 
 # --- NEW: Camera "Switchboard" ---
 @app.route('/get_camera/<bus_id>')
+@role_required(['PARENT', 'SCHOOL_ADMIN', 'SUPER_ADMIN'])
 def get_camera_url(bus_id):
     # IN THE FUTURE: Query DB for 'camera_stream_url'
     
@@ -1154,17 +1037,23 @@ def get_camera_url(bus_id):
 
 
 @app.route('/api/my_children/<parent_id>')
+@role_required(['PARENT'])
 def get_my_children(parent_id):
+    # SECURITY: a parent may only view their own children.
+    if parent_id != session.get('user_id'):
+        abort(403)
     conn = get_db_connection()
     cur = conn.cursor()
     
     # 3. Get Children & Their Status
+    # Join by student UUID — bus_manifest.student_id is always a student UUID,
+    # set by both manual attendance and NFC tap (listener.py resolves NFC→UUID).
     query = """
-        SELECT s.id, s.name, s.nfc_tag_id, 
-               bm.bus_id, 
+        SELECT s.id, s.name, s.nfc_tag_id,
+               bm.bus_id,
                b.plate_number
         FROM students s
-        LEFT JOIN bus_manifest bm ON s.nfc_tag_id = bm.student_id
+        LEFT JOIN bus_manifest bm ON bm.student_id = s.id::text AND bm.status = 'BOARDED'
         LEFT JOIN buses b ON bm.bus_id = b.id
         WHERE s.parent_id = %s
     """
@@ -1188,38 +1077,44 @@ def get_my_children(parent_id):
 
 # --- API: Create Driver ---
 @app.route('/api/create_driver', methods=['POST'])
+@limiter.limit("30 per minute")
 @role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
 def create_driver():
-    data = request.json
+    data = request.json or {}
+    driver_username = data.get('username', '').strip()
+    driver_password = data.get('password', '')
+
+    if not driver_username or not driver_password:
+        return json.dumps({"status": "error", "message": "Missing required fields: username, password"}), 400
+
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        
+
         import uuid
         new_id = str(uuid.uuid4())
-        
-        # Determine School ID
+
         if session['user_role'] == 'SCHOOL_ADMIN':
             school_id = session['school_id']
         else:
             school_id = data.get('school_id')
-            if not school_id: return json.dumps({"status": "error", "message": "School ID required"}), 400
+            if not school_id:
+                return json.dumps({"status": "error", "message": "School ID required"}), 400
 
-        # SECURITY: Hash the password before storing
-        hashed_password = generate_password_hash(data['password'])
+        hashed_password = generate_password_hash(driver_password)
 
         cur.execute("""
             INSERT INTO users (id, name, role, school_id, password_hash)
             VALUES (%s, %s, 'DRIVER', %s, %s)
-        """, (new_id, data['username'], school_id, hashed_password))
-        
+        """, (new_id, driver_username, school_id, hashed_password))
+
         conn.commit()
         cur.close()
         conn.close()
         return json.dumps({"status": "success", "id": new_id}), 200
     except Exception as e:
         print(f"Error creating driver: {e}")
-        return json.dumps({"status": "error", "message": str(e)}), 500
+        return json.dumps({"status": "error", "message": "Internal server error"}), 500
 
 # --- API: Get Drivers ---
 @app.route('/api/get_drivers', methods=['GET'])
@@ -1246,10 +1141,12 @@ def get_drivers():
         conn.close()
         return json.dumps(drivers), 200
     except Exception as e:
-        return str(e), 500
+        print(f"Error fetching drivers: {e}")
+        return "Internal server error", 500
 
 # --- API: Assign Driver to Bus ---
 @app.route('/api/assign_driver', methods=['POST'])
+@limiter.limit("30 per minute")
 @role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
 def assign_driver():
     data = request.json
@@ -1271,7 +1168,8 @@ def assign_driver():
         conn.close()
         return "Driver Assigned", 200
     except Exception as e:
-        return str(e), 500
+        print(f"Error assigning driver: {e}")
+        return "Internal server error", 500
 
 # --- SOCKET.IO HANDLERS ---
 
@@ -1282,12 +1180,16 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     print(f"❌ Client Disconnected: {request.sid}")
+    _socket_rate.pop(request.sid, None)
 
 @socketio.on('join')
 def on_join(data):
-    room = data['room']
+    room = data.get('room', '') if isinstance(data, dict) else ''
+    # Only allow joining bus rooms (numeric IDs) or known named rooms
+    if not room or not str(room).isdigit():
+        return
     from flask_socketio import join_room
-    join_room(room)
+    join_room(str(room))
     print(f"📢 Client {request.sid} joined room: {room}")
 
 @socketio.on('driver_gps_update')
@@ -1296,23 +1198,23 @@ def handle_driver_gps(data):
     Received GPS data from Driver App.
     Data: { 'bus_id': 1, 'lat': ..., 'lng': ..., 'speed': ... }
     """
+    if session.get('user_role') != 'DRIVER':
+        return
+    if not _socket_allow('driver_gps_update', 0.5):
+        return
+
     bus_id = data.get('bus_id')
     lat = data.get('lat')
     lng = data.get('lng')
     speed = data.get('speed', 0)
-    
-    if not bus_id or not lat or not lng:
+
+    if not bus_id or lat is None or lng is None:
+        return
+    if not _valid_coords(lat, lng):
         return
 
-    # 1. Broadcast to School Admins / Parents watching this bus
-    # Emit to a specific room for this bus (if we had rooms per bus)
-    # OR emit to a 'school_admin' room.
-    # For now, simplistic broadcast or specific room if implemented.
-    # Let's emit to "bus_{bus_id}" room which parents/admins join.
-    socketio.emit('bus_update', data, room=f"bus_{bus_id}")
-    
-    # Also emit to global map for admins?
-    socketio.emit('global_bus_update', data) # Listeners on dashboard
+    # Broadcast to parent/admin maps — clients filter by bus_id client-side.
+    socketio.emit('update_map', data)
 
     # 2. Update DB (Asynchronously via eventlet/psycogreen)
     try:
@@ -1335,10 +1237,15 @@ def handle_manual_attendance(data):
     Driver manually toggles student status.
     Data: { 'student_id': 123, 'status': 'BOARDED'|'DROPPED', 'bus_id': 1 }
     """
+    if session.get('user_role') != 'DRIVER':
+        return
     student_id = data.get('student_id')
     status = data.get('status')
     bus_id = data.get('bus_id')
-    
+
+    if not student_id or not bus_id or status not in ('BOARDED', 'DROPPED'):
+        return
+
     print(f"🚌 Manual Attendance: Student {student_id} -> {status} (Bus {bus_id})")
     
     try:
@@ -1375,13 +1282,13 @@ def handle_manual_attendance(data):
             
         conn.commit()
         
-        # Notify Parents/Admins
-        socketio.emit('attendance_update', {
+        # Notify parents/admins — clients filter by bus_id or reload on receipt.
+        socketio.emit('student_status_update', {
             'student_id': student_id,
             'status': status,
-            'bus_id': bus_id,
+            'bus_id': bus_id if status == 'BOARDED' else None,
             'timestamp': str(datetime.now())
-        }, room=f"bus_{bus_id}")
+        })
         
         cur.close()
         conn.close()
@@ -1390,25 +1297,43 @@ def handle_manual_attendance(data):
         print(f"Attendance Update Error: {e}")
 
 # --- CAMERA STREAMING HANDLERS ---
+# Tracks which buses currently have an active camera stream (bus_id -> True).
+active_streams = {}
+
 @socketio.on('camera_stream_start')
 def handle_stream_start(data):
+    if session.get('user_role') != 'DRIVER':
+        return
     bus_id = data.get('bus_id')
+    active_streams[bus_id] = True
     print(f"📹 Stream Started for Bus {bus_id}")
-    socketio.emit('stream_status', {'bus_id': bus_id, 'status': 'live'}, room="admin_room")
+    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': True})
 
 @socketio.on('camera_stream_stop')
 def handle_stream_stop(data):
+    if session.get('user_role') != 'DRIVER':
+        return
     bus_id = data.get('bus_id')
+    active_streams.pop(bus_id, None)
     print(f"🛑 Stream Stopped for Bus {bus_id}")
-    socketio.emit('stream_status', {'bus_id': bus_id, 'status': 'offline'}, room="admin_room")
+    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': False})
 
 @socketio.on('camera_frame')
 def handle_camera_frame(data):
-    # data: { bus_id, frame (base64) }
-    # Broadcast to anyone watching this bus stream
+    if session.get('user_role') != 'DRIVER':
+        return
+    # Throttle to ~12 fps per client to limit bandwidth and DoS exposure.
+    if not _socket_allow('camera_frame', 0.08):
+        return
+    socketio.emit('bus_camera_frame', data)
+
+@socketio.on('join_bus_stream')
+def handle_join_stream(data):
+    """A viewer subscribes to a bus's camera stream and gets its current state."""
+    if session.get('user_role') not in ('PARENT', 'SCHOOL_ADMIN', 'SUPER_ADMIN'):
+        return
     bus_id = data.get('bus_id')
-    # Emit to room "stream_bus_{bus_id}"
-    socketio.emit('camera_feed', data, room=f"stream_bus_{bus_id}")
+    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': bus_id in active_streams})
 
 @app.route('/api/optimize_route/<int:bus_id>', methods=['GET'])
 @role_required(['DRIVER', 'SCHOOL_ADMIN', 'SUPER_ADMIN'])
@@ -1533,11 +1458,8 @@ def optimize_route(bus_id):
 
 
 
-@app.route('/parent/dashboard')
-def parent_dashboard_view():
-    return render_template('parent_dashboard.html')
-
 @app.route('/api/fix_gps')
+@role_required(['SUPER_ADMIN'])
 def api_fix_gps():
     try:
         from fix_student_gps import fix_gps

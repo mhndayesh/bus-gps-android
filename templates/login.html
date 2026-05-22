@@ -138,6 +138,7 @@
         </div>
 
         <form method="POST" action="/login">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label class="bilingual-label">اسم المستخدم / Username</label>
             <input type="text" name="username" placeholder="أدخل اسم المستخدم" required>
 

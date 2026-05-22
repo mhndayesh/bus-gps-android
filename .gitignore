@@ -7,3 +7,4 @@ mosquitto/log/
 backups/
 node_modules/
 **/node_modules/
+credentials.md

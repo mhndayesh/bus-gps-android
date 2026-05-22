@@ -5,9 +5,9 @@
     <title>آمن مدرستي - لوحة ولي الأمر</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js" integrity="sha384-DkkWv9oJFWLIydBXXjkBWnG1/fuVhw8YPBq37uvvD6WSYRFRqr21eY5Dg9ZhmWdy" crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
@@ -141,6 +141,12 @@
     <div id="map"></div>
 
     <script>
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
         var map = L.map('map').setView([21.5433, 39.1728], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -165,11 +171,11 @@
                         var statusTextAr = child.on_bus ? `🚌 في الحافلة` : "🏫 في المدرسة / المنزل";
                         var statusTextEn = child.on_bus ? `On Bus` : "At School / Home";
                         var busInfo = child.on_bus && child.bus_plate ?
-                            `<div class="bus-info">🚌 ${child.bus_plate}</div>` : '';
+                            `<div class="bus-info">🚌 ${escapeHtml(child.bus_plate)}</div>` : '';
 
                         html += `
                     <div class="child-card ${statusClass}">
-                        <h3>${child.name}</h3>
+                        <h3>${escapeHtml(child.name)}</h3>
                         <span class="status-badge ${badgeClass}">${statusTextAr}</span>
                         <div style="font-size:0.8em; color:var(--sage-dark); margin-top:5px;">${statusTextEn}</div>
                         ${busInfo}
@@ -198,7 +204,7 @@
                     var icon = L.divIcon({ className: 'bus-icon', html: '🚌', iconSize: [30, 30] });
                     busMarkers[data.bus_id] = L.marker(markerPos, { icon: icon })
                         .addTo(map)
-                        .bindPopup(`الباص ${data.bus_id}`);
+                        .bindPopup(`الباص ${escapeHtml(data.bus_id)}`);
 
                     map.setView(markerPos, 15);
                 }

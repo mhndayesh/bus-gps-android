@@ -3,8 +3,8 @@
 
 <head>
     <title>آمن مدرستي - إدارة المدرسة</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
@@ -355,6 +355,12 @@
                 <label>اسم ولي الأمر / Parent Name:</label>
                 <input type="text" id="parent_name" placeholder="مثال: أحمد محمد">
 
+                <label>اسم المستخدم / Username:</label>
+                <input type="text" id="parent_username" placeholder="للدخول إلى التطبيق">
+
+                <label>كلمة المرور / Password:</label>
+                <input type="password" id="parent_password" placeholder="كلمة المرور">
+
                 <button class="btn-primary" onclick="createParent()">+ إنشاء الحساب</button>
                 <div id="res_parent" class="result-box"></div>
             </div>
@@ -428,7 +434,7 @@
                 <p>Remove Student</p>
 
                 <label>اختر ولي الأمر:</label>
-                <select id="del_parent_filter" onchange="filterStudentsForDelete()">
+                <select id="del_parent_filter" onchange="filterStudentsToDelete()">
                     <option value="" disabled selected>اختر ولي الأمر...</option>
                 </select>
 
@@ -504,6 +510,10 @@
     </div>
 
     <script>
+        // Fetch CSRF token once on page load; included in all POST requests.
+        let _csrfToken = '';
+        fetch('/api/csrf-token').then(r => r.json()).then(d => { _csrfToken = d.token; });
+
         // Tab Navigation
         // Tab Navigation
         function showTab(tabName) {
@@ -528,21 +538,26 @@
         // --- PARENTS ---
         function createParent() {
             const name = document.getElementById('parent_name').value;
-            if (!name) { alert("يرجى إدخال الاسم"); return; }
+            const username = document.getElementById('parent_username').value;
+            const password = document.getElementById('parent_password').value;
+            if (!name || !username || !password) { alert("يرجى ملء جميع الحقول"); return; }
 
             fetch('/api/create_parent', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name })
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+                body: JSON.stringify({ name, username, password })
             })
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
                         showResult('res_parent', '✅ تم الإنشاء! UUID: ' + data.id);
                         loadParents();
+                        document.getElementById('parent_name').value = '';
+                        document.getElementById('parent_username').value = '';
+                        document.getElementById('parent_password').value = '';
                         setTimeout(() => {
                             document.getElementById('p_id').value = data.id;
                         }, 500);
-                    } else showResult('res_parent', '❌ خطأ');
+                    } else showResult('res_parent', '❌ خطأ: ' + (data.message || ''));
                 });
         }
 
@@ -561,7 +576,7 @@
             };
 
             fetch('/api/add_student', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify(data)
             })
                 .then(res => res.json())
@@ -571,6 +586,14 @@
                         loadStudents();
                     } else showResult('res_student', "❌ خطأ");
                 });
+        }
+
+        // Escapes HTML-special characters to prevent stored XSS when database
+        // values are interpolated into innerHTML.
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
         }
 
         function loadStudents() {
@@ -585,7 +608,7 @@
                 .then(data => {
                     ALL_PARENTS = data;
                     const html = '<option value="" disabled selected>اختر ولي الأمر</option>' +
-                        data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                        data.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
 
                     ['p_id', 'upd_parent_filter', 'del_parent_filter', 'assign_parent_filter'].forEach(id => {
                         const el = document.getElementById(id);
@@ -599,7 +622,7 @@
             const sel = document.getElementById('upd_student_id');
             const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
             sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
-                filtered.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                filtered.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
         }
 
         function filterStudentsForDelete() {
@@ -607,7 +630,7 @@
             const sel = document.getElementById('del_student_id');
             const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
             sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
-                filtered.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                filtered.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
         }
 
         function filterStudentsForAssignment() {
@@ -615,7 +638,7 @@
             const sel = document.getElementById('assign_student_id');
             const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
             sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
-                filtered.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                filtered.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
         }
 
         function updateLocation() {
@@ -627,7 +650,7 @@
             if (!sid || !lat || !lng) { alert("يرجى ملء البيانات"); return; }
 
             fetch('/api/update_student_location', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ student_id: sid, lat, lng, address_text: addr })
             })
                 .then(res => {
@@ -642,7 +665,7 @@
             if (!confirm("⚠️ هل أنت متأكد من حذف هذا الطالب؟")) return;
 
             fetch('/api/delete_student', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ student_id: sid })
             })
                 .then(res => {
@@ -662,7 +685,7 @@
             if (!bid) { alert("اختر باصاً"); return; }
 
             fetch('/api/assign_bus', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ student_id: sid, bus_id: bid })
             })
                 .then(res => {
@@ -677,7 +700,7 @@
                 .then(res => res.json())
                 .then(data => {
                     const html = '<option value="" disabled selected>اختر الباص</option>' +
-                        data.map(b => `<option value="${b.id}">${b.plate}</option>`).join('');
+                        data.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.plate)}</option>`).join('');
 
                     ['bus_id', 'assign_driver_bus_id'].forEach(id => {
                         const el = document.getElementById(id);
@@ -694,7 +717,7 @@
             if (!u || !p) { alert("أدخل بيانات الدخول"); return; }
 
             fetch('/api/create_driver', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ username: u, password: p })
             })
                 .then(res => res.json())
@@ -714,7 +737,7 @@
                 .then(data => {
                     const sel = document.getElementById('assign_driver_id');
                     sel.innerHTML = '<option value="" disabled selected>اختر السائق</option>' +
-                        data.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+                        data.map(d => `<option value="${escapeHtml(d.id)}">${escapeHtml(d.name)}</option>`).join('');
                 });
         }
 
@@ -723,7 +746,7 @@
             const bid = document.getElementById('assign_driver_bus_id').value;
 
             fetch('/api/assign_driver', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ driver_id: did, bus_id: bid })
             })
                 .then(res => {

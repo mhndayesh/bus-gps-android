@@ -138,6 +138,7 @@
         <p class="welcome-text">مرحباً بك في نظام تتبع الحافلات</p>
 
         <form method="POST" action="/driver/login">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label class="bilingual-label">اسم المستخدم / Username</label>
             <input type="text" name="username" placeholder="أدخل اسم المستخدم" required>
 

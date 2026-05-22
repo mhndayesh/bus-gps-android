@@ -3,11 +3,11 @@
 
 <head>
     <title>آمن مدرستي - لوحة السائق</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js" integrity="sha384-DkkWv9oJFWLIydBXXjkBWnG1/fuVhw8YPBq37uvvD6WSYRFRqr21eY5Dg9ZhmWdy" crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
     <style>
         :root {
             --sage-green: #9FB8AD;
@@ -406,7 +406,7 @@
     </div>
 
     <!-- Attendance Warning Modal -->
-    <div class="modal-overlay" id="attendance-modal">
+    <div class="modal-overlay" id="attendance-modal" role="dialog" aria-modal="true" aria-label="تنبيه الحضور">
         <div class="modal-content">
             <div class="modal-icon">⚠️</div>
             <div class="modal-title">تنبيه: طلاب غير موجودين!</div>
@@ -442,6 +442,13 @@
         const FRAME_RATE = 10; // 10 FPS (100ms interval) - smooth streaming
         const FRAME_QUALITY = 0.6; // JPEG quality (0.6 = 60%)
 
+        // Escapes HTML-special characters to prevent XSS via interpolated values.
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
         // --- LOAD MANIFEST ---
         function loadManifest() {
             fetch('/api/driver/manifest')
@@ -462,119 +469,23 @@
 
                         html += `
                         <div class="student-row">
-                            <span>${s.name}</span>
-                            <button class="toggle-btn ${btnClass}" onclick="toggleStudent(this, '${s.id}')">
+                            <span>${escapeHtml(s.name)}</span>
+                            <button class="toggle-btn ${btnClass}" onclick="toggleStudent(this, '${escapeHtml(s.id)}')">
                                 ${btnText}
                             </button>
                         </div>`;
                     });
                     container.innerHTML = html;
                 })
-                .catch(err => console.error("Error loading manifest:", err));
+                .catch(err => {
+                    console.error("Error loading manifest:", err);
+                    const c = document.getElementById('student-container');
+                    if (c) c.innerHTML = '<h3 class="section-title">📋 قائمة الطلاب</h3>' +
+                        '<p class="no-students">تعذّر تحميل قائمة الطلاب. تحقّق من الاتصال وحاول مجدداً.</p>';
+                });
         }
 
         loadManifest();
-
-        // --- CLIENT-SIDE ROUTE CALCULATION (Restored Backend Call) ---
-        function optimizeRoute() {
-            console.log("🖱️ Optimize Route Clicked!");
-            // alert("DEBUG: Optimize Route Clicked"); 
-            _calcRoute(false);
-        }
-
-        function _calcRoute(silent) {
-            const btn = document.getElementById('btn-optimize');
-
-            if (!silent) {
-                btn.innerHTML = "⏳ جاري الحساب...";
-                btn.disabled = true;
-            }
-
-            if (_driverLat && _driverLng) {
-                _performRouteFetch(_driverLat, _driverLng, btn, silent);
-            } else {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            _performRouteFetch(pos.coords.latitude, pos.coords.longitude, btn, silent);
-                        },
-                        (err) => {
-                            if (!silent) {
-                                alert("تعذر تحديد موقعك. سيتم المحاولة بدون موقع.");
-                                _performRouteFetch(null, null, btn, silent);
-                            }
-                        },
-                        { enableHighAccuracy: true, timeout: 5000 }
-                    );
-                } else {
-                    _performRouteFetch(null, null, btn, silent);
-                }
-            }
-        }
-
-        function _performRouteFetch(lat, lng, btn, silent) {
-            let url = `/api/optimize_route/${busId}`;
-            if (lat && lng) url += `?lat=${lat}&lng=${lng}`;
-
-            console.log(`🌐 Fetching Route from: ${url}`);
-            // alert(`DEBUG: Fetching ${url}`);
-
-            fetch(url)
-                .then(res => res.json())
-                .then(data => {
-                    if (!silent) {
-                        btn.innerHTML = "🗺️ احسب المسار الأسرع";
-                        btn.disabled = false;
-                    }
-
-                    if (data.status === 'success') {
-                        const stops = data.stops;
-                        if (stops.length > 0) {
-                            // Generate Google Maps Link
-                            let gmUrl = "https://www.google.com/maps/dir/?api=1";
-                            if (lat && lng) {
-                                gmUrl += `&origin=${lat},${lng}`;
-                            } else {
-                                gmUrl += `&origin=${stops[0].lat},${stops[0].lng}`;
-                            }
-
-                            const last = stops[stops.length - 1];
-                            gmUrl += `&destination=${last.lat},${last.lng}`;
-                            gmUrl += `&travelmode=driving`;
-
-                            if (stops.length > 1) {
-                                const wps = stops.slice(0, -1).map(s => `${s.lat},${s.lng}`).join('|');
-                                gmUrl += `&waypoints=${wps}`;
-                            }
-
-                            let oldBtn = document.getElementById('gmaps-btn');
-                            if (oldBtn) oldBtn.remove();
-
-                            const gb = document.createElement('button');
-                            gb.id = 'gmaps-btn';
-                            gb.innerHTML = `🚀 اضغط هنا لبدء الرحلة (${stops.length} محطات)`;
-                            gb.style.cssText = 'width:100%; padding:20px; margin-top:15px; font-size:18px; background:#28a745; color:white; border:none; border-radius:12px; cursor:pointer; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); animation: pulse 2s infinite;';
-                            gb.onclick = () => window.open(gmUrl, '_blank');
-
-                            const mapContainer = document.getElementById('map');
-                            mapContainer.after(gb);
-                            gb.scrollIntoView({ behavior: "smooth" });
-                        } else {
-                            if (!silent) alert("لا يوجد محطات (Fastest Route).");
-                        }
-                    } else {
-                        if (!silent) alert("Error: " + data.message);
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    if (!silent) {
-                        btn.innerHTML = "🗺️ احسب المسار الأسرع";
-                        btn.disabled = false;
-                        alert("Fetch Error: " + err.message);
-                    }
-                });
-        }
 
         // --- GPS LOGIC ---
         function startTrip() {
@@ -590,7 +501,7 @@
                         // Show warning modal
                         const listDiv = document.getElementById('missing-students-list');
                         listDiv.innerHTML = missingStudents.map(s =>
-                            `<div class="missing-student">❌ ${s.name}</div>`
+                            `<div class="missing-student">❌ ${escapeHtml(s.name)}</div>`
                         ).join('');
 
                         document.getElementById('attendance-modal').style.display = 'flex';
@@ -619,6 +530,7 @@
         }
 
         function actuallyStartTrip() {
+            _routeActive = true;
             document.querySelector('.btn-start').style.display = 'none';
             document.querySelector('.btn-stop').style.display = 'block';
 
@@ -655,13 +567,16 @@
         }
 
         function stopTrip() {
-            navigator.geolocation.clearWatch(watchId);
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            _routeActive = false;
             document.querySelector('.btn-start').style.display = 'block';
             document.querySelector('.btn-stop').style.display = 'none';
             document.getElementById('gps-status').innerText = "GPS: 🔴 متوقف";
             document.getElementById('gps-status').style.color = "#c0392b";
 
-            // Also stop camera if streaming
             if (isStreaming) {
                 stopCamera();
             }
@@ -994,17 +909,23 @@
             }
         });
     </script>
-    <!-- ON-SCREEN DEBUG LOG -->
+    <!-- ON-SCREEN DEBUG LOG (opt-in only: append ?debug=1 to the URL) -->
     <div id="debug-console"
-        style="margin: 20px; padding: 10px; background: #000; color: #0f0; border-radius: 8px; font-family: monospace; max-height: 200px; overflow-y: scroll; direction: ltr; text-align: left; position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;">
+        style="display: none; margin: 20px; padding: 10px; background: #000; color: #0f0; border-radius: 8px; font-family: monospace; max-height: 200px; overflow-y: scroll; direction: ltr; text-align: left; position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;">
         <strong>Debug Console:</strong><br>
     </div>
 
     <script>
         (function () {
+            // The debug console echoes GPS coordinates, attendance data and error
+            // details on screen, so it is disabled unless explicitly requested.
+            var debugEnabled = new URLSearchParams(window.location.search).get('debug') === '1';
+            if (!debugEnabled) return;
+
+            var debugConsole = document.getElementById('debug-console');
+            if (debugConsole) debugConsole.style.display = 'block';
             var oldLog = console.log;
             var oldError = console.error;
-            var debugConsole = document.getElementById('debug-console');
 
             function logToScreen(msg, color) {
                 var div = document.createElement('div');

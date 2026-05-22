@@ -2,12 +2,8 @@ import psycopg2
 import os
 import random
 
-# DB Configuration (Same as web_app.py)
-DB_HOST = os.environ.get("DB_HOST", "yamabiko.proxy.rlwy.net")
-DB_NAME = os.environ.get("DB_NAME", "railway")
-DB_USER = os.environ.get("DB_USER", "postgres")
-DB_PASS = os.environ.get("DB_PASS", "yskvrNocmTymfEkzyhpHXTKdKHIcxvDN")
-DB_PORT = os.environ.get("DB_PORT", "27535")
+# DB configuration is loaded from the environment (see db_config.py)
+from db_config import DB_HOST, DB_NAME, DB_USER, DB_PASS, DB_PORT
 
 def fix_gps():
     print(f"🔌 Connecting to {DB_HOST}...")

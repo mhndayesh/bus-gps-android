@@ -677,8 +677,12 @@
         </div>
     </div>
 
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js" integrity="sha384-DkkWv9oJFWLIydBXXjkBWnG1/fuVhw8YPBq37uvvD6WSYRFRqr21eY5Dg9ZhmWdy" crossorigin="anonymous"></script>
     <script>
+        // Fetch CSRF token once on page load; included in all POST requests.
+        let _csrfToken = '';
+        fetch('/api/csrf-token').then(r => r.json()).then(d => { _csrfToken = d.token; });
+
         // Tab Navigation
         function showTab(tabName) {
             // Hide all tabs
@@ -704,7 +708,7 @@
             if (!sName || !pPass) { alert("يرجى ملء جميع الحقول"); return; }
 
             fetch('/api/create_school_admin', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ school_name: sName, username: sName, password: pPass })
             })
                 .then(res => res.json())
@@ -730,7 +734,7 @@
             if (!name || !username || !password) { alert("يرجى ملء جميع الحقول"); return; }
 
             fetch('/api/create_parent', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ name, school_id: sid, username, password })
             })
                 .then(res => res.json())
@@ -745,6 +749,14 @@
                 });
         }
 
+        // Escapes HTML-special characters to prevent stored XSS when database
+        // values are interpolated into innerHTML.
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
         function loadParentsForActivation() {
             const schoolId = document.getElementById('activate_school_id').value;
             const parentSel = document.getElementById('activate_parent_id');
@@ -754,7 +766,7 @@
                 .then(res => res.json())
                 .then(data => {
                     parentSel.innerHTML = '<option value="" disabled selected>اختر ولي الأمر</option>' +
-                        data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                        data.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
                 });
         }
 
@@ -766,7 +778,7 @@
             if (!pid || !user || !pass) { alert("يرجى ملء جميع الحقول"); return; }
 
             fetch('/api/update_parent_credentials', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ parent_id: pid, username: user, password: pass })
             })
                 .then(res => {
@@ -794,7 +806,7 @@
             };
 
             fetch('/api/add_student', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify(data)
             })
                 .then(res => res.json())
@@ -818,7 +830,7 @@
                 .then(data => {
                     ALL_PARENTS = data;
                     const html = '<option value="" disabled selected>اختر ولي الأمر</option>' +
-                        data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                        data.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
 
                     ['p_id', 'upd_parent_filter', 'del_parent_filter', 'assign_parent_filter'].forEach(id => {
                         const el = document.getElementById(id);
@@ -832,7 +844,7 @@
             const sel = document.getElementById('upd_student_id');
             const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
             sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
-                filtered.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                filtered.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
         }
 
         function filterStudentsToDelete() {
@@ -840,7 +852,7 @@
             const sel = document.getElementById('del_student_id');
             const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
             sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
-                filtered.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                filtered.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
         }
 
         function filterStudentsForAssignment() {
@@ -848,7 +860,7 @@
             const sel = document.getElementById('assign_student_id');
             const filtered = ALL_STUDENTS.filter(s => s.parent_id === pid);
             sel.innerHTML = '<option value="" disabled selected>اختر الطالب</option>' +
-                filtered.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                filtered.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
         }
 
         function updateLocation() {
@@ -860,7 +872,7 @@
             if (!sid || !lat || !lng) { alert("يرجى ملء البيانات"); return; }
 
             fetch('/api/update_student_location', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ student_id: sid, lat, lng, address_text: addr })
             })
                 .then(res => {
@@ -875,7 +887,7 @@
             if (!confirm("⚠️ هل أنت متأكد من حذف هذا الطالب؟")) return;
 
             fetch('/api/delete_student', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ student_id: sid })
             })
                 .then(res => {
@@ -895,7 +907,7 @@
             if (!bid) { alert("اختر باصاً"); return; }
 
             fetch('/api/assign_bus', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ student_id: sid, bus_id: bid })
             })
                 .then(res => {
@@ -912,7 +924,7 @@
             const sid = document.getElementById('bus_school_id').value;
 
             fetch('/api/add_bus', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ plate, school_id: sid })
             })
                 .then(res => res.json())
@@ -933,11 +945,11 @@
 
                     const selDel = document.getElementById('delete_bus_id');
                     selDel.innerHTML = '<option value="" disabled selected>اختر الباص</option>' +
-                        data.map(b => `<option value="${b.id}">${b.plate}</option>`).join('');
+                        data.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.plate)}</option>`).join('');
 
                     const selAssign = document.getElementById('assign_bus_id');
                     selAssign.innerHTML = '<option value="" disabled selected>اختر الباص</option>' +
-                        data.map(b => `<option value="${b.id}">${b.plate}</option>`).join('');
+                        data.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.plate)}</option>`).join('');
 
                     filterAssignmentOptions();
                 });
@@ -949,7 +961,7 @@
             if (!confirm("⚠️ هل أنت متأكد؟")) return;
 
             fetch('/api/delete_bus', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ bus_id: busId })
             })
                 .then(res => {
@@ -973,7 +985,7 @@
             if (!u || !p) { alert("أدخل بيانات الدخول"); return; }
 
             fetch('/api/create_driver', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ school_id: sid, username: u, password: p })
             })
                 .then(async res => {
@@ -1013,7 +1025,7 @@
                 drvSel.innerHTML = filtered.length === 0
                     ? '<option disabled selected>لا يوجد سائقين</option>'
                     : '<option value="" disabled selected>اختر السائق</option>' +
-                    filtered.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+                    filtered.map(d => `<option value="${escapeHtml(d.id)}">${escapeHtml(d.name)}</option>`).join('');
             }
 
             const busSel = document.getElementById('assign_driver_bus_id');
@@ -1025,7 +1037,7 @@
                 busSel.innerHTML = filtered.length === 0
                     ? '<option disabled selected>لا يوجد باصات</option>'
                     : '<option value="" disabled selected>اختر الباص</option>' +
-                    filtered.map(b => `<option value="${b.id}">${b.plate}</option>`).join('');
+                    filtered.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.plate)}</option>`).join('');
             }
         }
 
@@ -1034,7 +1046,7 @@
             const bid = document.getElementById('assign_driver_bus_id').value;
 
             fetch('/api/assign_driver', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
                 body: JSON.stringify({ driver_id: did, bus_id: bid })
             })
                 .then(res => {
@@ -1052,7 +1064,7 @@
                 .then(data => {
                     ALL_SCHOOLS = data;
                     const html = '<option value="" disabled selected>اختر المدرسة</option>' +
-                        data.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                        data.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
 
                     ['bus_school_id', 'activate_school_id', 'parent_school_id',
                         'driver_school_id', 'student_school_id'].forEach(id => {
@@ -1064,7 +1076,7 @@
                     if (filterEl) {
                         filterEl.innerHTML = '<option value="" disabled selected>اختر المدرسة</option>' +
                             '<option value="ALL">عرض الكل</option>' +
-                            data.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                            data.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
                     }
                 });
         }
@@ -1089,7 +1101,7 @@
                     const sel = document.getElementById('stream_bus_id');
                     sel.innerHTML = '<option value="" disabled selected>اختر الحافلة...</option>';
                     buses.forEach(b => {
-                        sel.innerHTML += `<option value="${b.id}">${b.plate_number} (ID: ${b.id})</option>`;
+                        sel.innerHTML += `<option value="${escapeHtml(b.id)}">${escapeHtml(b.plate_number)} (ID: ${escapeHtml(b.id)})</option>`;
                     });
                 });
         }
@@ -1102,7 +1114,7 @@
                     sel.innerHTML = '<option value="" disabled selected>اختر السائق...</option>';
                     drivers.forEach(d => {
                         const busInfo = d.bus_id ? ` - 🚌 ${d.bus_id}` : ' - لا يوجد باص';
-                        sel.innerHTML += `<option value="${d.id}" data-bus="${d.bus_id || ''}">${d.name}${busInfo}</option>`;
+                        sel.innerHTML += `<option value="${escapeHtml(d.id)}" data-bus="${escapeHtml(d.bus_id || '')}">${escapeHtml(d.name)}${escapeHtml(busInfo)}</option>`;
                     });
                 });
         }

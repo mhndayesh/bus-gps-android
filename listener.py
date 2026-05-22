@@ -56,24 +56,39 @@ def get_db():
         port=DB_PORT
     )
 
-# 1. NEW: Handle NFC Taps (Boarding/Exiting)
+# 1. Handle NFC Taps (Boarding/Exiting)
 def handle_nfc_event(client, bus_id, nfc_id, event_type):
     try:
         conn = get_db()
         cur = conn.cursor()
-        
-        # Map NFC Tag ID to Student ID (Simple lookup for now)
-        student_id = nfc_id 
+
+        # Resolve NFC tag to the student's primary key so bus_manifest.student_id
+        # is always a student UUID, consistent with manual attendance entries.
+        cur.execute("SELECT id, name FROM students WHERE nfc_tag_id = %s", (nfc_id,))
+        student_row = cur.fetchone()
+        if not student_row:
+            print(f"⚠️ NFC tag {nfc_id} not linked to any student — ignoring")
+            cur.close()
+            conn.close()
+            return
+        student_id = str(student_row[0])
+        student_name = student_row[1]
 
         if event_type == "BOARDING":
-            print(f"🔵 Student {student_id} BOARDED Bus {bus_id}")
-            # Add to Manifest
-            cur.execute("INSERT INTO bus_manifest (bus_id, student_id) VALUES (%s, %s) ON CONFLICT DO NOTHING", (bus_id, student_id))
-        
+            print(f"🔵 Student {student_name} ({student_id}) BOARDED Bus {bus_id}")
+            cur.execute("""
+                INSERT INTO bus_manifest (bus_id, student_id, student_name, status)
+                VALUES (%s, %s, %s, 'BOARDED')
+                ON CONFLICT (bus_id, student_id)
+                DO UPDATE SET status = 'BOARDED', timestamp = NOW()
+            """, (bus_id, student_id, student_name))
+
         elif event_type == "DROPOFF":
-            print(f"🟢 Student {student_id} LEFT Bus {bus_id}")
-            # Remove from Manifest
-            cur.execute("DELETE FROM bus_manifest WHERE bus_id = %s AND student_id = %s", (bus_id, student_id))
+            print(f"🟢 Student {student_name} ({student_id}) LEFT Bus {bus_id}")
+            cur.execute("""
+                UPDATE bus_manifest SET status = 'DROPPED', timestamp = NOW()
+                WHERE bus_id = %s AND student_id = %s
+            """, (bus_id, student_id))
 
         conn.commit()
         cur.close()
@@ -184,8 +199,8 @@ try:
         client.username_pw_set(MQTT_USER, MQTT_PASS)
 
     if USE_SSL:
-        client.tls_set(cert_reqs=ssl.CERT_NONE)
-        client.tls_insecure_set(True)
+        # Verify the broker's TLS certificate against system CAs (prevents MITM).
+        client.tls_set()
 
     client.connect(MQTT_BROKER, int(MQTT_PORT), 60)
     client.loop_forever()
