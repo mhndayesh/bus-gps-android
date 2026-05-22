@@ -11,3 +11,7 @@ credentials.md
 
 # Local archive / clone artifacts (e.g. bus-gps-system.zip)
 *.zip
+
+# Local demo credentials and extracted design assets
+demo-accounts-dont-push.text
+masarat/

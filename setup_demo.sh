@@ -7,33 +7,54 @@ cd "$(dirname "$0")"
 echo "=== Starting stack ==="
 docker compose up --build -d
 
-echo "=== Waiting for app to be ready ==="
-for i in $(seq 1 30); do
-  if curl -s http://localhost:5000 > /dev/null 2>&1; then
-    echo "App is up."
+echo "=== Waiting for app to be ready (DB migration runs on first request) ==="
+READY=0
+for i in $(seq 1 60); do
+  code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000 2>/dev/null || echo "000")
+  if [ "$code" = "200" ] || [ "$code" = "302" ]; then
+    echo "App is up (HTTP $code). Waiting 6s for DB migration to finish..."
+    sleep 6
+    READY=1
     break
   fi
-  echo "  waiting... ($i/30)"
+  echo "  waiting... ($i/60)  [HTTP $code]"
   sleep 3
 done
 
+if [ "$READY" = "0" ]; then
+  echo "ERROR: App did not come up after 3 minutes. Check logs with:"
+  echo "  docker compose logs web"
+  exit 1
+fi
+
 echo "=== Creating demo accounts ==="
 python3 - <<'PYEOF'
-import requests, sys
+import requests, sys, time
 
 BASE = "http://localhost:5000"
 s = requests.Session()
 
+# Retry wrapper for the first few requests while eventlet settles
+def get_retry(url, retries=5):
+    for i in range(retries):
+        try:
+            r = s.get(url, timeout=10)
+            return r
+        except Exception as e:
+            if i == retries - 1: raise
+            print(f"  retrying ({i+1}/{retries})...")
+            time.sleep(2)
+
 def csrf():
-    return s.get(f"{BASE}/api/csrf-token").json()["csrf_token"]
+    return s.get(f"{BASE}/api/csrf-token", timeout=10).json()["csrf_token"]
 
 def post(path, data):
     r = s.post(f"{BASE}{path}", json={**data, "csrf_token": csrf()},
-               headers={"X-CSRFToken": csrf()})
+               headers={"X-CSRFToken": csrf()}, timeout=10)
     return r
 
 # Login as Super Admin
-r = s.get(f"{BASE}/login")
+r = get_retry(f"{BASE}/login")
 from html.parser import HTMLParser
 class T(HTMLParser):
     tok = ""
