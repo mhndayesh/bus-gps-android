@@ -8,3 +8,6 @@ backups/
 node_modules/
 **/node_modules/
 credentials.md
+
+# Local archive / clone artifacts (e.g. bus-gps-system.zip)
+*.zip
