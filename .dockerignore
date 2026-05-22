@@ -10,6 +10,7 @@ node_modules
 ingestion-service
 backups
 *.log
+*.zip
 tmp
 *.md
 docker-compose.yml
