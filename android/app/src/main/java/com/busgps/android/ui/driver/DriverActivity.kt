@@ -205,7 +205,9 @@ class DriverActivity : AppCompatActivity() {
      */
     private fun openGoogleMapsNavigation(stops: List<RouteStop>) {
         if (stops.isEmpty()) {
-            Snackbar.make(binding.root, "No boarded students with a location to navigate to", Snackbar.LENGTH_LONG).show()
+            Snackbar.make(binding.root,
+                "No stops to navigate. Ask the admin to assign students to this bus and set their home locations.",
+                Snackbar.LENGTH_LONG).show()
             return
         }
         // Google Maps supports up to ~9 waypoints via URL.

@@ -58,6 +58,14 @@ interface ApiService {
         @Query("lng") lng: Double?
     ): Response<OptimizeRouteResponse>
 
+    // Full pickup route over ALL assigned students (used on Start Trip).
+    @GET("/api/bus_route/{busId}")
+    suspend fun busRoute(
+        @Path("busId") busId: Int,
+        @Query("lat") lat: Double?,
+        @Query("lng") lng: Double?
+    ): Response<OptimizeRouteResponse>
+
     // Admin — students
     @GET("/api/get_students")
     suspend fun getStudents(): Response<List<Student>>

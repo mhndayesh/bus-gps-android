@@ -29,6 +29,10 @@ class DataRepository {
     suspend fun optimizeRoute(busId: Int, lat: Double?, lng: Double?): List<RouteStop> =
         ApiClient.api.optimizeRoute(busId, lat, lng).body()?.stops ?: emptyList()
 
+    /** Full pickup route over all assigned students (route_stops), for Start Trip. */
+    suspend fun busRoute(busId: Int, lat: Double?, lng: Double?): List<RouteStop> =
+        ApiClient.api.busRoute(busId, lat, lng).body()?.stops ?: emptyList()
+
     // Admin
     suspend fun getStudents(): List<Student> =
         ApiClient.api.getStudents().body() ?: emptyList()

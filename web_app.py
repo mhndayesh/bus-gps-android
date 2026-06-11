@@ -1697,6 +1697,62 @@ def optimize_route(bus_id):
         if conn: conn.close()
 
 
+@app.route('/api/bus_route/<int:bus_id>', methods=['GET'])
+@role_required(['DRIVER', 'SCHOOL_ADMIN', 'SUPER_ADMIN'])
+def bus_route(bus_id):
+    """Optimized PICKUP route over EVERY student assigned to the bus (route_stops),
+    regardless of boarding status. This is what the driver app navigates on
+    'Start Trip' — Google Maps then advances stop-by-stop to the last one.
+    """
+    driver_lat = request.args.get('lat', type=float)
+    driver_lng = request.args.get('lng', type=float)
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Authorize the bus for the caller (driver owns it / admin's school).
+        role = session.get('user_role')
+        if role == 'DRIVER':
+            cur.execute("SELECT 1 FROM buses WHERE id = %s AND driver_id = %s", (bus_id, session.get('user_id')))
+            if not cur.fetchone():
+                return json.dumps({"status": "error", "stops": [], "count": 0, "message": "Not your bus"}), 403
+        elif role == 'SCHOOL_ADMIN':
+            cur.execute("SELECT 1 FROM buses WHERE id = %s AND school_id = %s", (bus_id, session.get('school_id')))
+            if not cur.fetchone():
+                return json.dumps({"status": "error", "stops": [], "count": 0, "message": "Bus not found"}), 404
+
+        cur.execute("""
+            SELECT stop_name, lat, lng FROM route_stops
+            WHERE bus_id = %s AND lat IS NOT NULL AND lng IS NOT NULL
+        """, (bus_id,))
+        stops = [{"name": r[0], "lat": r[1], "lng": r[2]} for r in cur.fetchall()]
+
+        if not stops:
+            return json.dumps({"status": "empty", "stops": [], "count": 0,
+                               "message": "No stops assigned. Assign students to this bus and set their home locations."}), 200
+
+        # Nearest-neighbor order starting from the driver's position (or first stop).
+        cur_lat = driver_lat if driver_lat is not None else stops[0]["lat"]
+        cur_lng = driver_lng if driver_lng is not None else stops[0]["lng"]
+        unvisited = list(stops)
+        ordered = []
+        while unvisited:
+            idx = min(range(len(unvisited)),
+                      key=lambda i: (unvisited[i]["lat"] - cur_lat) ** 2 + (unvisited[i]["lng"] - cur_lng) ** 2)
+            nxt = unvisited.pop(idx)
+            ordered.append(nxt)
+            cur_lat, cur_lng = nxt["lat"], nxt["lng"]
+
+        return json.dumps({"status": "success", "stops": ordered, "count": len(ordered)}), 200
+    except Exception as e:
+        print(f"bus_route error: {e}")
+        return json.dumps({"status": "error", "stops": [], "count": 0, "message": "Internal server error"}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
 
 @app.route('/api/fix_gps')
 @role_required(['SUPER_ADMIN'])

@@ -60,9 +60,10 @@ class DriverViewModel : ViewModel() {
 
     fun startTrip() {
         _tripActive.value = true
-        // Fetch the optimized route, then signal the UI to open Google Maps.
+        // Pickup route = ALL students assigned to the bus (not just boarded), so
+        // Google Maps can navigate every stop from the start of the trip.
         viewModelScope.launch {
-            val stops = repo.optimizeRoute(busId, lastLocation?.latitude, lastLocation?.longitude)
+            val stops = repo.busRoute(busId, lastLocation?.latitude, lastLocation?.longitude)
             _routeStops.value = stops
             _openNav.value = Event(stops)
         }
