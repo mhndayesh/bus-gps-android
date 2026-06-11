@@ -25,6 +25,7 @@ import com.busgps.android.network.ApiClient
 import com.busgps.android.repository.DataRepository
 import com.busgps.android.ui.adapters.StudentAdapter
 import com.busgps.android.ui.admin.DriverListAdapter
+import com.busgps.android.ui.common.CameraViewerActivity
 import com.busgps.android.ui.common.MapPickerActivity
 import com.busgps.android.ui.login.RoleSelectActivity
 import com.google.android.material.snackbar.Snackbar
@@ -161,7 +162,18 @@ class SuperAdminActivity : AppCompatActivity() {
                 confirm("Delete bus $plate?") {
                     doAction { repo.deleteBus(busId) }
                 }
-            }
+            },
+            onWatchCamera = { bus -> watchCamera(bus) }
+        )
+    }
+
+    private fun watchCamera(bus: Bus) {
+        val busIdInt = bus.id.toIntOrNull()
+        if (busIdInt == null) { toast("Invalid bus id"); return }
+        startActivity(
+            Intent(this, CameraViewerActivity::class.java)
+                .putExtra(CameraViewerActivity.EXTRA_BUS_ID, busIdInt)
+                .putExtra(CameraViewerActivity.EXTRA_TITLE, bus.plate)
         )
     }
 

@@ -9,7 +9,8 @@ import com.busgps.android.model.Bus
 class SuperBusAdapter(
     private val buses: List<Bus>,
     private val onAssignDriver: (String) -> Unit,
-    private val onDelete: (String) -> Unit
+    private val onDelete: (String) -> Unit,
+    private val onWatchCamera: (Bus) -> Unit = {}
 ) : RecyclerView.Adapter<SuperBusAdapter.VH>() {
 
     inner class VH(val binding: ItemBusSuperBinding) : RecyclerView.ViewHolder(binding.root)
@@ -24,6 +25,7 @@ class SuperBusAdapter(
         holder.binding.apply {
             tvPlate.text = bus.plate
             tvBusId.text = "Bus #${bus.id}"
+            btnCamera.setOnClickListener { onWatchCamera(bus) }
             btnAssignDriver.setOnClickListener { onAssignDriver(bus.id) }
             btnDelete.setOnClickListener { onDelete(bus.id) }
         }

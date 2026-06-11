@@ -126,10 +126,12 @@ class ParentDashboardActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         binding.mapView.onResume()
+        vm.startPolling()  // refresh children every 10s (catches NFC-based boarding)
     }
 
     override fun onPause() {
         super.onPause()
         binding.mapView.onPause()
+        vm.stopPolling()
     }
 }

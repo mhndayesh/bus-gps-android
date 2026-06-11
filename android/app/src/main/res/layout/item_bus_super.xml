@@ -38,6 +38,21 @@
         </LinearLayout>
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCamera"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="📹"
+            android:textSize="12sp"
+            android:minWidth="44dp"
+            android:insetLeft="0dp"
+            android:insetRight="0dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:layout_marginEnd="4dp"
+            app:backgroundTint="@color/role_driver"
+            app:cornerRadius="6dp" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAssignDriver"
             android:layout_width="wrap_content"
             android:layout_height="36dp"
