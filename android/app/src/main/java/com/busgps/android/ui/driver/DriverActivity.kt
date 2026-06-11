@@ -1,8 +1,10 @@
 package com.busgps.android.ui.driver
 
 import android.Manifest
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.os.Looper
 import android.view.View
@@ -13,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.busgps.android.databinding.ActivityDriverBinding
+import com.busgps.android.model.RouteStop
 import com.busgps.android.network.ApiClient
 import com.busgps.android.ui.adapters.ManifestAdapter
 import com.busgps.android.ui.login.RoleSelectActivity
@@ -45,10 +48,9 @@ class DriverActivity : AppCompatActivity() {
     private val locationPermission = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { grants ->
-        if (grants[Manifest.permission.ACCESS_FINE_LOCATION] == true) {
-            startLocationUpdates()
-        } else {
-            Snackbar.make(binding.root, "Location permission required for GPS tracking", Snackbar.LENGTH_LONG).show()
+        if (grants[Manifest.permission.ACCESS_FINE_LOCATION] != true &&
+            grants[Manifest.permission.ACCESS_COARSE_LOCATION] != true) {
+            Snackbar.make(binding.root, "Location permission required to start a trip", Snackbar.LENGTH_LONG).show()
         }
     }
 
@@ -73,6 +75,7 @@ class DriverActivity : AppCompatActivity() {
         vm.connectSocket(cookie)  // joins bus room on connect
         vm.loadManifest()
 
+        binding.btnTrip.setOnClickListener { onTripButton() }
         binding.btnOptimize.setOnClickListener { vm.optimizeRoute() }
         binding.btnCamera.setOnClickListener {
             if (vm.busId < 0) {
@@ -86,8 +89,45 @@ class DriverActivity : AppCompatActivity() {
         binding.btnLogout.setOnClickListener { logout() }
         binding.btnBack.setOnClickListener { logout() }
         onBackPressedDispatcher.addCallback(this) { logout() }
+    }
 
-        checkAndRequestLocation()
+    // ── Trip lifecycle (mirrors the website's idle → in-trip → stop flow) ──
+
+    private fun onTripButton() {
+        if (vm.tripActive.value == true) {
+            vm.endTrip()
+            return
+        }
+        if (vm.busId < 0) {
+            Snackbar.make(binding.root, "No bus assigned — ask your admin", Snackbar.LENGTH_LONG).show()
+            return
+        }
+        // Ensure we have location permission before starting GPS tracking.
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
+            locationPermission.launch(arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            Snackbar.make(binding.root, "Grant location, then press Start Trip", Snackbar.LENGTH_LONG).show()
+            return
+        }
+        // Warn if some students aren't boarded yet (same as the website modal).
+        val missing = vm.notBoardedCount()
+        if (missing > 0) {
+            AlertDialog.Builder(this)
+                .setTitle("$missing student(s) not boarded")
+                .setMessage("Some students haven't been marked as boarded. Start the trip anyway?")
+                .setPositiveButton("Start anyway") { _, _ -> beginTrip() }
+                .setNegativeButton("Recheck") { _, _ -> vm.loadManifest() }
+                .show()
+        } else {
+            beginTrip()
+        }
+    }
+
+    private fun beginTrip() {
+        startLocationUpdates()
+        vm.startTrip()  // optimizes route, then emits openNav to launch Google Maps
+        Snackbar.make(binding.root, "Trip started — sharing live location", Snackbar.LENGTH_SHORT).show()
     }
 
     private fun setupMap() {
@@ -137,6 +177,61 @@ class DriverActivity : AppCompatActivity() {
         vm.statusMsg.observe(this) { msg ->
             Snackbar.make(binding.root, msg, Snackbar.LENGTH_SHORT).show()
         }
+
+        vm.tripActive.observe(this) { active ->
+            if (active) {
+                binding.btnTrip.text = "■  End Trip"
+                binding.btnTrip.setBackgroundColor(0xFFE53935.toInt())
+            } else {
+                binding.btnTrip.text = "▶  Start Trip"
+                binding.btnTrip.setBackgroundColor(ContextCompat.getColor(this, com.busgps.android.R.color.role_driver))
+                fusedLocation.removeLocationUpdates(locationCallback)
+            }
+        }
+
+        // One-shot: open Google Maps navigation when a trip starts.
+        vm.openNav.observe(this) { stops ->
+            if (stops != null) {
+                openGoogleMapsNavigation(stops)
+                vm.navHandled()
+            }
+        }
+    }
+
+    /**
+     * Launch Google Maps turn-by-turn navigation through the optimized stops.
+     * Origin defaults to the driver's current location; the last stop is the
+     * destination and the rest become ordered waypoints.
+     */
+    private fun openGoogleMapsNavigation(stops: List<RouteStop>) {
+        if (stops.isEmpty()) {
+            Snackbar.make(binding.root, "No boarded students with a location to navigate to", Snackbar.LENGTH_LONG).show()
+            return
+        }
+        // Google Maps supports up to ~9 waypoints via URL.
+        val capped = stops.take(10)
+        val destination = capped.last()
+        val waypoints = capped.dropLast(1)
+
+        val sb = StringBuilder("https://www.google.com/maps/dir/?api=1")
+        vm.lastLat?.let { la -> vm.lastLng?.let { ln -> sb.append("&origin=$la,$ln") } }
+        sb.append("&destination=${destination.lat},${destination.lng}")
+        if (waypoints.isNotEmpty()) {
+            val wp = waypoints.joinToString("|") { "${it.lat},${it.lng}" }
+            sb.append("&waypoints=").append(Uri.encode(wp))
+        }
+        sb.append("&travelmode=driving")
+
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(sb.toString()))
+        // Prefer the Google Maps app if installed; otherwise any maps/browser handler.
+        intent.setPackage("com.google.android.apps.maps")
+        if (intent.resolveActivity(packageManager) != null) {
+            startActivity(intent)
+        } else {
+            val fallback = Intent(Intent.ACTION_VIEW, Uri.parse(sb.toString()))
+            if (fallback.resolveActivity(packageManager) != null) startActivity(fallback)
+            else Snackbar.make(binding.root, "No maps app available", Snackbar.LENGTH_LONG).show()
+        }
     }
 
     private fun updateSelfOnMap(lat: Double, lng: Double) {
@@ -151,16 +246,6 @@ class DriverActivity : AppCompatActivity() {
         selfMarker!!.position = point
         binding.mapView.controller.animateTo(point)
         binding.mapView.invalidate()
-    }
-
-    private fun checkAndRequestLocation() {
-        val fine = Manifest.permission.ACCESS_FINE_LOCATION
-        val coarse = Manifest.permission.ACCESS_COARSE_LOCATION
-        if (ContextCompat.checkSelfPermission(this, fine) == PackageManager.PERMISSION_GRANTED) {
-            startLocationUpdates()
-        } else {
-            locationPermission.launch(arrayOf(fine, coarse))
-        }
     }
 
     private fun startLocationUpdates() {

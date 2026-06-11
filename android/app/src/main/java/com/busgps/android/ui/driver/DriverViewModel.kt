@@ -27,8 +27,18 @@ class DriverViewModel : ViewModel() {
     private val _statusMsg = MutableLiveData<String>()
     val statusMsg: LiveData<String> = _statusMsg
 
+    private val _tripActive = MutableLiveData(false)
+    val tripActive: LiveData<Boolean> = _tripActive
+
+    // One-shot event: stops to launch Google Maps navigation with (null = nothing pending).
+    private val _openNav = MutableLiveData<List<RouteStop>?>()
+    val openNav: LiveData<List<RouteStop>?> = _openNav
+
     var busId: Int = -1
     private var lastLocation: Location? = null
+
+    val lastLat: Double? get() = lastLocation?.latitude
+    val lastLng: Double? get() = lastLocation?.longitude
 
     fun connectSocket(cookie: String) {
         SocketManager.connect(cookie, busId)
@@ -42,10 +52,34 @@ class DriverViewModel : ViewModel() {
         }
     }
 
+    /** Count of students not yet BOARDED (used to warn before starting a trip). */
+    fun notBoardedCount(): Int =
+        _manifest.value?.count { it.status != "BOARDED" } ?: 0
+
+    fun startTrip() {
+        _tripActive.value = true
+        // Fetch the optimized route, then signal the UI to open Google Maps.
+        viewModelScope.launch {
+            val stops = repo.optimizeRoute(busId, lastLocation?.latitude, lastLocation?.longitude)
+            _routeStops.value = stops
+            _openNav.value = stops
+        }
+    }
+
+    fun navHandled() { _openNav.value = null }
+
+    fun endTrip() {
+        _tripActive.value = false
+        loadManifest()
+    }
+
     fun sendGpsUpdate(location: Location) {
         lastLocation = location
         if (busId < 0) return
-        SocketManager.emitGpsUpdate(busId, location.latitude, location.longitude, location.speed)
+        // Match the website: only broadcast GPS while a trip is active.
+        if (_tripActive.value == true) {
+            SocketManager.emitGpsUpdate(busId, location.latitude, location.longitude, location.speed)
+        }
     }
 
     fun markBoarded(studentId: String) {
