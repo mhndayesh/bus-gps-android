@@ -33,6 +33,8 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogout"
                 style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="@string/logout"
                 android:textColor="#FFFFFF" />
         </LinearLayout>
