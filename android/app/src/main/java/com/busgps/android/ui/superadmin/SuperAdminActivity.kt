@@ -234,12 +234,19 @@ class SuperAdminActivity : AppCompatActivity() {
     }
 
     private fun showCreateDriverDialog() {
+        if (schools.isEmpty()) { toast("Create a school first"); return }
         val layout = vstack {
             addEditText("Username")
             addEditTextPassword("Password")
         }
         val etUser = layout.getChildAt(0) as EditText
         val etPass = layout.getChildAt(1) as EditText
+        val schoolSpinner = Spinner(this).apply {
+            adapter = ArrayAdapter(this@SuperAdminActivity,
+                android.R.layout.simple_spinner_item, schools.map { it.name })
+                .also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        }
+        layout.addView(schoolSpinner)
 
         AlertDialog.Builder(this)
             .setTitle("Create Driver")
@@ -247,8 +254,9 @@ class SuperAdminActivity : AppCompatActivity() {
             .setPositiveButton("Create") { _, _ ->
                 val u = etUser.text.toString().trim()
                 val p = etPass.text.toString().trim()
+                val schoolId = schools.getOrNull(schoolSpinner.selectedItemPosition)?.id
                 if (u.isNotEmpty() && p.isNotEmpty()) {
-                    doAction { repo.createDriver(com.busgps.android.model.CreateDriverRequest(u, p)) }
+                    doAction { repo.createDriver(u, p, schoolId) }
                 }
             }
             .setNegativeButton("Cancel", null)
@@ -256,6 +264,7 @@ class SuperAdminActivity : AppCompatActivity() {
     }
 
     private fun showCreateParentDialog() {
+        if (schools.isEmpty()) { toast("Create a school first"); return }
         val layout = vstack {
             addEditText("Full Name")
             addEditText("Username")
@@ -264,6 +273,12 @@ class SuperAdminActivity : AppCompatActivity() {
         val etName = layout.getChildAt(0) as EditText
         val etUser = layout.getChildAt(1) as EditText
         val etPass = layout.getChildAt(2) as EditText
+        val schoolSpinner = Spinner(this).apply {
+            adapter = ArrayAdapter(this@SuperAdminActivity,
+                android.R.layout.simple_spinner_item, schools.map { it.name })
+                .also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        }
+        layout.addView(schoolSpinner)
 
         AlertDialog.Builder(this)
             .setTitle("Create Parent")
@@ -272,8 +287,9 @@ class SuperAdminActivity : AppCompatActivity() {
                 val n = etName.text.toString().trim()
                 val u = etUser.text.toString().trim()
                 val p = etPass.text.toString().trim()
+                val schoolId = schools.getOrNull(schoolSpinner.selectedItemPosition)?.id
                 if (n.isNotEmpty() && u.isNotEmpty() && p.isNotEmpty()) {
-                    doAction { repo.createParent(com.busgps.android.model.CreateParentRequest(n, u, p)) }
+                    doAction { repo.createParent(n, u, p, schoolId) }
                 }
             }
             .setNegativeButton("Cancel", null)

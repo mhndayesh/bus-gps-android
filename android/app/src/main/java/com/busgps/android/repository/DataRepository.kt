@@ -32,6 +32,9 @@ class DataRepository {
     suspend fun createParent(req: CreateParentRequest): Boolean =
         ApiClient.api.createParent(req).isSuccessful
 
+    suspend fun createParent(name: String, username: String, password: String, schoolId: Int?): Boolean =
+        ApiClient.api.createParent(CreateParentRequest(name, username, password, schoolId)).isSuccessful
+
     suspend fun getBuses(): List<Bus> =
         ApiClient.api.getBuses().body() ?: emptyList()
 
@@ -43,6 +46,9 @@ class DataRepository {
 
     suspend fun createDriver(req: CreateDriverRequest): Boolean =
         ApiClient.api.createDriver(req).isSuccessful
+
+    suspend fun createDriver(username: String, password: String, schoolId: Int?): Boolean =
+        ApiClient.api.createDriver(CreateDriverRequest(username, password, schoolId)).isSuccessful
 
     suspend fun assignDriver(driverId: String, busId: String): Boolean =
         ApiClient.api.assignDriver(AssignDriverRequest(driverId, busId)).isSuccessful

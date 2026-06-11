@@ -113,12 +113,14 @@ data class AddStudentRequest(
 data class CreateParentRequest(
     val name: String,
     val username: String,
-    val password: String
+    val password: String,
+    @SerializedName("school_id") val schoolId: Int? = null
 )
 
 data class CreateDriverRequest(
     val username: String,
-    val password: String
+    val password: String,
+    @SerializedName("school_id") val schoolId: Int? = null
 )
 
 data class AssignBusRequest(

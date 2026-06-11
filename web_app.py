@@ -389,16 +389,18 @@ def get_my_kids():
         for r in rows:
             student_id = str(r[0])
             
-            # Check if student is on a bus (in bus_manifest)
+            # Check if student is currently BOARDED on a bus.
+            # We still return bus_id/plate for any manifest row so the parent map
+            # can track the assigned bus, but on_bus reflects live boarding only.
             cur.execute("""
-                SELECT bm.bus_id, b.plate_number 
+                SELECT bm.bus_id, b.plate_number, bm.status
                 FROM bus_manifest bm
                 JOIN buses b ON bm.bus_id = b.id
                 WHERE bm.student_id = %s
             """, (student_id,))
             bus_row = cur.fetchone()
-            
-            on_bus = bus_row is not None
+
+            on_bus = bus_row is not None and bus_row[2] == 'BOARDED'
             bus_id = bus_row[0] if bus_row else None
             bus_plate = bus_row[1] if bus_row else None
             
@@ -564,9 +566,15 @@ def add_student():
     parent_id = data.get('parent_id', '').strip()
     nfc_id = data.get('nfc_id', '').strip()
 
-    if not student_name or not parent_id or not nfc_id:
+    if not student_name or not parent_id:
         cur.close(); conn.close()
-        return "Missing required fields: name, parent_id, nfc_id", 400
+        return "Missing required fields: name, parent_id", 400
+
+    # NFC tag is optional at creation (assigned later when hardware is paired).
+    # nfc_tag_id is UNIQUE, so generate a non-colliding placeholder when blank.
+    if not nfc_id:
+        import uuid as _uuid
+        nfc_id = f"PENDING-{_uuid.uuid4().hex[:12]}"
 
     # VALIDATION: Check if parent_id is a valid UUID
     import uuid
