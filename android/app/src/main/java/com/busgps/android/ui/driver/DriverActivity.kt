@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Looper
 import android.view.View
+import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -83,6 +84,8 @@ class DriverActivity : AppCompatActivity() {
         }
         binding.swipeRefresh.setOnRefreshListener { vm.loadManifest() }
         binding.btnLogout.setOnClickListener { logout() }
+        binding.btnBack.setOnClickListener { logout() }
+        onBackPressedDispatcher.addCallback(this) { logout() }
 
         checkAndRequestLocation()
     }

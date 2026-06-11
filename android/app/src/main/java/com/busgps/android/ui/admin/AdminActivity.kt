@@ -9,6 +9,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
+import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -64,6 +65,8 @@ class AdminActivity : AppCompatActivity() {
         binding.swipeRefresh.setOnRefreshListener { vm.loadAll() }
         binding.fabAdd.setOnClickListener { showAddDialogForCurrentTab() }
         binding.btnLogout.setOnClickListener { logout() }
+        binding.btnBack.setOnClickListener { logout() }
+        onBackPressedDispatcher.addCallback(this) { logout() }
     }
 
     private fun setupTabs() {

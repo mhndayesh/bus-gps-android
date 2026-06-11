@@ -78,6 +78,7 @@ class MapPickerActivity : AppCompatActivity() {
         }
         binding.mapView.overlays.add(MapEventsOverlay(receiver))
 
+        binding.btnBack.setOnClickListener { finish() }
         binding.btnMyLocation.setOnClickListener { requestMyLocation() }
         binding.btnConfirm.setOnClickListener { confirm() }
     }

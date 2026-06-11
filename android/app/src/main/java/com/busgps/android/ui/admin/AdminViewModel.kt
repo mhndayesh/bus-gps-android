@@ -37,6 +37,7 @@ class AdminViewModel : ViewModel() {
         _loading.value = true
         viewModelScope.launch {
             try {
+                repo.refreshCsrf()  // keep a valid CSRF token so saves persist
                 _students.value = repo.getStudents()
                 _buses.value = repo.getBuses()
                 _drivers.value = repo.getDrivers()

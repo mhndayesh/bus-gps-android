@@ -5,6 +5,19 @@ import com.busgps.android.network.ApiClient
 
 class DataRepository {
 
+    /**
+     * Refresh the CSRF token. Flask-WTF tokens expire after ~1h, and the app
+     * otherwise reuses the one fetched at login — a long-lived session would
+     * start failing POSTs (saves) silently. Call this when a dashboard loads
+     * so every create/update/delete uses a fresh, valid token.
+     */
+    suspend fun refreshCsrf() {
+        try {
+            val t = ApiClient.api.getCsrfToken().body()?.csrfToken
+            if (t != null) ApiClient.setCsrfToken(t)
+        } catch (_: Exception) {}
+    }
+
     // Parent
     suspend fun getMyKids(): List<Kid> =
         ApiClient.api.getMyKids().body() ?: emptyList()

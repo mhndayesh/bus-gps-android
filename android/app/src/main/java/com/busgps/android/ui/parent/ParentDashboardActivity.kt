@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import androidx.activity.addCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -41,6 +42,8 @@ class ParentDashboardActivity : AppCompatActivity() {
         binding.swipeRefresh.setOnRefreshListener { vm.loadKids() }
 
         binding.btnLogout.setOnClickListener { logout() }
+        binding.btnBack.setOnClickListener { logout() }
+        onBackPressedDispatcher.addCallback(this) { logout() }
     }
 
     private fun setupMap() {

@@ -10,6 +10,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
+import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -70,6 +71,8 @@ class SuperAdminActivity : AppCompatActivity() {
         binding.swipeRefresh.setOnRefreshListener { loadAll() }
         binding.fabAdd.setOnClickListener { showAddForCurrentTab() }
         binding.btnLogout.setOnClickListener { logout() }
+        binding.btnBack.setOnClickListener { logout() }
+        onBackPressedDispatcher.addCallback(this) { logout() }
     }
 
     private fun setupTabs() {
@@ -99,6 +102,7 @@ class SuperAdminActivity : AppCompatActivity() {
         binding.swipeRefresh.isRefreshing = true
         lifecycleScope.launch {
             try {
+                repo.refreshCsrf()  // keep a valid CSRF token so saves persist
                 schools = repo.getSchools()
                 students = repo.getStudents()
                 buses = repo.getBuses()
