@@ -43,6 +43,7 @@ class ParentDashboardActivity : AppCompatActivity() {
         binding.swipeRefresh.setOnRefreshListener { vm.loadKids() }
 
         binding.btnLogout.setOnClickListener { logout() }
+        binding.btnLang.setOnClickListener { com.busgps.android.util.LocaleHelper.toggle() }
         binding.btnBack.setOnClickListener { logout() }
         onBackPressedDispatcher.addCallback(this) { logout() }
     }
@@ -65,7 +66,7 @@ class ParentDashboardActivity : AppCompatActivity() {
         val busId = kid.busId ?: return
         AlertDialog.Builder(this)
             .setTitle(kid.name)
-            .setItems(arrayOf("Track on map", "📹 Watch camera")) { _, which ->
+            .setItems(arrayOf(getString(R.string.track_on_map), getString(R.string.watch_camera))) { _, which ->
                 selectedBusId = busId
                 vm.joinBusRoom(busId)
                 if (which == 1) {

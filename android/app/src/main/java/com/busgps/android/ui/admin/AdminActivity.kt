@@ -65,12 +65,13 @@ class AdminActivity : AppCompatActivity() {
         binding.swipeRefresh.setOnRefreshListener { vm.loadAll() }
         binding.fabAdd.setOnClickListener { showAddDialogForCurrentTab() }
         binding.btnLogout.setOnClickListener { logout() }
+        binding.btnLang.setOnClickListener { com.busgps.android.util.LocaleHelper.toggle() }
         binding.btnBack.setOnClickListener { logout() }
         onBackPressedDispatcher.addCallback(this) { logout() }
     }
 
     private fun setupTabs() {
-        listOf("Overview", "Students", "Buses", "Drivers", "Parents").forEach { title ->
+        listOf(getString(R.string.overview), getString(R.string.students), getString(R.string.buses), getString(R.string.drivers), getString(R.string.parents)).forEach { title ->
             binding.tabLayout.addTab(binding.tabLayout.newTab().setText(title))
         }
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
@@ -108,7 +109,7 @@ class AdminActivity : AppCompatActivity() {
     private fun openLocationPicker(student: Student) {
         locationTargetStudentId = student.id
         val intent = Intent(this, MapPickerActivity::class.java).apply {
-            putExtra(MapPickerActivity.EXTRA_TITLE, "Set ${student.name}'s home")
+            putExtra(MapPickerActivity.EXTRA_TITLE, getString(R.string.set_home_of, student.name))
             if (student.lat != null && student.lng != null) {
                 putExtra(MapPickerActivity.EXTRA_LAT, student.lat)
                 putExtra(MapPickerActivity.EXTRA_LNG, student.lng)
@@ -160,7 +161,7 @@ class AdminActivity : AppCompatActivity() {
         }
 
         vm.toast.observe(this) {
-            Snackbar.make(binding.root, it, Snackbar.LENGTH_SHORT).show()
+            Snackbar.make(binding.root, getString(it), Snackbar.LENGTH_SHORT).show()
         }
     }
 
@@ -177,22 +178,22 @@ class AdminActivity : AppCompatActivity() {
         // Guard: a student must be linked to a parent. If none exist, guide the admin.
         if (currentParents.isEmpty()) {
             AlertDialog.Builder(this)
-                .setTitle("No parents yet")
-                .setMessage("You must create a parent before adding a student. Open the Parents tab and add one first.")
-                .setPositiveButton("Go to Parents") { _, _ ->
+                .setTitle(getString(R.string.no_parents_title))
+                .setMessage(getString(R.string.no_parents_msg))
+                .setPositiveButton(getString(R.string.go_to_parents)) { _, _ ->
                     binding.tabLayout.getTabAt(4)?.select()
                 }
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(getString(R.string.cancel), null)
                 .show()
             return
         }
 
         val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(48, 24, 48, 0) }
 
-        val etName = EditText(this).apply { hint = "Student name" }
+        val etName = EditText(this).apply { hint = getString(R.string.student_name_hint) }
 
         val lblParent = TextView(this).apply {
-            text = "Parent"
+            text = getString(R.string.parent_label)
             setPadding(0, 24, 0, 4)
         }
         val spinnerParent = Spinner(this).apply {
@@ -200,7 +201,7 @@ class AdminActivity : AppCompatActivity() {
                 currentParents.map { it.name }).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
         }
 
-        val etNfc = EditText(this).apply { hint = "NFC tag ID (optional)" }
+        val etNfc = EditText(this).apply { hint = getString(R.string.nfc_optional_hint) }
 
         layout.addView(etName)
         layout.addView(lblParent)
@@ -208,62 +209,62 @@ class AdminActivity : AppCompatActivity() {
         layout.addView(etNfc)
 
         AlertDialog.Builder(this)
-            .setTitle("Add Student")
-            .setMessage("Set the home location afterward with the 📍 button on the student row.")
+            .setTitle(getString(R.string.add_student))
+            .setMessage(getString(R.string.set_home_hint))
             .setView(layout)
-            .setPositiveButton("Add") { _, _ ->
+            .setPositiveButton(getString(R.string.add)) { _, _ ->
                 val name = etName.text.toString().trim()
                 val parentId = currentParents.getOrNull(spinnerParent.selectedItemPosition)?.id
                     ?: return@setPositiveButton
                 val nfc = etNfc.text.toString().trim()
                 if (name.isNotEmpty()) vm.addStudent(name, parentId, nfcId = nfc)
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
     private fun showAddDriverDialog() {
         val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(48, 16, 48, 0) }
-        val etUser = EditText(this).apply { hint = "Username" }
-        val etPass = EditText(this).apply { hint = "Password"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD }
+        val etUser = EditText(this).apply { hint = getString(R.string.username) }
+        val etPass = EditText(this).apply { hint = getString(R.string.password); inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD }
         layout.addView(etUser); layout.addView(etPass)
 
         AlertDialog.Builder(this)
-            .setTitle("Add Driver")
+            .setTitle(getString(R.string.add_driver))
             .setView(layout)
-            .setPositiveButton("Create") { _, _ ->
+            .setPositiveButton(getString(R.string.create)) { _, _ ->
                 val u = etUser.text.toString().trim()
                 val p = etPass.text.toString().trim()
                 if (u.isNotEmpty() && p.isNotEmpty()) vm.createDriver(u, p)
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
     private fun showAddParentDialog() {
         val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(48, 16, 48, 0) }
-        val etName = EditText(this).apply { hint = "Full name" }
-        val etUser = EditText(this).apply { hint = "Username" }
-        val etPass = EditText(this).apply { hint = "Password"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD }
+        val etName = EditText(this).apply { hint = getString(R.string.full_name_hint) }
+        val etUser = EditText(this).apply { hint = getString(R.string.username) }
+        val etPass = EditText(this).apply { hint = getString(R.string.password); inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD }
         layout.addView(etName); layout.addView(etUser); layout.addView(etPass)
 
         AlertDialog.Builder(this)
-            .setTitle("Add Parent")
+            .setTitle(getString(R.string.add_parent))
             .setView(layout)
-            .setPositiveButton("Create") { _, _ ->
+            .setPositiveButton(getString(R.string.create)) { _, _ ->
                 val n = etName.text.toString().trim()
                 val u = etUser.text.toString().trim()
                 val p = etPass.text.toString().trim()
                 if (n.isNotEmpty() && u.isNotEmpty() && p.isNotEmpty()) vm.createParent(n, u, p)
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
     private fun showAssignBusDialog(studentId: String) {
         val buses = currentBuses
         AlertDialog.Builder(this)
-            .setTitle("Assign to Bus")
+            .setTitle(getString(R.string.assign_to_bus))
             .setItems(buses.map { it.plate }.toTypedArray()) { _, i ->
                 vm.assignBus(studentId, buses[i].id)
             }
@@ -273,7 +274,7 @@ class AdminActivity : AppCompatActivity() {
     private fun showAssignDriverDialog(busId: String) {
         val drivers = vm.drivers.value ?: return
         AlertDialog.Builder(this)
-            .setTitle("Assign Driver")
+            .setTitle(getString(R.string.assign_driver))
             .setItems(drivers.map { it.name }.toTypedArray()) { _, i ->
                 vm.assignDriver(drivers[i].id, busId)
             }

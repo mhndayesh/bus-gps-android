@@ -1,10 +1,12 @@
 package com.busgps.android.repository
 
+import com.busgps.android.R
 import com.busgps.android.network.ApiClient
 
 sealed class AuthResult {
     object Success : AuthResult()
-    data class Error(val message: String) : AuthResult()
+    /** Carries a string-resource id so the message is localized in the UI. */
+    data class Error(val msgRes: Int) : AuthResult()
 }
 
 class AuthRepository {
@@ -36,7 +38,7 @@ class AuthRepository {
 
     private suspend fun login(username: String, password: String, role: String): AuthResult {
         return try {
-            if (!fetchCsrfToken()) return AuthResult.Error("Could not reach server")
+            if (!fetchCsrfToken()) return AuthResult.Error(R.string.could_not_reach)
             val token = ApiClient.getCsrfToken() ?: ""
             val resp = when (role) {
                 "ADMIN"  -> ApiClient.api.adminLogin(username, password, token)
@@ -45,12 +47,12 @@ class AuthRepository {
             }
             when {
                 resp.code() == 302 -> AuthResult.Success  // Flask redirect = success
-                resp.code() == 401 -> AuthResult.Error("Invalid username or password")
-                resp.code() == 403 -> AuthResult.Error("Access denied for this role")
-                else -> AuthResult.Error("Login failed (${resp.code()})")
+                resp.code() == 401 -> AuthResult.Error(R.string.invalid_login)
+                resp.code() == 403 -> AuthResult.Error(R.string.access_denied_role)
+                else -> AuthResult.Error(R.string.could_not_reach)
             }
         } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "Network error")
+            AuthResult.Error(R.string.could_not_reach)
         }
     }
 

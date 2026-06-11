@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.busgps.android.R
 import com.busgps.android.databinding.ActivitySuperAdminBinding
 import com.busgps.android.model.Bus
 import com.busgps.android.model.Driver
@@ -72,12 +73,13 @@ class SuperAdminActivity : AppCompatActivity() {
         binding.swipeRefresh.setOnRefreshListener { loadAll() }
         binding.fabAdd.setOnClickListener { showAddForCurrentTab() }
         binding.btnLogout.setOnClickListener { logout() }
+        binding.btnLang.setOnClickListener { com.busgps.android.util.LocaleHelper.toggle() }
         binding.btnBack.setOnClickListener { logout() }
         onBackPressedDispatcher.addCallback(this) { logout() }
     }
 
     private fun setupTabs() {
-        listOf("Overview", "Schools", "Students", "Buses", "Drivers", "Parents").forEach {
+        listOf(getString(R.string.overview), getString(R.string.schools), getString(R.string.students), getString(R.string.buses), getString(R.string.drivers), getString(R.string.parents)).forEach {
             binding.tabLayout.addTab(binding.tabLayout.newTab().setText(it))
         }
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
@@ -132,7 +134,7 @@ class SuperAdminActivity : AppCompatActivity() {
         binding.rvItems.adapter = StudentAdapter(
             students,
             onDelete = { id ->
-                confirm("Delete student?") {
+                confirm(getString(R.string.delete_student_q)) {
                     doAction { repo.deleteStudent(id) }
                 }
             },
@@ -144,7 +146,7 @@ class SuperAdminActivity : AppCompatActivity() {
     private fun openLocationPicker(student: Student) {
         locationTargetStudentId = student.id
         val intent = Intent(this, MapPickerActivity::class.java).apply {
-            putExtra(MapPickerActivity.EXTRA_TITLE, "Set ${student.name}'s home")
+            putExtra(MapPickerActivity.EXTRA_TITLE, getString(R.string.set_home_of, student.name))
             if (student.lat != null && student.lng != null) {
                 putExtra(MapPickerActivity.EXTRA_LAT, student.lat)
                 putExtra(MapPickerActivity.EXTRA_LNG, student.lng)
@@ -159,7 +161,7 @@ class SuperAdminActivity : AppCompatActivity() {
             onAssignDriver = { busId -> showAssignDriverDialog(busId) },
             onDelete = { busId ->
                 val plate = buses.find { it.id == busId }?.plate ?: busId
-                confirm("Delete bus $plate?") {
+                confirm(getString(R.string.delete_bus_q, plate)) {
                     doAction { repo.deleteBus(busId) }
                 }
             },
@@ -204,18 +206,18 @@ class SuperAdminActivity : AppCompatActivity() {
 
     private fun showCreateSchoolDialog() {
         val layout = vstack {
-            addEditText("School Name")
-            addEditText("Admin Username")
-            addEditTextPassword("Admin Password")
+            addEditText(getString(R.string.school_name_hint))
+            addEditText(getString(R.string.admin_username_hint))
+            addEditTextPassword(getString(R.string.admin_password_hint))
         }
         val schoolName = layout.getChildAt(0) as EditText
         val username = layout.getChildAt(1) as EditText
         val password = layout.getChildAt(2) as EditText
 
         AlertDialog.Builder(this)
-            .setTitle("Create School + Admin")
+            .setTitle(getString(R.string.create_school_admin))
             .setView(layout)
-            .setPositiveButton("Create") { _, _ ->
+            .setPositiveButton(getString(R.string.create)) { _, _ ->
                 val sn = schoolName.text.toString().trim()
                 val u = username.text.toString().trim()
                 val p = password.text.toString().trim()
@@ -223,40 +225,40 @@ class SuperAdminActivity : AppCompatActivity() {
                     doAction { repo.createSchoolAdmin(sn, u, p) }
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
     private fun showAddStudentDialog() {
         if (parents.isEmpty()) {
             AlertDialog.Builder(this)
-                .setTitle("No parents yet")
-                .setMessage("Create a parent first (Parents tab), then add students under them.")
-                .setPositiveButton("Go to Parents") { _, _ -> binding.tabLayout.getTabAt(5)?.select() }
-                .setNegativeButton("Cancel", null)
+                .setTitle(getString(R.string.no_parents_title))
+                .setMessage(getString(R.string.no_parents_msg))
+                .setPositiveButton(getString(R.string.go_to_parents)) { _, _ -> binding.tabLayout.getTabAt(5)?.select() }
+                .setNegativeButton(getString(R.string.cancel), null)
                 .show()
             return
         }
 
         val layout = vstack {
-            addEditText("Student Name")
+            addEditText(getString(R.string.student_name_hint))
         }
         val etName = layout.getChildAt(0) as EditText
 
-        layout.addView(TextView(this).apply { text = "Parent"; setPadding(0, 24, 0, 4) })
+        layout.addView(TextView(this).apply { text = getString(R.string.parent_label); setPadding(0, 24, 0, 4) })
         val parentSpinner = Spinner(this).apply {
             adapter = ArrayAdapter(this@SuperAdminActivity,
                 android.R.layout.simple_spinner_item, parents.map { it.name })
                 .also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
         }
         layout.addView(parentSpinner)
-        val etNfc = layout.addEditText("NFC tag ID (optional)") as EditText
+        val etNfc = layout.addEditText(getString(R.string.nfc_optional_hint)) as EditText
 
         AlertDialog.Builder(this)
-            .setTitle("Add Student")
-            .setMessage("Set the home location afterward with the 📍 button on the student row.")
+            .setTitle(getString(R.string.add_student))
+            .setMessage(getString(R.string.set_home_hint))
             .setView(layout)
-            .setPositiveButton("Add") { _, _ ->
+            .setPositiveButton(getString(R.string.add)) { _, _ ->
                 val name = etName.text.toString().trim()
                 val parentId = parents.getOrNull(parentSpinner.selectedItemPosition)?.id ?: return@setPositiveButton
                 val nfc = etNfc.text.toString().trim()
@@ -264,13 +266,13 @@ class SuperAdminActivity : AppCompatActivity() {
                     doAction { repo.addStudent(com.busgps.android.model.AddStudentRequest(name = name, parentId = parentId, nfcId = nfc)) }
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
     private fun showAddBusDialog() {
         val layout = vstack {
-            addEditText("Plate Number (e.g. ABC-123)")
+            addEditText(getString(R.string.plate_hint))
         }
         val etPlate = layout.getChildAt(0) as EditText
 
@@ -282,24 +284,24 @@ class SuperAdminActivity : AppCompatActivity() {
         layout.addView(schoolSpinner)
 
         AlertDialog.Builder(this)
-            .setTitle("Add Bus")
+            .setTitle(getString(R.string.add_bus))
             .setView(layout)
-            .setPositiveButton("Add") { _, _ ->
+            .setPositiveButton(getString(R.string.add)) { _, _ ->
                 val plate = etPlate.text.toString().trim()
                 val schoolId = schools.getOrNull(schoolSpinner.selectedItemPosition)?.id ?: return@setPositiveButton
                 if (plate.isNotEmpty()) {
                     doAction { repo.addBus(plate, schoolId) }
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
     private fun showCreateDriverDialog() {
-        if (schools.isEmpty()) { toast("Create a school first"); return }
+        if (schools.isEmpty()) { toast(getString(R.string.create_school_first)); return }
         val layout = vstack {
-            addEditText("Username")
-            addEditTextPassword("Password")
+            addEditText(getString(R.string.username))
+            addEditTextPassword(getString(R.string.password))
         }
         val etUser = layout.getChildAt(0) as EditText
         val etPass = layout.getChildAt(1) as EditText
@@ -311,9 +313,9 @@ class SuperAdminActivity : AppCompatActivity() {
         layout.addView(schoolSpinner)
 
         AlertDialog.Builder(this)
-            .setTitle("Create Driver")
+            .setTitle(getString(R.string.create_driver))
             .setView(layout)
-            .setPositiveButton("Create") { _, _ ->
+            .setPositiveButton(getString(R.string.create)) { _, _ ->
                 val u = etUser.text.toString().trim()
                 val p = etPass.text.toString().trim()
                 val schoolId = schools.getOrNull(schoolSpinner.selectedItemPosition)?.id
@@ -321,16 +323,16 @@ class SuperAdminActivity : AppCompatActivity() {
                     doAction { repo.createDriver(u, p, schoolId) }
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
     private fun showCreateParentDialog() {
-        if (schools.isEmpty()) { toast("Create a school first"); return }
+        if (schools.isEmpty()) { toast(getString(R.string.create_school_first)); return }
         val layout = vstack {
-            addEditText("Full Name")
-            addEditText("Username")
-            addEditTextPassword("Password")
+            addEditText(getString(R.string.full_name_hint))
+            addEditText(getString(R.string.username))
+            addEditTextPassword(getString(R.string.password))
         }
         val etName = layout.getChildAt(0) as EditText
         val etUser = layout.getChildAt(1) as EditText
@@ -343,9 +345,9 @@ class SuperAdminActivity : AppCompatActivity() {
         layout.addView(schoolSpinner)
 
         AlertDialog.Builder(this)
-            .setTitle("Create Parent")
+            .setTitle(getString(R.string.create_parent))
             .setView(layout)
-            .setPositiveButton("Create") { _, _ ->
+            .setPositiveButton(getString(R.string.create)) { _, _ ->
                 val n = etName.text.toString().trim()
                 val u = etUser.text.toString().trim()
                 val p = etPass.text.toString().trim()
@@ -354,14 +356,14 @@ class SuperAdminActivity : AppCompatActivity() {
                     doAction { repo.createParent(n, u, p, schoolId) }
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
     private fun showAssignBusDialog(studentId: String) {
-        if (buses.isEmpty()) { toast("No buses available"); return }
+        if (buses.isEmpty()) { toast(getString(R.string.no_buses_available)); return }
         AlertDialog.Builder(this)
-            .setTitle("Assign to Bus")
+            .setTitle(getString(R.string.assign_to_bus))
             .setItems(buses.map { it.plate }.toTypedArray()) { _, i ->
                 doAction { repo.assignBus(studentId, buses[i].id) }
             }
@@ -369,9 +371,9 @@ class SuperAdminActivity : AppCompatActivity() {
     }
 
     private fun showAssignDriverDialog(busId: String) {
-        if (drivers.isEmpty()) { toast("No drivers available"); return }
+        if (drivers.isEmpty()) { toast(getString(R.string.no_drivers_available)); return }
         AlertDialog.Builder(this)
-            .setTitle("Assign Driver")
+            .setTitle(getString(R.string.assign_driver))
             .setItems(drivers.map { it.name }.toTypedArray()) { _, i ->
                 doAction { repo.assignDriver(drivers[i].id, busId) }
             }
@@ -380,8 +382,8 @@ class SuperAdminActivity : AppCompatActivity() {
 
     private fun showEditParentCredsDialog(parent: Parent) {
         val layout = vstack {
-            addEditText("New Username").also { (it as EditText).setText(parent.name) }
-            addEditTextPassword("New Password")
+            addEditText(getString(R.string.new_username_hint)).also { (it as EditText).setText(parent.name) }
+            addEditTextPassword(getString(R.string.new_password_hint))
         }
         val etUser = layout.getChildAt(0) as EditText
         val etPass = layout.getChildAt(1) as EditText
@@ -389,14 +391,14 @@ class SuperAdminActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle("Edit Login — ${parent.name}")
             .setView(layout)
-            .setPositiveButton("Save") { _, _ ->
+            .setPositiveButton(getString(R.string.save)) { _, _ ->
                 val u = etUser.text.toString().trim()
                 val p = etPass.text.toString().trim()
                 if (u.isNotEmpty() && p.isNotEmpty()) {
                     doAction { repo.updateParentCreds(parent.id, u, p) }
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
@@ -405,7 +407,7 @@ class SuperAdminActivity : AppCompatActivity() {
     private fun doAction(block: suspend () -> Boolean) {
         lifecycleScope.launch {
             val ok = try { block() } catch (_: Exception) { false }
-            toast(if (ok) "Done" else "Failed — check connection")
+            toast(getString(if (ok) R.string.action_done else R.string.action_failed))
             if (ok) loadAll()
         }
     }
@@ -413,8 +415,8 @@ class SuperAdminActivity : AppCompatActivity() {
     private fun confirm(message: String, onConfirm: () -> Unit) {
         AlertDialog.Builder(this)
             .setMessage(message)
-            .setPositiveButton("Yes") { _, _ -> onConfirm() }
-            .setNegativeButton("Cancel", null)
+            .setPositiveButton(getString(R.string.yes)) { _, _ -> onConfirm() }
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 

@@ -1,5 +1,6 @@
 package com.busgps.android.ui.common
 
+import com.busgps.android.R
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Base64
@@ -41,7 +42,7 @@ class CameraViewerActivity : AppCompatActivity() {
             try {
                 val obj = args[0] as JSONObject
                 if (obj.optInt("bus_id", -1) == busId && !obj.optBoolean("streaming", false)) {
-                    runOnUiThread { binding.tvStatus.text = "Camera offline — waiting for driver…" }
+                    runOnUiThread { binding.tvStatus.text = getString(R.string.camera_offline) }
                 }
             } catch (_: Exception) {}
         }
@@ -56,7 +57,7 @@ class CameraViewerActivity : AppCompatActivity() {
                 val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@on
                 runOnUiThread {
                     binding.imgFrame.setImageBitmap(bmp)
-                    binding.tvStatus.text = "🔴 LIVE"
+                    binding.tvStatus.text = getString(R.string.camera_live)
                 }
             } catch (_: Exception) {}
         }

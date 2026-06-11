@@ -1,30 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Bus GPS</string>
+    <string name="app_tagline">Real-time school bus tracking</string>
+    <!-- Label shown ON the toggle = the OTHER language you can switch to -->
+    <string name="language_toggle">العربية</string>
+
     <string name="select_role">Who are you?</string>
     <string name="role_parent">Parent</string>
     <string name="role_driver">Driver</string>
     <string name="role_admin">School Admin</string>
+
     <string name="username">Username</string>
     <string name="password">Password</string>
     <string name="login">Login</string>
     <string name="logout">Logout</string>
     <string name="back">Back</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="create">Create</string>
+    <string name="add">Add</string>
+    <string name="delete">Delete</string>
+    <string name="yes">Yes</string>
+    <string name="done">Done</string>
+    <string name="close">Close</string>
+    <string name="confirm">Confirm</string>
     <string name="loading">Loading…</string>
+
+    <!-- Login screens -->
+    <string name="enter_credentials">Enter username and password</string>
+    <string name="admin_login_title">School Admin Login</string>
+    <string name="admin_login_subtitle">Manage students, buses &amp; drivers</string>
+    <string name="driver_login_title">Driver Login</string>
+    <string name="driver_login_subtitle">Track your route &amp; manage attendance</string>
+    <string name="parent_login_title">Parent Login</string>
+    <string name="parent_login_subtitle">Track your child\'s bus</string>
+    <string name="could_not_reach">Could not reach server</string>
+    <string name="invalid_login">Invalid username or password</string>
+    <string name="access_denied_role">Access denied for this role</string>
+
+    <!-- Parent -->
     <string name="no_kids">No children registered</string>
     <string name="on_bus">On Bus</string>
     <string name="at_home">At School / Home</string>
+    <string name="my_children">My Children</string>
+    <string name="track_on_map">Track on map</string>
+    <string name="watch_camera">📹 Watch camera</string>
+
+    <!-- Driver -->
+    <string name="driver_dashboard">Driver Dashboard</string>
+    <string name="bus_label">Bus %1$s</string>
+    <string name="start_trip">▶  Start Trip</string>
+    <string name="end_trip">■  End Trip</string>
+    <string name="camera_btn">📹 Camera</string>
     <string name="optimize_route">Optimize Route</string>
-    <string name="refresh">Refresh</string>
-    <string name="add">Add</string>
-    <string name="delete">Delete</string>
-    <string name="assign_bus">Assign Bus</string>
-    <string name="assign_driver">Assign Driver</string>
     <string name="board">Board</string>
     <string name="drop">Drop</string>
+    <string name="dropped_off">Dropped Off</string>
+    <string name="waiting">Waiting</string>
+    <string name="marked_boarded">Marked as boarded</string>
+    <string name="marked_dropped">Marked as dropped</string>
+    <string name="no_bus_assigned">No bus assigned — ask your admin</string>
+    <string name="grant_location_then_start">Grant location, then press Start Trip</string>
+    <string name="location_required_trip">Location permission required to start a trip</string>
+    <string name="trip_started">Trip started — sharing live location</string>
+    <string name="not_boarded_title">%1$d student(s) not boarded</string>
+    <string name="not_boarded_msg">Some students haven\'t been marked as boarded. Start the trip anyway?</string>
+    <string name="start_anyway">Start anyway</string>
+    <string name="recheck">Recheck</string>
+    <string name="no_stops_nav">No stops to navigate. Ask the admin to assign students to this bus and set their home locations.</string>
+    <string name="students_summary">%1$s | %2$d students</string>
+
+    <!-- Admin -->
+    <string name="refresh">Refresh</string>
+    <string name="assign_bus">Assign Bus</string>
+    <string name="assign_driver">Assign Driver</string>
     <string name="overview">Overview</string>
+    <string name="stat_total_buses">Total Buses</string>
+    <string name="stat_active_buses">Active Buses</string>
+    <string name="stat_on_bus_now">On Bus Now</string>
     <string name="students">Students</string>
     <string name="buses">Buses</string>
     <string name="drivers">Drivers</string>
     <string name="parents">Parents</string>
+    <string name="schools">Schools</string>
+    <string name="admin_dashboard">Admin Dashboard</string>
+    <string name="super_admin">Super Admin</string>
+    <string name="add_student">Add Student</string>
+    <string name="add_driver">Add Driver</string>
+    <string name="add_parent">Add Parent</string>
+    <string name="add_bus">Add Bus</string>
+    <string name="create_driver">Create Driver</string>
+    <string name="create_parent">Create Parent</string>
+    <string name="create_school_admin">Create School + Admin</string>
+    <string name="parent_label">Parent</string>
+    <string name="student_name_hint">Student name</string>
+    <string name="nfc_optional_hint">NFC tag ID (optional)</string>
+    <string name="full_name_hint">Full name</string>
+    <string name="school_name_hint">School Name</string>
+    <string name="plate_hint">Plate Number (e.g. ABC-123)</string>
+    <string name="admin_username_hint">Admin Username</string>
+    <string name="admin_password_hint">Admin Password</string>
+    <string name="new_username_hint">New Username</string>
+    <string name="new_password_hint">New Password</string>
+    <string name="no_parents_title">No parents yet</string>
+    <string name="no_parents_msg">You must create a parent before adding a student. Open the Parents tab and add one first.</string>
+    <string name="go_to_parents">Go to Parents</string>
+    <string name="create_school_first">Create a school first</string>
+    <string name="set_home_hint">Set the home location afterward with the 📍 button on the student row.</string>
+    <string name="assign_to_bus">Assign to Bus</string>
+    <string name="no_buses_available">No buses available</string>
+    <string name="no_drivers_available">No drivers available</string>
+    <string name="edit_login">Edit Login</string>
+    <string name="delete_student_q">Delete student?</string>
+    <string name="delete_bus_q">Delete bus %1$s?</string>
+    <string name="action_done">Done</string>
+    <string name="action_failed">Failed — check connection</string>
+    <string name="student_added">Student added</string>
+    <string name="failed_add_student">Failed to add student</string>
+    <string name="student_deleted">Student deleted</string>
+    <string name="failed_delete">Failed to delete</string>
+    <string name="parent_created">Parent created</string>
+    <string name="failed_create_parent">Failed to create parent</string>
+    <string name="driver_created">Driver created</string>
+    <string name="failed_create_driver">Failed to create driver</string>
+    <string name="bus_assigned">Bus assigned</string>
+    <string name="failed_assign_bus">Failed to assign bus</string>
+    <string name="driver_assigned">Driver assigned</string>
+    <string name="failed_assign_driver">Failed to assign driver</string>
+
+    <!-- Camera -->
+    <string name="streaming_to_parents">LIVE — streaming to parents</string>
+    <string name="stop_streaming">Stop streaming</string>
+    <string name="flip">Flip</string>
+    <string name="camera_unavailable">Camera unavailable</string>
+    <string name="camera_permission_denied">Camera permission denied</string>
+    <string name="camera_connecting">Connecting to camera…</string>
+    <string name="camera_offline">Camera offline — waiting for driver…</string>
+    <string name="camera_live">🔴 LIVE</string>
+
+    <!-- Map picker -->
+    <string name="map_pick_title">Tap map to set home location</string>
+    <string name="use_my_location">Use my location</string>
+    <string name="no_location_selected">No location selected</string>
+    <string name="location_saved">Location saved</string>
+    <string name="failed_save_location">Failed to save location</string>
+    <string name="set_home_of">Set %1$s\'s home</string>
+    <string name="coords_fmt">Lat: %1$.5f, Lng: %2$.5f</string>
+
+    <!-- Student row -->
+    <string name="location_set">📍 Location set</string>
+    <string name="no_home_location">⚠️ No home location</string>
+    <string name="no_address">No address</string>
 </resources>

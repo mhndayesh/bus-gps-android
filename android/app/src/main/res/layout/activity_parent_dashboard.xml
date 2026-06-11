@@ -35,12 +35,22 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="My Children"
+                android:text="@string/my_children"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#FFFFFF" />
 
-            <com.google.android.material.button.MaterialButton
+                    <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLang"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="40dp"
+            android:text="@string/language_toggle"
+            android:textSize="12sp"
+            android:textColor="#FFFFFF" />
+
+<com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogout"
                 style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"

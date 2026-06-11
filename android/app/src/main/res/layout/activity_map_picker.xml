@@ -31,7 +31,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Tap map to set home location"
+            android:text="@string/map_pick_title"
             android:textSize="16sp"
             android:textStyle="bold"
             android:textColor="#FFFFFF" />
@@ -48,7 +48,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="12dp"
-        android:text="No location selected"
+        android:text="@string/no_location_selected"
         android:textSize="13sp"
         android:textColor="@color/text_secondary" />
 
@@ -64,7 +64,7 @@
             android:layout_height="48dp"
             android:layout_weight="1"
             android:layout_marginEnd="6dp"
-            android:text="Use my location"
+            android:text="@string/use_my_location"
             android:textSize="13sp"
             app:backgroundTint="@color/secondary"
             app:cornerRadius="8dp" />
@@ -75,7 +75,7 @@
             android:layout_height="48dp"
             android:layout_weight="1"
             android:layout_marginStart="6dp"
-            android:text="Confirm"
+            android:text="@string/confirm"
             android:textSize="13sp"
             android:enabled="false"
             app:backgroundTint="@color/primary"

@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.busgps.android.databinding.ActivityDriverBinding
+import com.busgps.android.R
 import com.busgps.android.model.RouteStop
 import com.busgps.android.network.ApiClient
 import com.busgps.android.ui.adapters.ManifestAdapter
@@ -53,7 +54,7 @@ class DriverActivity : AppCompatActivity() {
     ) { grants ->
         if (grants[Manifest.permission.ACCESS_FINE_LOCATION] != true &&
             grants[Manifest.permission.ACCESS_COARSE_LOCATION] != true) {
-            Snackbar.make(binding.root, "Location permission required to start a trip", Snackbar.LENGTH_LONG).show()
+            Snackbar.make(binding.root, getString(R.string.location_required_trip), Snackbar.LENGTH_LONG).show()
         }
     }
 
@@ -72,7 +73,7 @@ class DriverActivity : AppCompatActivity() {
         setupRecycler()
         observeViewModel()
 
-        binding.tvStudentCount.text = if (plate.isNotEmpty()) "Bus $plate" else "Driver Dashboard"
+        binding.tvStudentCount.text = if (plate.isNotEmpty()) getString(R.string.bus_label, plate) else getString(R.string.driver_dashboard)
 
         val cookie = ApiClient.getCookiesForSocket()
         vm.connectSocket(cookie)  // joins bus room on connect
@@ -82,7 +83,7 @@ class DriverActivity : AppCompatActivity() {
         binding.btnOptimize.setOnClickListener { vm.optimizeRoute() }
         binding.btnCamera.setOnClickListener {
             if (vm.busId < 0) {
-                Snackbar.make(binding.root, "No bus assigned — ask your admin", Snackbar.LENGTH_LONG).show()
+                Snackbar.make(binding.root, getString(R.string.no_bus_assigned), Snackbar.LENGTH_LONG).show()
             } else {
                 startActivity(Intent(this, CameraStreamActivity::class.java)
                     .putExtra(CameraStreamActivity.EXTRA_BUS_ID, vm.busId))
@@ -90,6 +91,7 @@ class DriverActivity : AppCompatActivity() {
         }
         binding.swipeRefresh.setOnRefreshListener { vm.loadManifest() }
         binding.btnLogout.setOnClickListener { logout() }
+        binding.btnLang.setOnClickListener { com.busgps.android.util.LocaleHelper.toggle() }
         binding.btnBack.setOnClickListener { logout() }
         onBackPressedDispatcher.addCallback(this) { logout() }
     }
@@ -102,7 +104,7 @@ class DriverActivity : AppCompatActivity() {
             return
         }
         if (vm.busId < 0) {
-            Snackbar.make(binding.root, "No bus assigned — ask your admin", Snackbar.LENGTH_LONG).show()
+            Snackbar.make(binding.root, getString(R.string.no_bus_assigned), Snackbar.LENGTH_LONG).show()
             return
         }
         // Ensure we have location permission before starting GPS tracking.
@@ -110,17 +112,17 @@ class DriverActivity : AppCompatActivity() {
             != PackageManager.PERMISSION_GRANTED) {
             locationPermission.launch(arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-            Snackbar.make(binding.root, "Grant location, then press Start Trip", Snackbar.LENGTH_LONG).show()
+            Snackbar.make(binding.root, getString(R.string.grant_location_then_start), Snackbar.LENGTH_LONG).show()
             return
         }
         // Warn if some students aren't boarded yet (same as the website modal).
         val missing = vm.notBoardedCount()
         if (missing > 0) {
             AlertDialog.Builder(this)
-                .setTitle("$missing student(s) not boarded")
-                .setMessage("Some students haven't been marked as boarded. Start the trip anyway?")
-                .setPositiveButton("Start anyway") { _, _ -> beginTrip() }
-                .setNegativeButton("Recheck") { _, _ -> vm.loadManifest() }
+                .setTitle(getString(R.string.not_boarded_title, missing))
+                .setMessage(getString(R.string.not_boarded_msg))
+                .setPositiveButton(getString(R.string.start_anyway)) { _, _ -> beginTrip() }
+                .setNegativeButton(getString(R.string.recheck)) { _, _ -> vm.loadManifest() }
                 .show()
         } else {
             beginTrip()
@@ -130,7 +132,7 @@ class DriverActivity : AppCompatActivity() {
     private fun beginTrip() {
         startLocationUpdates()
         vm.startTrip()  // optimizes route, then emits openNav to launch Google Maps
-        Snackbar.make(binding.root, "Trip started — sharing live location", Snackbar.LENGTH_SHORT).show()
+        Snackbar.make(binding.root, getString(R.string.trip_started), Snackbar.LENGTH_SHORT).show()
     }
 
     private fun setupMap() {
@@ -155,8 +157,8 @@ class DriverActivity : AppCompatActivity() {
         vm.manifest.observe(this) { manifest ->
             manifestAdapter.submit(manifest)
             val plate = getSharedPreferences("session", MODE_PRIVATE).getString("bus_plate", "") ?: ""
-            val prefix = if (plate.isNotEmpty()) "Bus $plate" else "Driver"
-            binding.tvStudentCount.text = "$prefix | ${manifest.size} students"
+            val prefix = if (plate.isNotEmpty()) getString(R.string.bus_label, plate) else getString(R.string.role_driver)
+            binding.tvStudentCount.text = getString(R.string.students_summary, prefix, manifest.size)
         }
 
         vm.routeStops.observe(this) { stops ->
@@ -176,16 +178,16 @@ class DriverActivity : AppCompatActivity() {
             binding.mapView.invalidate()
         }
 
-        vm.statusMsg.observe(this) { msg ->
-            Snackbar.make(binding.root, msg, Snackbar.LENGTH_SHORT).show()
+        vm.statusMsg.observe(this) { msgRes ->
+            Snackbar.make(binding.root, getString(msgRes), Snackbar.LENGTH_SHORT).show()
         }
 
         vm.tripActive.observe(this) { active ->
             if (active) {
-                binding.btnTrip.text = "■  End Trip"
+                binding.btnTrip.text = getString(R.string.end_trip)
                 binding.btnTrip.setBackgroundColor(0xFFE53935.toInt())
             } else {
-                binding.btnTrip.text = "▶  Start Trip"
+                binding.btnTrip.text = getString(R.string.start_trip)
                 binding.btnTrip.setBackgroundColor(ContextCompat.getColor(this, com.busgps.android.R.color.role_driver))
                 fusedLocation.removeLocationUpdates(locationCallback)
             }
@@ -205,9 +207,7 @@ class DriverActivity : AppCompatActivity() {
      */
     private fun openGoogleMapsNavigation(stops: List<RouteStop>) {
         if (stops.isEmpty()) {
-            Snackbar.make(binding.root,
-                "No stops to navigate. Ask the admin to assign students to this bus and set their home locations.",
-                Snackbar.LENGTH_LONG).show()
+            Snackbar.make(binding.root, getString(R.string.no_stops_nav), Snackbar.LENGTH_LONG).show()
             return
         }
         // Google Maps supports up to ~9 waypoints via URL.

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">باص جي بي اس</string>
+    <string name="app_tagline">تتبع الحافلة المدرسية لحظياً</string>
+    <!-- On Arabic UI, the toggle switches back to English -->
+    <string name="language_toggle">English</string>
+
+    <string name="select_role">من أنت؟</string>
+    <string name="role_parent">ولي أمر</string>
+    <string name="role_driver">سائق</string>
+    <string name="role_admin">مدير المدرسة</string>
+
+    <string name="username">اسم المستخدم</string>
+    <string name="password">كلمة المرور</string>
+    <string name="login">تسجيل الدخول</string>
+    <string name="logout">تسجيل الخروج</string>
+    <string name="back">رجوع</string>
+    <string name="cancel">إلغاء</string>
+    <string name="save">حفظ</string>
+    <string name="create">إنشاء</string>
+    <string name="add">إضافة</string>
+    <string name="delete">حذف</string>
+    <string name="yes">نعم</string>
+    <string name="done">تم</string>
+    <string name="close">إغلاق</string>
+    <string name="confirm">تأكيد</string>
+    <string name="loading">جارٍ التحميل…</string>
+
+    <!-- Login screens -->
+    <string name="enter_credentials">أدخل اسم المستخدم وكلمة المرور</string>
+    <string name="admin_login_title">دخول مدير المدرسة</string>
+    <string name="admin_login_subtitle">إدارة الطلاب والحافلات والسائقين</string>
+    <string name="driver_login_title">دخول السائق</string>
+    <string name="driver_login_subtitle">تتبّع مسارك وإدارة الحضور</string>
+    <string name="parent_login_title">دخول ولي الأمر</string>
+    <string name="parent_login_subtitle">تتبّع حافلة طفلك</string>
+    <string name="could_not_reach">تعذّر الاتصال بالخادم</string>
+    <string name="invalid_login">اسم المستخدم أو كلمة المرور غير صحيحة</string>
+    <string name="access_denied_role">غير مصرّح لهذا الدور</string>
+
+    <!-- Parent -->
+    <string name="no_kids">لا يوجد أطفال مسجّلون</string>
+    <string name="on_bus">في الحافلة</string>
+    <string name="at_home">في المدرسة / المنزل</string>
+    <string name="my_children">أطفالي</string>
+    <string name="track_on_map">التتبّع على الخريطة</string>
+    <string name="watch_camera">📹 مشاهدة الكاميرا</string>
+
+    <!-- Driver -->
+    <string name="driver_dashboard">لوحة السائق</string>
+    <string name="bus_label">حافلة %1$s</string>
+    <string name="start_trip">▶  بدء الرحلة</string>
+    <string name="end_trip">■  إنهاء الرحلة</string>
+    <string name="camera_btn">📹 الكاميرا</string>
+    <string name="optimize_route">حساب المسار الأمثل</string>
+    <string name="board">صعود</string>
+    <string name="drop">نزول</string>
+    <string name="dropped_off">تم الإنزال</string>
+    <string name="waiting">بالانتظار</string>
+    <string name="marked_boarded">تم تسجيل الصعود</string>
+    <string name="marked_dropped">تم تسجيل النزول</string>
+    <string name="no_bus_assigned">لا توجد حافلة مخصّصة — راجع الإدارة</string>
+    <string name="grant_location_then_start">امنح إذن الموقع ثم اضغط بدء الرحلة</string>
+    <string name="location_required_trip">إذن الموقع مطلوب لبدء الرحلة</string>
+    <string name="trip_started">بدأت الرحلة — تتم مشاركة الموقع المباشر</string>
+    <string name="not_boarded_title">%1$d طالب لم يصعد بعد</string>
+    <string name="not_boarded_msg">بعض الطلاب لم يتم تسجيل صعودهم. هل تريد بدء الرحلة على أي حال؟</string>
+    <string name="start_anyway">ابدأ على أي حال</string>
+    <string name="recheck">إعادة الفحص</string>
+    <string name="no_stops_nav">لا توجد محطات للتنقّل. اطلب من الإدارة إسناد الطلاب لهذه الحافلة وتحديد مواقع منازلهم.</string>
+    <string name="students_summary">%1$s | %2$d طالب</string>
+
+    <!-- Admin -->
+    <string name="refresh">تحديث</string>
+    <string name="assign_bus">إسناد حافلة</string>
+    <string name="assign_driver">إسناد سائق</string>
+    <string name="overview">نظرة عامة</string>
+    <string name="stat_total_buses">إجمالي الحافلات</string>
+    <string name="stat_active_buses">الحافلات النشطة</string>
+    <string name="stat_on_bus_now">في الحافلة الآن</string>
+    <string name="students">الطلاب</string>
+    <string name="buses">الحافلات</string>
+    <string name="drivers">السائقون</string>
+    <string name="parents">أولياء الأمور</string>
+    <string name="schools">المدارس</string>
+    <string name="admin_dashboard">لوحة الإدارة</string>
+    <string name="super_admin">المدير العام</string>
+    <string name="add_student">إضافة طالب</string>
+    <string name="add_driver">إضافة سائق</string>
+    <string name="add_parent">إضافة ولي أمر</string>
+    <string name="add_bus">إضافة حافلة</string>
+    <string name="create_driver">إنشاء سائق</string>
+    <string name="create_parent">إنشاء ولي أمر</string>
+    <string name="create_school_admin">إنشاء مدرسة + مدير</string>
+    <string name="parent_label">ولي الأمر</string>
+    <string name="student_name_hint">اسم الطالب</string>
+    <string name="nfc_optional_hint">معرّف بطاقة NFC (اختياري)</string>
+    <string name="full_name_hint">الاسم الكامل</string>
+    <string name="school_name_hint">اسم المدرسة</string>
+    <string name="plate_hint">رقم اللوحة (مثال ABC-123)</string>
+    <string name="admin_username_hint">اسم مستخدم المدير</string>
+    <string name="admin_password_hint">كلمة مرور المدير</string>
+    <string name="new_username_hint">اسم مستخدم جديد</string>
+    <string name="new_password_hint">كلمة مرور جديدة</string>
+    <string name="no_parents_title">لا يوجد أولياء أمور بعد</string>
+    <string name="no_parents_msg">يجب إنشاء ولي أمر قبل إضافة طالب. افتح تبويب أولياء الأمور وأضف واحداً أولاً.</string>
+    <string name="go_to_parents">الذهاب لأولياء الأمور</string>
+    <string name="create_school_first">أنشئ مدرسة أولاً</string>
+    <string name="set_home_hint">حدّد موقع المنزل لاحقاً بزر 📍 في صف الطالب.</string>
+    <string name="assign_to_bus">إسناد إلى حافلة</string>
+    <string name="no_buses_available">لا توجد حافلات متاحة</string>
+    <string name="no_drivers_available">لا يوجد سائقون متاحون</string>
+    <string name="edit_login">تعديل الدخول</string>
+    <string name="delete_student_q">حذف الطالب؟</string>
+    <string name="delete_bus_q">حذف الحافلة %1$s؟</string>
+    <string name="action_done">تم</string>
+    <string name="action_failed">فشل — تحقق من الاتصال</string>
+    <string name="student_added">تمت إضافة الطالب</string>
+    <string name="failed_add_student">فشل إضافة الطالب</string>
+    <string name="student_deleted">تم حذف الطالب</string>
+    <string name="failed_delete">فشل الحذف</string>
+    <string name="parent_created">تم إنشاء ولي الأمر</string>
+    <string name="failed_create_parent">فشل إنشاء ولي الأمر</string>
+    <string name="driver_created">تم إنشاء السائق</string>
+    <string name="failed_create_driver">فشل إنشاء السائق</string>
+    <string name="bus_assigned">تم إسناد الحافلة</string>
+    <string name="failed_assign_bus">فشل إسناد الحافلة</string>
+    <string name="driver_assigned">تم إسناد السائق</string>
+    <string name="failed_assign_driver">فشل إسناد السائق</string>
+
+    <!-- Camera -->
+    <string name="streaming_to_parents">مباشر — يتم البث لأولياء الأمور</string>
+    <string name="stop_streaming">إيقاف البث</string>
+    <string name="flip">تبديل الكاميرا</string>
+    <string name="camera_unavailable">الكاميرا غير متاحة</string>
+    <string name="camera_permission_denied">تم رفض إذن الكاميرا</string>
+    <string name="camera_connecting">جارٍ الاتصال بالكاميرا…</string>
+    <string name="camera_offline">الكاميرا غير متصلة — بانتظار السائق…</string>
+    <string name="camera_live">🔴 مباشر</string>
+
+    <!-- Map picker -->
+    <string name="map_pick_title">اضغط على الخريطة لتحديد موقع المنزل</string>
+    <string name="use_my_location">استخدم موقعي</string>
+    <string name="no_location_selected">لم يتم اختيار موقع</string>
+    <string name="location_saved">تم حفظ الموقع</string>
+    <string name="failed_save_location">فشل حفظ الموقع</string>
+    <string name="set_home_of">تحديد منزل %1$s</string>
+    <string name="coords_fmt">خط العرض: %1$.5f، خط الطول: %2$.5f</string>
+
+    <!-- Student row -->
+    <string name="location_set">📍 تم تحديد الموقع</string>
+    <string name="no_home_location">⚠️ لا يوجد موقع منزل</string>
+    <string name="no_address">لا يوجد عنوان</string>
+</resources>

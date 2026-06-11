@@ -1,5 +1,6 @@
 package com.busgps.android.ui.common
 
+import com.busgps.android.R
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -93,7 +94,7 @@ class MapPickerActivity : AppCompatActivity() {
         }
         marker!!.position = p
         binding.mapView.invalidate()
-        binding.tvCoords.text = "Lat: %.5f, Lng: %.5f".format(p.latitude, p.longitude)
+        binding.tvCoords.text = getString(R.string.coords_fmt, p.latitude, p.longitude)
         binding.btnConfirm.isEnabled = true
     }
 

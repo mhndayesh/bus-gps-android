@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.busgps.android.R
 import com.busgps.android.databinding.ActivityLoginBinding
 import com.busgps.android.network.ApiClient
 import com.busgps.android.repository.AuthRepository
@@ -24,14 +25,14 @@ class AdminLoginActivity : AppCompatActivity() {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.tvRoleTitle.text = "School Admin Login"
-        binding.tvRoleSubtitle.text = "Manage students, buses & drivers"
+        binding.tvRoleTitle.text = getString(R.string.admin_login_title)
+        binding.tvRoleSubtitle.text = getString(R.string.admin_login_subtitle)
 
         binding.btnLogin.setOnClickListener {
             val username = binding.etUsername.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()
             if (username.isEmpty() || password.isEmpty()) {
-                Snackbar.make(binding.root, "Enter username and password", Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(binding.root, getString(R.string.enter_credentials), Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             doLogin(username, password)
@@ -64,7 +65,7 @@ class AdminLoginActivity : AppCompatActivity() {
                 is AuthResult.Error -> {
                     binding.progressBar.visibility = View.GONE
                     binding.btnLogin.isEnabled = true
-                    Snackbar.make(binding.root, result.message, Snackbar.LENGTH_LONG).show()
+                    Snackbar.make(binding.root, getString(result.msgRes), Snackbar.LENGTH_LONG).show()
                 }
             }
         }

@@ -120,7 +120,10 @@ _IS_PRODUCTION = any(os.environ.get(v) for v in
 app.config['SESSION_COOKIE_SECURE'] = _IS_PRODUCTION  # HTTPS-only in production
 app.config['SESSION_COOKIE_HTTPONLY'] = True      # No JavaScript access
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'     # CSRF protection
-app.config['PERMANENT_SESSION_LIFETIME'] = 3600   # 1 hour session expiry
+# Keep users signed in across app restarts: sessions are marked permanent on
+# login (see _verify_and_login) and live for 30 days.
+from datetime import timedelta
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # SECURITY: CORS - restrict to explicitly allowed origins.
 # Default (empty list) allows same-origin requests only. Set CORS_ORIGINS to a
@@ -498,6 +501,7 @@ def _verify_and_login(allowed_roles, redirect_endpoint):
                 return "❌ Access Denied: Use the correct portal for your role.", 403
             # SECURITY: regenerate the session on privilege change (prevents fixation).
             session.clear()
+            session.permanent = True  # persist for PERMANENT_SESSION_LIFETIME (30 days)
             session['user_id'] = user_id
             session['user_name'] = user_name
             session['user_role'] = role

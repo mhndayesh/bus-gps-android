@@ -8,6 +8,15 @@
     android:padding="32dp"
     android:background="@color/background">
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnLanguage"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:text="@string/language_toggle"
+        android:textSize="13sp" />
+
     <ImageView
         android:layout_width="100dp"
         android:layout_height="100dp"
@@ -27,7 +36,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Real-time school bus tracking"
+        android:text="@string/app_tagline"
         android:textSize="14sp"
         android:textColor="@color/text_secondary"
         android:layout_marginBottom="48dp" />

@@ -1,5 +1,6 @@
 package com.busgps.android.ui.driver
 
+import com.busgps.android.R
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -51,7 +52,7 @@ class CameraStreamActivity : AppCompatActivity() {
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) startCamera()
-        else { binding.tvStatus.text = "Camera permission denied"; finishAfterShortDelay() }
+        else { binding.tvStatus.text = getString(R.string.camera_permission_denied); finishAfterShortDelay() }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,7 +89,7 @@ class CameraStreamActivity : AppCompatActivity() {
                 bindUseCases()
             } catch (e: Exception) {
                 Log.e(TAG, "Camera init failed", e)
-                binding.tvStatus.text = "Camera unavailable"
+                binding.tvStatus.text = getString(R.string.camera_unavailable)
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -116,7 +117,7 @@ class CameraStreamActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "bindToLifecycle failed", e)
-            binding.tvStatus.text = "Camera unavailable"
+            binding.tvStatus.text = getString(R.string.camera_unavailable)
         }
     }
 

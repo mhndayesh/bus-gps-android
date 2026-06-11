@@ -1,5 +1,6 @@
 package com.busgps.android.ui.adapters
 
+import com.busgps.android.R
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -28,8 +29,8 @@ class StudentAdapter(
             val hasLocation = s.lat != null && s.lng != null
             tvAddress.text = when {
                 !s.addressText.isNullOrBlank() -> s.addressText
-                hasLocation -> "📍 Location set"
-                else -> "⚠️ No home location"
+                hasLocation -> root.context.getString(R.string.location_set)
+                else -> root.context.getString(R.string.no_home_location)
             }
             btnLocation.setOnClickListener { onSetLocation(s) }
             btnDelete.setOnClickListener { onDelete(s.id) }

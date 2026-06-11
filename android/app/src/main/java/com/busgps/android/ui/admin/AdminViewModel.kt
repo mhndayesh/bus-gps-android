@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.busgps.android.R
 import com.busgps.android.model.*
 import com.busgps.android.repository.DataRepository
 import kotlinx.coroutines.launch
@@ -30,8 +31,8 @@ class AdminViewModel : ViewModel() {
     private val _loading = MutableLiveData(false)
     val loading: LiveData<Boolean> = _loading
 
-    private val _toast = MutableLiveData<String>()
-    val toast: LiveData<String> = _toast
+    private val _toast = MutableLiveData<Int>()
+    val toast: LiveData<Int> = _toast
 
     fun loadAll() {
         _loading.value = true
@@ -68,7 +69,7 @@ class AdminViewModel : ViewModel() {
                     addressText = address
                 )
             )
-            _toast.value = if (ok) "Student added" else "Failed to add student"
+            _toast.value = if (ok) R.string.student_added else R.string.failed_add_student
             if (ok) _students.value = repo.getStudents()
         }
     }
@@ -76,7 +77,7 @@ class AdminViewModel : ViewModel() {
     fun updateStudentLocation(studentId: String, lat: Double, lng: Double, address: String = "") {
         viewModelScope.launch {
             val ok = repo.updateStudentLocation(studentId, lat, lng, address)
-            _toast.value = if (ok) "Location saved" else "Failed to save location"
+            _toast.value = if (ok) R.string.location_saved else R.string.failed_save_location
             if (ok) _students.value = repo.getStudents()
         }
     }
@@ -84,7 +85,7 @@ class AdminViewModel : ViewModel() {
     fun deleteStudent(studentId: String) {
         viewModelScope.launch {
             val ok = repo.deleteStudent(studentId)
-            _toast.value = if (ok) "Student deleted" else "Failed to delete"
+            _toast.value = if (ok) R.string.student_deleted else R.string.failed_delete
             if (ok) _students.value = repo.getStudents()
         }
     }
@@ -92,7 +93,7 @@ class AdminViewModel : ViewModel() {
     fun createParent(name: String, username: String, password: String) {
         viewModelScope.launch {
             val ok = repo.createParent(CreateParentRequest(name, username, password))
-            _toast.value = if (ok) "Parent created" else "Failed to create parent"
+            _toast.value = if (ok) R.string.parent_created else R.string.failed_create_parent
             if (ok) _parents.value = repo.getParents()
         }
     }
@@ -100,7 +101,7 @@ class AdminViewModel : ViewModel() {
     fun createDriver(username: String, password: String) {
         viewModelScope.launch {
             val ok = repo.createDriver(CreateDriverRequest(username, password))
-            _toast.value = if (ok) "Driver created" else "Failed to create driver"
+            _toast.value = if (ok) R.string.driver_created else R.string.failed_create_driver
             if (ok) _drivers.value = repo.getDrivers()
         }
     }
@@ -108,14 +109,14 @@ class AdminViewModel : ViewModel() {
     fun assignBus(studentId: String, busId: String) {
         viewModelScope.launch {
             val ok = repo.assignBus(studentId, busId)
-            _toast.value = if (ok) "Bus assigned" else "Failed to assign bus"
+            _toast.value = if (ok) R.string.bus_assigned else R.string.failed_assign_bus
         }
     }
 
     fun assignDriver(driverId: String, busId: String) {
         viewModelScope.launch {
             val ok = repo.assignDriver(driverId, busId)
-            _toast.value = if (ok) "Driver assigned" else "Failed to assign driver"
+            _toast.value = if (ok) R.string.driver_assigned else R.string.failed_assign_driver
         }
     }
 }

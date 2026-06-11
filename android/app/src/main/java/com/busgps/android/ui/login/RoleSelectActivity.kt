@@ -4,12 +4,16 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.busgps.android.BuildConfig
 import com.busgps.android.databinding.ActivityRoleSelectBinding
 import com.busgps.android.network.ApiClient
 import com.busgps.android.ui.admin.AdminActivity
 import com.busgps.android.ui.driver.DriverActivity
 import com.busgps.android.ui.parent.ParentDashboardActivity
+import com.busgps.android.ui.superadmin.SuperAdminActivity
+import com.busgps.android.util.LocaleHelper
+import kotlinx.coroutines.launch
 
 class RoleSelectActivity : AppCompatActivity() {
 
@@ -24,11 +28,8 @@ class RoleSelectActivity : AppCompatActivity() {
         binding = ActivityRoleSelectBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Auto-login if a saved role exists
-        val savedRole = prefs.getString("role", null)
-        if (savedRole != null) {
-            navigateToRole(savedRole)
-            return
+        binding.btnLanguage.setOnClickListener {
+            LocaleHelper.toggle()  // persists + recreates the activity stack
         }
 
         binding.btnParent.setOnClickListener {
@@ -42,25 +43,42 @@ class RoleSelectActivity : AppCompatActivity() {
         }
 
         binding.tvVersion.text = "v${BuildConfig.VERSION_NAME}"
+
+        // Stay signed in: if we have a saved role AND the server session is still
+        // valid, jump straight to the dashboard. Otherwise fall back to the chooser.
+        val savedRole = prefs.getString("role", null)
+        if (savedRole != null) verifySessionAndNavigate(savedRole)
+    }
+
+    private fun verifySessionAndNavigate(role: String) {
+        lifecycleScope.launch {
+            val live = try {
+                ApiClient.api.getMe().body()?.role != null
+            } catch (_: Exception) {
+                // Network error on launch: trust the saved role rather than logging out.
+                true
+            }
+            if (live) {
+                navigateToRole(role)
+            } else {
+                // Session expired/invalid (e.g. server restarted): clear and show chooser.
+                prefs.edit().clear().apply()
+                ApiClient.clearSession()
+            }
+        }
     }
 
     private fun navigateToRole(role: String) {
         val intent = when (role) {
             "PARENT"      -> Intent(this, ParentDashboardActivity::class.java)
             "DRIVER"      -> Intent(this, DriverActivity::class.java)
-            "SCHOOL_ADMIN", "SUPER_ADMIN" -> Intent(this, AdminActivity::class.java)
+            "SUPER_ADMIN" -> Intent(this, SuperAdminActivity::class.java)
+            "SCHOOL_ADMIN" -> Intent(this, AdminActivity::class.java)
             else -> null
         }
         intent?.let {
             it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(it)
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Clear saved role if user returned here (logged out)
-        val savedRole = prefs.getString("role", null)
-        if (savedRole != null) navigateToRole(savedRole)
     }
 }

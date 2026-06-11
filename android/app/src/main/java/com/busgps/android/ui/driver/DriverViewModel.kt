@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.busgps.android.R
 import com.busgps.android.model.ManifestItem
 import com.busgps.android.model.RouteStop
 import com.busgps.android.network.SocketManager
@@ -25,8 +26,9 @@ class DriverViewModel : ViewModel() {
     private val _loading = MutableLiveData(false)
     val loading: LiveData<Boolean> = _loading
 
-    private val _statusMsg = MutableLiveData<String>()
-    val statusMsg: LiveData<String> = _statusMsg
+    // String-resource id so the message is localized in the Activity.
+    private val _statusMsg = MutableLiveData<Int>()
+    val statusMsg: LiveData<Int> = _statusMsg
 
     private val _tripActive = MutableLiveData(false)
     val tripActive: LiveData<Boolean> = _tripActive
@@ -87,14 +89,14 @@ class DriverViewModel : ViewModel() {
         if (busId < 0) return
         SocketManager.emitAttendance(studentId, "BOARDED", busId)
         updateLocalStatus(studentId, "BOARDED")
-        _statusMsg.value = "Marked as BOARDED"
+        _statusMsg.value = R.string.marked_boarded
     }
 
     fun markDropped(studentId: String) {
         if (busId < 0) return
         SocketManager.emitAttendance(studentId, "DROPPED", busId)
         updateLocalStatus(studentId, "DROPPED")
-        _statusMsg.value = "Marked as DROPPED"
+        _statusMsg.value = R.string.marked_dropped
     }
 
     private fun updateLocalStatus(studentId: String, status: String) {

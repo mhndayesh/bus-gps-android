@@ -1,5 +1,6 @@
 package com.busgps.android.ui.adapters
 
+import com.busgps.android.R
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -29,7 +30,7 @@ class KidAdapter(
         val kid = kids[position]
         holder.binding.apply {
             tvKidName.text = kid.name
-            tvStatus.text = if (kid.onBus) "On Bus" else "At School / Home"
+            tvStatus.text = if (kid.onBus) root.context.getString(R.string.on_bus) else root.context.getString(R.string.at_home)
             tvBusPlate.text = kid.busPlate ?: "—"
             val color = if (kid.onBus) 0xFF4CAF50.toInt() else 0xFF9E9E9E.toInt()
             tvStatus.setTextColor(color)

@@ -1,5 +1,6 @@
 package com.busgps.android.ui.adapters
 
+import com.busgps.android.R
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -31,9 +32,9 @@ class ManifestAdapter(
         holder.binding.apply {
             tvStudentName.text = item.name
             val statusText = when (item.status) {
-                "BOARDED" -> "On Bus"
-                "DROPPED" -> "Dropped Off"
-                else      -> "Waiting"
+                "BOARDED" -> root.context.getString(R.string.on_bus)
+                "DROPPED" -> root.context.getString(R.string.dropped_off)
+                else      -> root.context.getString(R.string.waiting)
             }
             tvStudentStatus.text = statusText
             tvStudentStatus.setTextColor(when (item.status) {

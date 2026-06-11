@@ -64,6 +64,17 @@
         <activity android:name=".ui.common.CameraViewerActivity"
             android:screenOrientation="portrait" />
 
+        <!-- Persists the per-app language (AppCompatDelegate.setApplicationLocales)
+             across restarts on all supported API levels. -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
+
     </application>
 
 </manifest>
