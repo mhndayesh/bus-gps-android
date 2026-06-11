@@ -889,7 +889,7 @@ def get_buses():
 @role_required(['SUPER_ADMIN'])
 def delete_bus():
     data = request.json
-    bus_id = data.get('bus_id')
+    bus_id = int(data.get('bus_id'))
     
     conn = get_db_connection()
     cur = conn.cursor()

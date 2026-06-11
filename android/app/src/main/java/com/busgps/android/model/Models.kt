@@ -136,3 +136,24 @@ data class DeleteRequest(
     @SerializedName("bus_id") val busId: Int? = null,
     @SerializedName("driver_id") val driverId: String? = null
 )
+
+data class AddBusRequest(
+    val plate: String,
+    @SerializedName("school_id") val schoolId: Int
+)
+
+data class DeleteBusRequest(
+    @SerializedName("bus_id") val busId: String
+)
+
+data class CreateSchoolAdminRequest(
+    @SerializedName("school_name") val schoolName: String,
+    val username: String,
+    val password: String
+)
+
+data class UpdateParentCredsRequest(
+    @SerializedName("parent_id") val parentId: String,
+    val username: String,
+    val password: String
+)

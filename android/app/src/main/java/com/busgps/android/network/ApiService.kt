@@ -96,4 +96,16 @@ interface ApiService {
     // Super admin
     @GET("/api/get_schools")
     suspend fun getSchools(): Response<List<School>>
+
+    @POST("/api/add_bus")
+    suspend fun addBus(@Body body: AddBusRequest): Response<GenericResponse>
+
+    @POST("/api/delete_bus")
+    suspend fun deleteBus(@Body body: DeleteBusRequest): Response<Void>
+
+    @POST("/api/create_school_admin")
+    suspend fun createSchoolAdmin(@Body body: CreateSchoolAdminRequest): Response<GenericResponse>
+
+    @POST("/api/update_parent_credentials")
+    suspend fun updateParentCreds(@Body body: UpdateParentCredsRequest): Response<Void>
 }

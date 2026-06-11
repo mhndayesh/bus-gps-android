@@ -53,4 +53,16 @@ class DataRepository {
     // Super admin
     suspend fun getSchools(): List<School> =
         ApiClient.api.getSchools().body() ?: emptyList()
+
+    suspend fun addBus(plate: String, schoolId: Int): Boolean =
+        ApiClient.api.addBus(AddBusRequest(plate, schoolId)).isSuccessful
+
+    suspend fun deleteBus(busId: String): Boolean =
+        ApiClient.api.deleteBus(DeleteBusRequest(busId)).isSuccessful
+
+    suspend fun createSchoolAdmin(schoolName: String, username: String, password: String): Boolean =
+        ApiClient.api.createSchoolAdmin(CreateSchoolAdminRequest(schoolName, username, password)).isSuccessful
+
+    suspend fun updateParentCreds(parentId: String, username: String, password: String): Boolean =
+        ApiClient.api.updateParentCreds(UpdateParentCredsRequest(parentId, username, password)).isSuccessful
 }
