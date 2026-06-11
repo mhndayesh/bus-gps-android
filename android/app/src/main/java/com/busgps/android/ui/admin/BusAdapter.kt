@@ -8,7 +8,7 @@ import com.busgps.android.model.Bus
 
 class BusAdapter(
     private val buses: List<Bus>,
-    private val onAssignDriver: (Int) -> Unit
+    private val onAssignDriver: (String) -> Unit
 ) : RecyclerView.Adapter<BusAdapter.VH>() {
 
     inner class VH(val binding: ItemBusBinding) : RecyclerView.ViewHolder(binding.root)

@@ -521,6 +521,15 @@ def get_csrf_token():
     Exempt from rate limits — GET-only, no state mutation."""
     return json.dumps({'token': generate_csrf()})
 
+@app.route('/api/me')
+def get_me():
+    """Returns the current session's user role. Used by the Android app after
+    login to detect the actual role (SUPER_ADMIN vs SCHOOL_ADMIN)."""
+    role = session.get('user_role')
+    if not role:
+        return json.dumps({'role': None}), 401
+    return json.dumps({'role': role, 'name': session.get('user_name', '')})
+
 # --- API: Add Student (SCHOOL_ADMIN & SUPER_ADMIN) ---
 @app.route('/api/add_student', methods=['POST'])
 @limiter.limit("30 per minute")
@@ -653,7 +662,7 @@ def get_driver_manifest():
         rows = cur.fetchall()
         
         students = [{
-            "id": r[0], 
+            "id": str(r[0]),
             "name": r[1],
             "lat": r[2],
             "lng": r[3],
@@ -814,7 +823,7 @@ def update_student_location():
 def assign_bus():
     data = request.json
     student_id = data.get('student_id')
-    bus_id = data.get('bus_id') # We don't strictly use this in the simple logic yet, but good for record
+    bus_id = int(data.get('bus_id')) # We don't strictly use this in the simple logic yet, but good for record
     
     try:
         conn = get_db_connection()
@@ -1137,7 +1146,7 @@ def get_drivers():
                 cur.execute("SELECT id, name, school_id FROM users WHERE role = 'DRIVER'")
         
         rows = cur.fetchall()
-        drivers = [{"id": r[0], "name": r[1], "school_id": r[2] if len(r)>2 else ""} for r in rows]
+        drivers = [{"id": str(r[0]), "name": r[1], "school_id": r[2] if len(r) > 2 else None} for r in rows]
         
         cur.close()
         conn.close()
@@ -1153,7 +1162,7 @@ def get_drivers():
 def assign_driver():
     data = request.json
     driver_id = data.get('driver_id')
-    bus_id = data.get('bus_id')
+    bus_id = int(data.get('bus_id'))
     
     try:
         conn = get_db_connection()

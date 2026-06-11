@@ -37,7 +37,7 @@ class AuthRepository {
     private suspend fun login(username: String, password: String, role: String): AuthResult {
         return try {
             if (!fetchCsrfToken()) return AuthResult.Error("Could not reach server")
-            val token = ApiClient.api.getCsrfToken().body()?.csrfToken ?: ""
+            val token = ApiClient.getCsrfToken() ?: ""
             val resp = when (role) {
                 "ADMIN"  -> ApiClient.api.adminLogin(username, password, token)
                 "DRIVER" -> ApiClient.api.driverLogin(username, password, token)

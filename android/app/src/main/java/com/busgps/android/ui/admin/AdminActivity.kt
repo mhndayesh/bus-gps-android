@@ -206,7 +206,7 @@ class AdminActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun showAssignDriverDialog(busId: Int) {
+    private fun showAssignDriverDialog(busId: String) {
         val drivers = vm.drivers.value ?: return
         AlertDialog.Builder(this)
             .setTitle("Assign Driver")

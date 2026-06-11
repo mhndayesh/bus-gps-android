@@ -58,17 +58,30 @@ object ApiClient {
         csrfToken = token
     }
 
+    fun getCsrfToken(): String? = csrfToken
+
     fun clearSession() {
         cookieJar?.clear()
         csrfToken = null
     }
 
     fun getCookiesForSocket(): String {
-        val url = okhttp3.HttpUrl.Builder()
-            .scheme("https")
-            .host(BuildConfig.BASE_URL.removePrefix("https://").removePrefix("http://").substringBefore("/"))
-            .build()
-        return cookieJar?.loadForRequest(url)
+        val scheme = if (BuildConfig.BASE_URL.startsWith("https")) "https" else "http"
+        val hostAndPort = BuildConfig.BASE_URL.removePrefix("https://").removePrefix("http://").substringBefore("/")
+        val host = hostAndPort.substringBefore(":")
+        val portString = hostAndPort.substringAfter(":", "")
+
+        val urlBuilder = okhttp3.HttpUrl.Builder()
+            .scheme(scheme)
+            .host(host)
+
+        if (portString.isNotEmpty()) {
+            try {
+                urlBuilder.port(portString.toInt())
+            } catch (_: Exception) {}
+        }
+
+        return cookieJar?.loadForRequest(urlBuilder.build())
             ?.joinToString("; ") { "${it.name}=${it.value}" } ?: ""
     }
 }

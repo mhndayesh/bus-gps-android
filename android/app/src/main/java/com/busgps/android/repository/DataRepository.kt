@@ -35,7 +35,7 @@ class DataRepository {
     suspend fun getBuses(): List<Bus> =
         ApiClient.api.getBuses().body() ?: emptyList()
 
-    suspend fun assignBus(studentId: String, busId: Int): Boolean =
+    suspend fun assignBus(studentId: String, busId: String): Boolean =
         ApiClient.api.assignBus(AssignBusRequest(studentId, busId)).isSuccessful
 
     suspend fun getDrivers(): List<Driver> =
@@ -44,7 +44,7 @@ class DataRepository {
     suspend fun createDriver(req: CreateDriverRequest): Boolean =
         ApiClient.api.createDriver(req).isSuccessful
 
-    suspend fun assignDriver(driverId: String, busId: Int): Boolean =
+    suspend fun assignDriver(driverId: String, busId: String): Boolean =
         ApiClient.api.assignDriver(AssignDriverRequest(driverId, busId)).isSuccessful
 
     suspend fun getDashboardStats(): DashboardStats? =

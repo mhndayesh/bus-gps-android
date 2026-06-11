@@ -6,9 +6,11 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.busgps.android.databinding.ActivityLoginBinding
+import com.busgps.android.network.ApiClient
 import com.busgps.android.repository.AuthRepository
 import com.busgps.android.repository.AuthResult
 import com.busgps.android.ui.admin.AdminActivity
+import com.busgps.android.ui.superadmin.SuperAdminActivity
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 
@@ -45,10 +47,17 @@ class AdminLoginActivity : AppCompatActivity() {
         lifecycleScope.launch {
             when (val result = repo.adminLogin(username, password)) {
                 is AuthResult.Success -> {
+                    val role = try {
+                        ApiClient.api.getMe().body()?.role ?: "SCHOOL_ADMIN"
+                    } catch (_: Exception) { "SCHOOL_ADMIN" }
+
                     getSharedPreferences("session", MODE_PRIVATE).edit()
-                        .putString("role", "SCHOOL_ADMIN")
+                        .putString("role", role)
                         .apply()
-                    val intent = Intent(this@AdminLoginActivity, AdminActivity::class.java)
+
+                    val dest = if (role == "SUPER_ADMIN") SuperAdminActivity::class.java
+                               else AdminActivity::class.java
+                    val intent = Intent(this@AdminLoginActivity, dest)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
                 }

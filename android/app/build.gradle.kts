@@ -5,33 +5,38 @@ plugins {
 
 android {
     namespace = "com.busgps.android"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.busgps.android"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
 
-        // Change this to your Railway / production URL
-        buildConfigField("String", "BASE_URL", "\"https://your-app.up.railway.app\"")
+        buildConfigField("String", "BASE_URL", "\"https://bus-gps-system-production.up.railway.app/\"")
     }
 
     buildTypes {
         debug {
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:5000\"") // emulator localhost
+            buildConfigField("String", "BASE_URL", "\"https://bus-gps-system-production.up.railway.app/\"")
         }
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            buildConfigField("String", "BASE_URL", "\"https://your-app.up.railway.app\"")
+            buildConfigField("String", "BASE_URL", "\"https://bus-gps-system-production.up.railway.app/\"")
         }
     }
 
     buildFeatures {
         buildConfig = true
         viewBinding = true
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
     }
 
     compileOptions {
@@ -50,6 +55,8 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.swiperefreshlayout)
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.fragment.ktx)
     implementation(libs.lifecycle.viewmodel.ktx)
     implementation(libs.lifecycle.livedata.ktx)
     implementation(libs.lifecycle.runtime.ktx)

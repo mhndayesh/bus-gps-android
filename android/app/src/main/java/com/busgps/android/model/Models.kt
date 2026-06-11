@@ -3,7 +3,12 @@ package com.busgps.android.model
 import com.google.gson.annotations.SerializedName
 
 data class CsrfResponse(
-    @SerializedName("csrf_token") val csrfToken: String
+    @SerializedName("token") val csrfToken: String
+)
+
+data class MeResponse(
+    val role: String?,
+    val name: String?
 )
 
 data class Kid(
@@ -34,7 +39,7 @@ data class ManifestItem(
 )
 
 data class Bus(
-    val id: Int,
+    val id: String,
     val plate: String,
     @SerializedName("school_id") val schoolId: Int?
 )
@@ -118,12 +123,12 @@ data class CreateDriverRequest(
 
 data class AssignBusRequest(
     @SerializedName("student_id") val studentId: String,
-    @SerializedName("bus_id") val busId: Int
+    @SerializedName("bus_id") val busId: String
 )
 
 data class AssignDriverRequest(
     @SerializedName("driver_id") val driverId: String,
-    @SerializedName("bus_id") val busId: Int
+    @SerializedName("bus_id") val busId: String
 )
 
 data class DeleteRequest(

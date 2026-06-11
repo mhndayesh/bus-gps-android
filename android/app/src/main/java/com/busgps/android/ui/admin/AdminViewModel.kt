@@ -80,14 +80,14 @@ class AdminViewModel : ViewModel() {
         }
     }
 
-    fun assignBus(studentId: String, busId: Int) {
+    fun assignBus(studentId: String, busId: String) {
         viewModelScope.launch {
             val ok = repo.assignBus(studentId, busId)
             _toast.value = if (ok) "Bus assigned" else "Failed to assign bus"
         }
     }
 
-    fun assignDriver(driverId: String, busId: Int) {
+    fun assignDriver(driverId: String, busId: String) {
         viewModelScope.launch {
             val ok = repo.assignDriver(driverId, busId)
             _toast.value = if (ok) "Driver assigned" else "Failed to assign driver"

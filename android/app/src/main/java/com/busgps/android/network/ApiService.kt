@@ -9,6 +9,9 @@ interface ApiService {
     @GET("/api/csrf-token")
     suspend fun getCsrfToken(): Response<CsrfResponse>
 
+    @GET("/api/me")
+    suspend fun getMe(): Response<MeResponse>
+
     // Auth — form-encoded
     @FormUrlEncoded
     @POST("/login")
