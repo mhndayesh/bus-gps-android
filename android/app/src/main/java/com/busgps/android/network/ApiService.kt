@@ -48,6 +48,9 @@ interface ApiService {
     @GET("/api/driver/manifest")
     suspend fun getManifest(): Response<List<ManifestItem>>
 
+    @GET("/api/driver/info")
+    suspend fun getDriverInfo(): Response<DriverInfo>
+
     @GET("/api/optimize_route/{busId}")
     suspend fun optimizeRoute(
         @Path("busId") busId: Int,

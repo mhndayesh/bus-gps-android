@@ -58,15 +58,18 @@ class DriverActivity : AppCompatActivity() {
 
         fusedLocation = LocationServices.getFusedLocationProviderClient(this)
 
-        // Bus ID from prefs (set during login flow in a full app)
-        vm.busId = getSharedPreferences("session", MODE_PRIVATE).getInt("bus_id", -1)
+        val prefs = getSharedPreferences("session", MODE_PRIVATE)
+        vm.busId = prefs.getInt("bus_id", -1)
+        val plate = prefs.getString("bus_plate", "") ?: ""
 
         setupMap()
         setupRecycler()
         observeViewModel()
 
+        binding.tvStudentCount.text = if (plate.isNotEmpty()) "Bus $plate" else "Driver Dashboard"
+
         val cookie = ApiClient.getCookiesForSocket()
-        vm.connectSocket(cookie)
+        vm.connectSocket(cookie)  // joins bus room on connect
         vm.loadManifest()
 
         binding.btnOptimize.setOnClickListener { vm.optimizeRoute() }
@@ -99,7 +102,9 @@ class DriverActivity : AppCompatActivity() {
                 onBoard = { vm.markBoarded(it) },
                 onDrop  = { vm.markDropped(it) }
             )
-            binding.tvStudentCount.text = "${manifest.size} students"
+            val plate = getSharedPreferences("session", MODE_PRIVATE).getString("bus_plate", "") ?: ""
+            val prefix = if (plate.isNotEmpty()) "Bus $plate" else "Driver"
+            binding.tvStudentCount.text = "$prefix | ${manifest.size} students"
         }
 
         vm.routeStops.observe(this) { stops ->

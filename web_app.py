@@ -682,6 +682,24 @@ def get_driver_manifest():
         print(f"Manifest Error: {e}")
         return json.dumps([]), 500
 
+# --- API: Driver Info (bus_id + plate for mobile app) ---
+@app.route('/api/driver/info')
+@role_required(['DRIVER'])
+def driver_info():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id, plate_number FROM buses WHERE driver_id = %s", (session['user_id'],))
+        bus = cur.fetchone()
+        cur.close()
+        conn.close()
+        if not bus:
+            return json.dumps({'bus_id': None, 'plate': None}), 200
+        return json.dumps({'bus_id': bus[0], 'plate': bus[1]}), 200
+    except Exception as e:
+        print(f"Error driver_info: {e}")
+        return json.dumps({'error': 'Internal server error'}), 500
+
 # --- API: Get Parents (Helper for Dropdown) ---
 @app.route('/api/get_parents', methods=['GET'])
 @role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])

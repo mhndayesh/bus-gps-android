@@ -31,7 +31,7 @@ class DriverViewModel : ViewModel() {
     private var lastLocation: Location? = null
 
     fun connectSocket(cookie: String) {
-        SocketManager.connect(cookie)
+        SocketManager.connect(cookie, busId)
     }
 
     fun loadManifest() {

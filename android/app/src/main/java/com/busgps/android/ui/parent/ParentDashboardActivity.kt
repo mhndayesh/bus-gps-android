@@ -21,6 +21,7 @@ class ParentDashboardActivity : AppCompatActivity() {
     private lateinit var binding: ActivityParentDashboardBinding
     private val vm: ParentViewModel by viewModels()
     private val busMarkers = mutableMapOf<Int, Marker>()
+    private var selectedBusId: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,23 +60,40 @@ class ParentDashboardActivity : AppCompatActivity() {
         }
 
         vm.kids.observe(this) { kids ->
+            // Auto-join socket rooms for all kids' buses so we receive updates
+            kids.mapNotNull { it.busId }.distinct().forEach { busId ->
+                vm.joinBusRoom(busId)
+            }
+            // Set default selected bus to the first kid's bus
+            if (selectedBusId == null) {
+                selectedBusId = kids.firstOrNull { it.busId != null }?.busId
+            }
             binding.rvKids.adapter = KidAdapter(kids) { kid ->
-                kid.busId?.let { vm.joinBusRoom(it) }
+                kid.busId?.let {
+                    selectedBusId = it
+                    vm.joinBusRoom(it)
+                }
             }
             binding.tvNoKids.visibility = if (kids.isEmpty()) View.VISIBLE else View.GONE
         }
 
         vm.busLocation.observe(this) { update ->
             val point = GeoPoint(update.lat, update.lng)
+            // Look up plate from kids list
+            val plate = vm.kids.value?.firstOrNull { it.busId == update.busId }?.busPlate
+            val markerTitle = if (!plate.isNullOrEmpty()) "Bus $plate" else "Bus ${update.busId}"
             val marker = busMarkers.getOrPut(update.busId) {
                 Marker(binding.mapView).also {
-                    it.title = "Bus ${update.busId}"
+                    it.title = markerTitle
                     it.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                     binding.mapView.overlays.add(it)
                 }
             }
+            marker.title = markerTitle
             marker.position = point
-            binding.mapView.controller.animateTo(point)
+            if (update.busId == selectedBusId) {
+                binding.mapView.controller.animateTo(point)
+            }
             binding.mapView.invalidate()
         }
     }

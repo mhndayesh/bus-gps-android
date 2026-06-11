@@ -12,8 +12,11 @@ object SocketManager {
     private const val TAG = "SocketManager"
     private var socket: Socket? = null
 
-    fun connect(cookieHeader: String) {
-        if (socket?.connected() == true) return
+    fun connect(cookieHeader: String, joinBusId: Int = -1) {
+        if (socket?.connected() == true) {
+            if (joinBusId >= 0) joinRoom(joinBusId)
+            return
+        }
 
         val options = IO.Options.builder()
             .setExtraHeaders(
@@ -26,7 +29,10 @@ object SocketManager {
             .build()
 
         socket = IO.socket(URI.create(BuildConfig.BASE_URL), options).apply {
-            on(Socket.EVENT_CONNECT) { Log.d(TAG, "Connected") }
+            on(Socket.EVENT_CONNECT) {
+                Log.d(TAG, "Connected")
+                if (joinBusId >= 0) joinRoom(joinBusId)
+            }
             on(Socket.EVENT_DISCONNECT) { Log.d(TAG, "Disconnected") }
             on(Socket.EVENT_CONNECT_ERROR) { args -> Log.e(TAG, "Error: ${args[0]}") }
             connect()
@@ -43,7 +49,7 @@ object SocketManager {
             .put("bus_id", busId)
             .put("lat", lat)
             .put("lng", lng)
-            .put("speed", speed)
+            .put("speed", speed * 3.6) // convert m/s to km/h
         socket?.emit("driver_gps_update", payload)
     }
 

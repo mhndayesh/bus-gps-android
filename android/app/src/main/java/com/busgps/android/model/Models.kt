@@ -157,3 +157,8 @@ data class UpdateParentCredsRequest(
     val username: String,
     val password: String
 )
+
+data class DriverInfo(
+    @SerializedName("bus_id") val busId: Int?,
+    val plate: String?
+)

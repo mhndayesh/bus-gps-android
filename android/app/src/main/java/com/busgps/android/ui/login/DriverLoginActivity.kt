@@ -6,6 +6,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.busgps.android.databinding.ActivityLoginBinding
+import com.busgps.android.network.ApiClient
 import com.busgps.android.repository.AuthRepository
 import com.busgps.android.repository.AuthResult
 import com.busgps.android.ui.driver.DriverActivity
@@ -45,12 +46,24 @@ class DriverLoginActivity : AppCompatActivity() {
         lifecycleScope.launch {
             when (val result = repo.driverLogin(username, password)) {
                 is AuthResult.Success -> {
+                    // Fetch bus info for this driver before navigating
+                    var busId = -1
+                    var plate = ""
+                    try {
+                        val info = ApiClient.api.getDriverInfo()
+                        busId = info.body()?.busId ?: -1
+                        plate = info.body()?.plate ?: ""
+                    } catch (_: Exception) {}
+
                     getSharedPreferences("session", MODE_PRIVATE).edit()
                         .putString("role", "DRIVER")
+                        .putInt("bus_id", busId)
+                        .putString("bus_plate", plate)
                         .apply()
-                    val intent = Intent(this@DriverLoginActivity, DriverActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    startActivity(intent)
+
+                    startActivity(Intent(this@DriverLoginActivity, DriverActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    })
                 }
                 is AuthResult.Error -> {
                     binding.progressBar.visibility = View.GONE
