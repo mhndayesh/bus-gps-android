@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:background="@color/background">
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:src="@mipmap/ic_launcher"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="App logo" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_name"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:textColor="@color/primary"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Real-time school bus tracking"
+        android:textSize="14sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginBottom="48dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/select_role"
+        android:textSize="18sp"
+        android:textColor="@color/on_background"
+        android:layout_marginBottom="24dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnParent"
+        style="@style/RoleButton"
+        android:text="@string/role_parent"
+        android:backgroundTint="@color/role_parent"
+        app:icon="@android:drawable/ic_menu_myplaces" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnDriver"
+        style="@style/RoleButton"
+        android:text="@string/role_driver"
+        android:backgroundTint="@color/role_driver"
+        app:icon="@android:drawable/ic_menu_directions" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnAdmin"
+        style="@style/RoleButton"
+        android:text="@string/role_admin"
+        android:backgroundTint="@color/role_admin"
+        app:icon="@android:drawable/ic_menu_manage" />
+
+    <TextView
+        android:id="@+id/tvVersion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginTop="32dp" />
+
+</LinearLayout>

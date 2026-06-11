@@ -48,10 +48,34 @@ class AdminViewModel : ViewModel() {
         }
     }
 
-    fun addStudent(name: String, parentId: String) {
+    fun addStudent(
+        name: String,
+        parentId: String,
+        nfcId: String = "",
+        lat: Double? = null,
+        lng: Double? = null,
+        address: String? = null
+    ) {
         viewModelScope.launch {
-            val ok = repo.addStudent(AddStudentRequest(name = name, parentId = parentId))
+            val ok = repo.addStudent(
+                AddStudentRequest(
+                    name = name,
+                    parentId = parentId,
+                    nfcId = nfcId,
+                    lat = lat,
+                    lng = lng,
+                    addressText = address
+                )
+            )
             _toast.value = if (ok) "Student added" else "Failed to add student"
+            if (ok) _students.value = repo.getStudents()
+        }
+    }
+
+    fun updateStudentLocation(studentId: String, lat: Double, lng: Double, address: String = "") {
+        viewModelScope.launch {
+            val ok = repo.updateStudentLocation(studentId, lat, lng, address)
+            _toast.value = if (ok) "Location saved" else "Failed to save location"
             if (ok) _students.value = repo.getStudents()
         }
     }

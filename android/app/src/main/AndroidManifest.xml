@@ -17,7 +17,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.BusGPS"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config">
 
         <activity
             android:name=".ui.login.RoleSelectActivity"
@@ -43,6 +44,9 @@
         <activity android:name=".ui.admin.AdminActivity"
             android:screenOrientation="portrait" />
         <activity android:name=".ui.superadmin.SuperAdminActivity"
+            android:screenOrientation="portrait" />
+
+        <activity android:name=".ui.common.MapPickerActivity"
             android:screenOrientation="portrait" />
 
     </application>

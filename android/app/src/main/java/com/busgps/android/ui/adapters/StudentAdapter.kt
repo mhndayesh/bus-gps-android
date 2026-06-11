@@ -9,7 +9,8 @@ import com.busgps.android.model.Student
 class StudentAdapter(
     private val students: List<Student>,
     private val onDelete: (String) -> Unit,
-    private val onAssignBus: (String) -> Unit
+    private val onAssignBus: (String) -> Unit,
+    private val onSetLocation: (Student) -> Unit = {}
 ) : RecyclerView.Adapter<StudentAdapter.VH>() {
 
     inner class VH(val binding: ItemStudentBinding) : RecyclerView.ViewHolder(binding.root)
@@ -24,7 +25,13 @@ class StudentAdapter(
         holder.binding.apply {
             tvName.text = s.name
             tvCode.text = s.code ?: "—"
-            tvAddress.text = s.addressText ?: "No address"
+            val hasLocation = s.lat != null && s.lng != null
+            tvAddress.text = when {
+                !s.addressText.isNullOrBlank() -> s.addressText
+                hasLocation -> "📍 Location set"
+                else -> "⚠️ No home location"
+            }
+            btnLocation.setOnClickListener { onSetLocation(s) }
             btnDelete.setOnClickListener { onDelete(s.id) }
             btnAssignBus.setOnClickListener { onAssignBus(s.id) }
         }

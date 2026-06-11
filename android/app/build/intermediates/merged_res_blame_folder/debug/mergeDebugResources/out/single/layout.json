@@ -1,0 +1,70 @@
+[
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/item_school.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/item_school.xml"
+    },
+    {
+        "merged": "com.busgps.android.app-mergeDebugResources-49:/layout/activity_map_picker.xml",
+        "source": "com.busgps.android.app-main-52:/layout/activity_map_picker.xml"
+    },
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/item_student.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/item_student.xml"
+    },
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/item_parent.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/item_parent.xml"
+    },
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/activity_role_select.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/activity_role_select.xml"
+    },
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/activity_super_admin.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/activity_super_admin.xml"
+    },
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/activity_admin.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/activity_admin.xml"
+    },
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/activity_driver.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/activity_driver.xml"
+    },
+    {
+        "merged": "com.busgps.android.app-mergeDebugResources-49:/layout/item_student.xml",
+        "source": "com.busgps.android.app-main-52:/layout/item_student.xml"
+    },
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/activity_parent_dashboard.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/activity_parent_dashboard.xml"
+    },
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/item_parent_super.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/item_parent_super.xml"
+    },
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/activity_login.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/activity_login.xml"
+    },
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/item_driver.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/item_driver.xml"
+    },
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/item_bus.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/item_bus.xml"
+    },
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/item_bus_super.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/item_bus_super.xml"
+    },
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/item_manifest.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/item_manifest.xml"
+    },
+    {
+        "merged": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-mergeDebugResources-49:/layout/item_kid_status.xml",
+        "source": "/home/mhnd/.gradle/daemon/8.10.2/com.busgps.android.app-main-52:/layout/item_kid_status.xml"
+    }
+]

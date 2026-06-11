@@ -1,0 +1,269 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.busgps.android"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="24"
+9        android:targetSdkVersion="35" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:4:5-67
+11-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:4:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:5:5-79
+12-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:5:22-76
+13    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+13-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:6:5-79
+13-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:6:22-76
+14    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+14-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:7:5-81
+14-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:7:22-78
+15    <uses-permission android:name="android.permission.CAMERA" />
+15-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:8:5-65
+15-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:8:22-62
+16    <uses-permission
+16-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:9:5-10:38
+17        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+17-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:9:22-78
+18        android:maxSdkVersion="28" />
+18-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:10:9-35
+19
+20    <permission
+20-->[androidx.core:core:1.13.1] /home/mhnd/.gradle/caches/8.10.2/transforms/5417c41b094c525f438666f055d93c25/transformed/core-1.13.1/AndroidManifest.xml:22:5-24:47
+21        android:name="com.busgps.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+21-->[androidx.core:core:1.13.1] /home/mhnd/.gradle/caches/8.10.2/transforms/5417c41b094c525f438666f055d93c25/transformed/core-1.13.1/AndroidManifest.xml:23:9-81
+22        android:protectionLevel="signature" />
+22-->[androidx.core:core:1.13.1] /home/mhnd/.gradle/caches/8.10.2/transforms/5417c41b094c525f438666f055d93c25/transformed/core-1.13.1/AndroidManifest.xml:24:9-44
+23
+24    <uses-permission android:name="com.busgps.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+24-->[androidx.core:core:1.13.1] /home/mhnd/.gradle/caches/8.10.2/transforms/5417c41b094c525f438666f055d93c25/transformed/core-1.13.1/AndroidManifest.xml:26:5-97
+24-->[androidx.core:core:1.13.1] /home/mhnd/.gradle/caches/8.10.2/transforms/5417c41b094c525f438666f055d93c25/transformed/core-1.13.1/AndroidManifest.xml:26:22-94
+25
+26    <supports-screens
+26-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:9:5-12:40
+27        android:anyDensity="true"
+27-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:10:9-34
+28        android:largeScreens="true"
+28-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:11:9-36
+29        android:normalScreens="true" />
+29-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:12:9-37
+30
+31    <uses-feature
+31-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:14:5-16:36
+32        android:name="android.hardware.location.network"
+32-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:15:9-57
+33        android:required="false" />
+33-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:16:9-33
+34    <uses-feature
+34-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:17:5-19:36
+35        android:name="android.hardware.location.gps"
+35-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:18:9-53
+36        android:required="false" />
+36-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:19:9-33
+37    <uses-feature
+37-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:20:5-22:36
+38        android:name="android.hardware.telephony"
+38-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:21:9-50
+39        android:required="false" />
+39-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:22:9-33
+40    <uses-feature
+40-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:23:5-25:36
+41        android:name="android.hardware.wifi"
+41-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:24:9-45
+42        android:required="false" />
+42-->[org.osmdroid:osmdroid-android:6.1.18] /home/mhnd/.gradle/caches/8.10.2/transforms/a25f1f864718892097cc6825bcd3cff3/transformed/osmdroid-android-6.1.18/AndroidManifest.xml:25:9-33
+43
+44    <application
+44-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:12:5-52:19
+45        android:name="com.busgps.android.App"
+45-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:13:9-28
+46        android:allowBackup="true"
+46-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:14:9-35
+47        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+47-->[androidx.core:core:1.13.1] /home/mhnd/.gradle/caches/8.10.2/transforms/5417c41b094c525f438666f055d93c25/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
+48        android:debuggable="true"
+49        android:extractNativeLibs="false"
+50        android:icon="@mipmap/ic_launcher"
+50-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:15:9-43
+51        android:label="@string/app_name"
+51-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:16:9-41
+52        android:networkSecurityConfig="@xml/network_security_config"
+52-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:21:9-69
+53        android:roundIcon="@mipmap/ic_launcher_round"
+53-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:17:9-54
+54        android:supportsRtl="true"
+54-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:18:9-35
+55        android:theme="@style/Theme.BusGPS"
+55-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:19:9-44
+56        android:usesCleartextTraffic="true" >
+56-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:20:9-44
+57        <activity
+57-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:23:9-31:20
+58            android:name="com.busgps.android.ui.login.RoleSelectActivity"
+58-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:24:13-56
+59            android:exported="true"
+59-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:25:13-36
+60            android:screenOrientation="portrait" >
+60-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:26:13-49
+61            <intent-filter>
+61-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:27:13-30:29
+62                <action android:name="android.intent.action.MAIN" />
+62-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:28:17-69
+62-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:28:25-66
+63
+64                <category android:name="android.intent.category.LAUNCHER" />
+64-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:29:17-77
+64-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:29:27-74
+65            </intent-filter>
+66        </activity>
+67        <activity
+67-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:33:9-34:52
+68            android:name="com.busgps.android.ui.login.AdminLoginActivity"
+68-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:33:19-62
+69            android:screenOrientation="portrait" />
+69-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:34:13-49
+70        <activity
+70-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:35:9-36:52
+71            android:name="com.busgps.android.ui.login.DriverLoginActivity"
+71-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:35:19-63
+72            android:screenOrientation="portrait" />
+72-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:36:13-49
+73        <activity
+73-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:37:9-38:52
+74            android:name="com.busgps.android.ui.login.ParentLoginActivity"
+74-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:37:19-63
+75            android:screenOrientation="portrait" />
+75-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:38:13-49
+76        <activity
+76-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:40:9-41:52
+77            android:name="com.busgps.android.ui.parent.ParentDashboardActivity"
+77-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:40:19-68
+78            android:screenOrientation="portrait" />
+78-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:41:13-49
+79        <activity
+79-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:42:9-43:52
+80            android:name="com.busgps.android.ui.driver.DriverActivity"
+80-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:42:19-59
+81            android:screenOrientation="portrait" />
+81-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:43:13-49
+82        <activity
+82-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:44:9-45:52
+83            android:name="com.busgps.android.ui.admin.AdminActivity"
+83-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:44:19-57
+84            android:screenOrientation="portrait" />
+84-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:45:13-49
+85        <activity
+85-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:46:9-47:52
+86            android:name="com.busgps.android.ui.superadmin.SuperAdminActivity"
+86-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:46:19-67
+87            android:screenOrientation="portrait" />
+87-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:47:13-49
+88        <activity
+88-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:49:9-50:52
+89            android:name="com.busgps.android.ui.common.MapPickerActivity"
+89-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:49:19-62
+90            android:screenOrientation="portrait" />
+90-->/home/mhnd/porjects/bus-gps-system/android/app/src/main/AndroidManifest.xml:50:13-49
+91
+92        <service
+92-->[androidx.camera:camera-camera2:1.4.0] /home/mhnd/.gradle/caches/8.10.2/transforms/c5e95199bb7ceee1d89355b584bb16e7/transformed/camera-camera2-1.4.0/AndroidManifest.xml:24:9-33:19
+93            android:name="androidx.camera.core.impl.MetadataHolderService"
+93-->[androidx.camera:camera-camera2:1.4.0] /home/mhnd/.gradle/caches/8.10.2/transforms/c5e95199bb7ceee1d89355b584bb16e7/transformed/camera-camera2-1.4.0/AndroidManifest.xml:25:13-75
+94            android:enabled="false"
+94-->[androidx.camera:camera-camera2:1.4.0] /home/mhnd/.gradle/caches/8.10.2/transforms/c5e95199bb7ceee1d89355b584bb16e7/transformed/camera-camera2-1.4.0/AndroidManifest.xml:26:13-36
+95            android:exported="false" >
+95-->[androidx.camera:camera-camera2:1.4.0] /home/mhnd/.gradle/caches/8.10.2/transforms/c5e95199bb7ceee1d89355b584bb16e7/transformed/camera-camera2-1.4.0/AndroidManifest.xml:27:13-37
+96            <meta-data
+96-->[androidx.camera:camera-camera2:1.4.0] /home/mhnd/.gradle/caches/8.10.2/transforms/c5e95199bb7ceee1d89355b584bb16e7/transformed/camera-camera2-1.4.0/AndroidManifest.xml:30:13-32:89
+97                android:name="androidx.camera.core.impl.MetadataHolderService.DEFAULT_CONFIG_PROVIDER"
+97-->[androidx.camera:camera-camera2:1.4.0] /home/mhnd/.gradle/caches/8.10.2/transforms/c5e95199bb7ceee1d89355b584bb16e7/transformed/camera-camera2-1.4.0/AndroidManifest.xml:31:17-103
+98                android:value="androidx.camera.camera2.Camera2Config$DefaultProvider" />
+98-->[androidx.camera:camera-camera2:1.4.0] /home/mhnd/.gradle/caches/8.10.2/transforms/c5e95199bb7ceee1d89355b584bb16e7/transformed/camera-camera2-1.4.0/AndroidManifest.xml:32:17-86
+99        </service>
+100
+101        <activity
+101-->[com.google.android.gms:play-services-base:18.5.0] /home/mhnd/.gradle/caches/8.10.2/transforms/f96d0bf264eceafafe5d338ff21707ba/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:9-173
+102            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+102-->[com.google.android.gms:play-services-base:18.5.0] /home/mhnd/.gradle/caches/8.10.2/transforms/f96d0bf264eceafafe5d338ff21707ba/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:19-85
+103            android:exported="false"
+103-->[com.google.android.gms:play-services-base:18.5.0] /home/mhnd/.gradle/caches/8.10.2/transforms/f96d0bf264eceafafe5d338ff21707ba/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:146-170
+104            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+104-->[com.google.android.gms:play-services-base:18.5.0] /home/mhnd/.gradle/caches/8.10.2/transforms/f96d0bf264eceafafe5d338ff21707ba/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:86-145
+105
+106        <meta-data
+106-->[com.google.android.gms:play-services-basement:18.4.0] /home/mhnd/.gradle/caches/8.10.2/transforms/74c954c655f06c8847eda170e38dac09/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:9-122
+107            android:name="com.google.android.gms.version"
+107-->[com.google.android.gms:play-services-basement:18.4.0] /home/mhnd/.gradle/caches/8.10.2/transforms/74c954c655f06c8847eda170e38dac09/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:20-65
+108            android:value="@integer/google_play_services_version" />
+108-->[com.google.android.gms:play-services-basement:18.4.0] /home/mhnd/.gradle/caches/8.10.2/transforms/74c954c655f06c8847eda170e38dac09/transformed/play-services-basement-18.4.0/AndroidManifest.xml:6:66-119
+109
+110        <provider
+110-->[androidx.emoji2:emoji2:1.3.0] /home/mhnd/.gradle/caches/8.10.2/transforms/156e477fc42543449894e695ca0003e4/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+111            android:name="androidx.startup.InitializationProvider"
+111-->[androidx.emoji2:emoji2:1.3.0] /home/mhnd/.gradle/caches/8.10.2/transforms/156e477fc42543449894e695ca0003e4/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
+112            android:authorities="com.busgps.android.androidx-startup"
+112-->[androidx.emoji2:emoji2:1.3.0] /home/mhnd/.gradle/caches/8.10.2/transforms/156e477fc42543449894e695ca0003e4/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
+113            android:exported="false" >
+113-->[androidx.emoji2:emoji2:1.3.0] /home/mhnd/.gradle/caches/8.10.2/transforms/156e477fc42543449894e695ca0003e4/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
+114            <meta-data
+114-->[androidx.emoji2:emoji2:1.3.0] /home/mhnd/.gradle/caches/8.10.2/transforms/156e477fc42543449894e695ca0003e4/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+115                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+115-->[androidx.emoji2:emoji2:1.3.0] /home/mhnd/.gradle/caches/8.10.2/transforms/156e477fc42543449894e695ca0003e4/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
+116                android:value="androidx.startup" />
+116-->[androidx.emoji2:emoji2:1.3.0] /home/mhnd/.gradle/caches/8.10.2/transforms/156e477fc42543449894e695ca0003e4/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
+117            <meta-data
+117-->[androidx.lifecycle:lifecycle-process:2.8.3] /home/mhnd/.gradle/caches/8.10.2/transforms/404731f77cc43aa25688b6e805b5cd24/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:29:13-31:52
+118                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+118-->[androidx.lifecycle:lifecycle-process:2.8.3] /home/mhnd/.gradle/caches/8.10.2/transforms/404731f77cc43aa25688b6e805b5cd24/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:30:17-78
+119                android:value="androidx.startup" />
+119-->[androidx.lifecycle:lifecycle-process:2.8.3] /home/mhnd/.gradle/caches/8.10.2/transforms/404731f77cc43aa25688b6e805b5cd24/transformed/lifecycle-process-2.8.3/AndroidManifest.xml:31:17-49
+120            <meta-data
+120-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
+121                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+121-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:30:17-85
+122                android:value="androidx.startup" />
+122-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:31:17-49
+123        </provider>
+124
+125        <receiver
+125-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:34:9-52:20
+126            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+126-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:35:13-76
+127            android:directBootAware="false"
+127-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:36:13-44
+128            android:enabled="true"
+128-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:37:13-35
+129            android:exported="true"
+129-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:38:13-36
+130            android:permission="android.permission.DUMP" >
+130-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:39:13-57
+131            <intent-filter>
+131-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:40:13-42:29
+132                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+132-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:17-91
+132-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:25-88
+133            </intent-filter>
+134            <intent-filter>
+134-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:43:13-45:29
+135                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+135-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:17-85
+135-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:25-82
+136            </intent-filter>
+137            <intent-filter>
+137-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:46:13-48:29
+138                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+138-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:17-88
+138-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:25-85
+139            </intent-filter>
+140            <intent-filter>
+140-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:49:13-51:29
+141                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+141-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
+141-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/mhnd/.gradle/caches/8.10.2/transforms/79418e7f0183db4f66f133c5a75099bf/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:25-92
+142            </intent-filter>
+143        </receiver>
+144    </application>
+145
+146</manifest>

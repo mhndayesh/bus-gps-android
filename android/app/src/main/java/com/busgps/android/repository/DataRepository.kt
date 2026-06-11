@@ -26,6 +26,11 @@ class DataRepository {
     suspend fun deleteStudent(studentId: String): Boolean =
         ApiClient.api.deleteStudent(DeleteRequest(studentId = studentId)).isSuccessful
 
+    suspend fun updateStudentLocation(studentId: String, lat: Double, lng: Double, address: String): Boolean =
+        ApiClient.api.updateStudentLocation(
+            UpdateStudentLocationRequest(studentId, lat, lng, address)
+        ).isSuccessful
+
     suspend fun getParents(): List<Parent> =
         ApiClient.api.getParents().body() ?: emptyList()
 

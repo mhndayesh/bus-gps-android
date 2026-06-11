@@ -7,6 +7,9 @@ import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.Spinner
+import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -17,6 +20,7 @@ import com.busgps.android.model.Parent
 import com.busgps.android.model.Student
 import com.busgps.android.network.ApiClient
 import com.busgps.android.ui.adapters.StudentAdapter
+import com.busgps.android.ui.common.MapPickerActivity
 import com.busgps.android.ui.login.RoleSelectActivity
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
@@ -28,6 +32,23 @@ class AdminActivity : AppCompatActivity() {
 
     private var currentParents: List<Parent> = emptyList()
     private var currentBuses: List<Bus> = emptyList()
+
+    // Student whose location is being set via the map picker.
+    private var locationTargetStudentId: String? = null
+
+    private val mapPicker = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val lat = result.data?.getDoubleExtra(MapPickerActivity.RESULT_LAT, Double.NaN) ?: return@registerForActivityResult
+            val lng = result.data?.getDoubleExtra(MapPickerActivity.RESULT_LNG, Double.NaN) ?: return@registerForActivityResult
+            val id = locationTargetStudentId
+            if (!lat.isNaN() && !lng.isNaN() && id != null) {
+                vm.updateStudentLocation(id, lat, lng)
+            }
+            locationTargetStudentId = null
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,8 +97,21 @@ class AdminActivity : AppCompatActivity() {
         val students = vm.students.value ?: return
         binding.rvItems.adapter = StudentAdapter(students,
             onDelete = { vm.deleteStudent(it) },
-            onAssignBus = { studentId -> showAssignBusDialog(studentId) }
+            onAssignBus = { studentId -> showAssignBusDialog(studentId) },
+            onSetLocation = { student -> openLocationPicker(student) }
         )
+    }
+
+    private fun openLocationPicker(student: Student) {
+        locationTargetStudentId = student.id
+        val intent = Intent(this, MapPickerActivity::class.java).apply {
+            putExtra(MapPickerActivity.EXTRA_TITLE, "Set ${student.name}'s home")
+            if (student.lat != null && student.lng != null) {
+                putExtra(MapPickerActivity.EXTRA_LAT, student.lat)
+                putExtra(MapPickerActivity.EXTRA_LNG, student.lng)
+            }
+        }
+        mapPicker.launch(intent)
     }
 
     private fun showBuses() {
@@ -137,22 +171,49 @@ class AdminActivity : AppCompatActivity() {
     }
 
     private fun showAddStudentDialog() {
-        val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(48, 16, 48, 0) }
+        // Guard: a student must be linked to a parent. If none exist, guide the admin.
+        if (currentParents.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle("No parents yet")
+                .setMessage("You must create a parent before adding a student. Open the Parents tab and add one first.")
+                .setPositiveButton("Go to Parents") { _, _ ->
+                    binding.tabLayout.getTabAt(4)?.select()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+            return
+        }
+
+        val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(48, 24, 48, 0) }
+
         val etName = EditText(this).apply { hint = "Student name" }
-        val spinnerParent = android.widget.Spinner(this).apply {
+
+        val lblParent = TextView(this).apply {
+            text = "Parent"
+            setPadding(0, 24, 0, 4)
+        }
+        val spinnerParent = Spinner(this).apply {
             adapter = ArrayAdapter(this@AdminActivity, android.R.layout.simple_spinner_item,
                 currentParents.map { it.name }).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
         }
+
+        val etNfc = EditText(this).apply { hint = "NFC tag ID (optional)" }
+
         layout.addView(etName)
+        layout.addView(lblParent)
         layout.addView(spinnerParent)
+        layout.addView(etNfc)
 
         AlertDialog.Builder(this)
             .setTitle("Add Student")
+            .setMessage("Set the home location afterward with the 📍 button on the student row.")
             .setView(layout)
             .setPositiveButton("Add") { _, _ ->
                 val name = etName.text.toString().trim()
-                val parentId = currentParents.getOrNull(spinnerParent.selectedItemPosition)?.id ?: return@setPositiveButton
-                if (name.isNotEmpty()) vm.addStudent(name, parentId)
+                val parentId = currentParents.getOrNull(spinnerParent.selectedItemPosition)?.id
+                    ?: return@setPositiveButton
+                val nfc = etNfc.text.toString().trim()
+                if (name.isNotEmpty()) vm.addStudent(name, parentId, nfcId = nfc)
             }
             .setNegativeButton("Cancel", null)
             .show()

@@ -164,3 +164,10 @@ data class DriverInfo(
     @SerializedName("bus_id") val busId: Int?,
     val plate: String?
 )
+
+data class UpdateStudentLocationRequest(
+    @SerializedName("student_id") val studentId: String,
+    val lat: Double,
+    val lng: Double,
+    @SerializedName("address_text") val addressText: String = ""
+)

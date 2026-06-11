@@ -68,6 +68,9 @@ interface ApiService {
     @POST("/api/delete_student")
     suspend fun deleteStudent(@Body body: DeleteRequest): Response<Void>
 
+    @POST("/api/update_student_location")
+    suspend fun updateStudentLocation(@Body body: UpdateStudentLocationRequest): Response<Void>
+
     // Admin — parents
     @GET("/api/get_parents")
     suspend fun getParents(): Response<List<Parent>>

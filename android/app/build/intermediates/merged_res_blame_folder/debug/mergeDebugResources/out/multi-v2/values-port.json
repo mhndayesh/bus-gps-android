@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.busgps.android.app-mergeDebugResources-48:/values-port/values-port.xml",
+            "map": [
+                {
+                    "source": "/home/mhnd/.gradle/caches/8.10.2/transforms/063075bf5fd6b681e7591394185c31d3/transformed/appcompat-1.7.0/res/values-port/values-port.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "55",
+                        "endOffsets": "106"
+                    }
+                }
+            ]
+        }
+    ]
+}

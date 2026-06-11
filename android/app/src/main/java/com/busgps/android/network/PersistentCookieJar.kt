@@ -40,12 +40,16 @@ class PersistentCookieJar(context: Context) : CookieJar {
 
     private fun parseCookie(raw: String, host: String): Cookie? {
         return try {
-            val parts = raw.split("=", limit = 2)
-            if (parts.size != 2) return null
+            val parts = raw.split("|")
+            if (parts.size < 2) return null
+            val nameValue = parts[0].split("=", limit = 2)
+            val expiresAt = parts.getOrNull(1)?.toLong() ?: Long.MAX_VALUE
+            
             Cookie.Builder()
-                .name(parts[0].trim())
-                .value(parts[1].trim())
+                .name(nameValue[0].trim())
+                .value(nameValue[1].trim())
                 .domain(host)
+                .expiresAt(expiresAt)
                 .build()
         } catch (e: Exception) {
             null
@@ -53,7 +57,7 @@ class PersistentCookieJar(context: Context) : CookieJar {
     }
 
     private fun persist(host: String, cookies: List<Cookie>) {
-        val value = cookies.joinToString(";") { "${it.name}=${it.value}" }
+        val value = cookies.joinToString(";") { "${it.name}=${it.value}|${it.expiresAt}" }
         prefs.edit().putString(host, value).apply()
     }
 }

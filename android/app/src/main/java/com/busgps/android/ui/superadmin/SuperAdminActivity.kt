@@ -9,6 +9,8 @@ import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Spinner
+import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,6 +24,7 @@ import com.busgps.android.network.ApiClient
 import com.busgps.android.repository.DataRepository
 import com.busgps.android.ui.adapters.StudentAdapter
 import com.busgps.android.ui.admin.DriverListAdapter
+import com.busgps.android.ui.common.MapPickerActivity
 import com.busgps.android.ui.login.RoleSelectActivity
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
@@ -37,6 +40,22 @@ class SuperAdminActivity : AppCompatActivity() {
     private var buses: List<Bus> = emptyList()
     private var drivers: List<Driver> = emptyList()
     private var parents: List<Parent> = emptyList()
+
+    private var locationTargetStudentId: String? = null
+
+    private val mapPicker = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val lat = result.data?.getDoubleExtra(MapPickerActivity.RESULT_LAT, Double.NaN) ?: return@registerForActivityResult
+            val lng = result.data?.getDoubleExtra(MapPickerActivity.RESULT_LNG, Double.NaN) ?: return@registerForActivityResult
+            val id = locationTargetStudentId
+            if (!lat.isNaN() && !lng.isNaN() && id != null) {
+                doAction { repo.updateStudentLocation(id, lat, lng, "") }
+            }
+            locationTargetStudentId = null
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,8 +131,21 @@ class SuperAdminActivity : AppCompatActivity() {
                     doAction { repo.deleteStudent(id) }
                 }
             },
-            onAssignBus = { id -> showAssignBusDialog(id) }
+            onAssignBus = { id -> showAssignBusDialog(id) },
+            onSetLocation = { student -> openLocationPicker(student) }
         )
+    }
+
+    private fun openLocationPicker(student: Student) {
+        locationTargetStudentId = student.id
+        val intent = Intent(this, MapPickerActivity::class.java).apply {
+            putExtra(MapPickerActivity.EXTRA_TITLE, "Set ${student.name}'s home")
+            if (student.lat != null && student.lng != null) {
+                putExtra(MapPickerActivity.EXTRA_LAT, student.lat)
+                putExtra(MapPickerActivity.EXTRA_LNG, student.lng)
+            }
+        }
+        mapPicker.launch(intent)
     }
 
     private fun showBuses() {
@@ -180,26 +212,40 @@ class SuperAdminActivity : AppCompatActivity() {
     }
 
     private fun showAddStudentDialog() {
+        if (parents.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle("No parents yet")
+                .setMessage("Create a parent first (Parents tab), then add students under them.")
+                .setPositiveButton("Go to Parents") { _, _ -> binding.tabLayout.getTabAt(5)?.select() }
+                .setNegativeButton("Cancel", null)
+                .show()
+            return
+        }
+
         val layout = vstack {
             addEditText("Student Name")
         }
         val etName = layout.getChildAt(0) as EditText
 
+        layout.addView(TextView(this).apply { text = "Parent"; setPadding(0, 24, 0, 4) })
         val parentSpinner = Spinner(this).apply {
             adapter = ArrayAdapter(this@SuperAdminActivity,
                 android.R.layout.simple_spinner_item, parents.map { it.name })
                 .also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
         }
         layout.addView(parentSpinner)
+        val etNfc = layout.addEditText("NFC tag ID (optional)") as EditText
 
         AlertDialog.Builder(this)
             .setTitle("Add Student")
+            .setMessage("Set the home location afterward with the 📍 button on the student row.")
             .setView(layout)
             .setPositiveButton("Add") { _, _ ->
                 val name = etName.text.toString().trim()
                 val parentId = parents.getOrNull(parentSpinner.selectedItemPosition)?.id ?: return@setPositiveButton
+                val nfc = etNfc.text.toString().trim()
                 if (name.isNotEmpty()) {
-                    doAction { repo.addStudent(com.busgps.android.model.AddStudentRequest(name = name, parentId = parentId)) }
+                    doAction { repo.addStudent(com.busgps.android.model.AddStudentRequest(name = name, parentId = parentId, nfcId = nfc)) }
                 }
             }
             .setNegativeButton("Cancel", null)
