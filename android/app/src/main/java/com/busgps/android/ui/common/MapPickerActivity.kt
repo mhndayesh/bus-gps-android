@@ -135,4 +135,5 @@ class MapPickerActivity : AppCompatActivity() {
 
     override fun onResume() { super.onResume(); binding.mapView.onResume() }
     override fun onPause() { super.onPause(); binding.mapView.onPause() }
+    override fun onDestroy() { super.onDestroy(); binding.mapView.onDetach() }
 }

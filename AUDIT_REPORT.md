@@ -27,10 +27,11 @@ require a running environment to verify safely; these are documented in Section 
 
 > **Removing a secret from source code does not remove it from git history.**
 
-1. **Rotate the Railway database password immediately.** The password
-   `yskvrNocmTymfEkzyhpHXTKdKHIcxvDN` was committed to the repo and remains in
-   git history. Anyone with repo access (or a fork/clone) has it. Generate a new
-   password in Railway, then set it as the `DB_PASS` environment variable.
+1. **Rotate the Railway database password immediately.** A real DB password was
+   committed to the repo in earlier history (value redacted here). Anyone with
+   repo access (or a fork/clone) can recover it via `git log -p`. Generate a new
+   password in Railway, set it as the `DB_PASS` environment variable, and treat
+   the old one as compromised. Optionally scrub history with BFG/filter-repo.
 2. **Rotate any other shared secrets** that were ever committed (MQTT credentials
    if applicable).
 3. **Set required environment variables** before deploying — the app now refuses

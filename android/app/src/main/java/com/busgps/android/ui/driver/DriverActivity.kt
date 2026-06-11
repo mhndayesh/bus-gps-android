@@ -31,6 +31,9 @@ class DriverActivity : AppCompatActivity() {
     private val vm: DriverViewModel by viewModels()
     private lateinit var fusedLocation: FusedLocationProviderClient
     private var selfMarker: Marker? = null
+    private val manifestAdapter by lazy {
+        ManifestAdapter(onBoard = { vm.markBoarded(it) }, onDrop = { vm.markDropped(it) })
+    }
 
     private val locationRequest = LocationRequest.Builder(
         Priority.PRIORITY_HIGH_ACCURACY, 2000L
@@ -140,6 +143,7 @@ class DriverActivity : AppCompatActivity() {
 
     private fun setupRecycler() {
         binding.rvManifest.layoutManager = LinearLayoutManager(this)
+        binding.rvManifest.adapter = manifestAdapter
     }
 
     private fun observeViewModel() {
@@ -149,17 +153,15 @@ class DriverActivity : AppCompatActivity() {
         }
 
         vm.manifest.observe(this) { manifest ->
-            binding.rvManifest.adapter = ManifestAdapter(manifest,
-                onBoard = { vm.markBoarded(it) },
-                onDrop  = { vm.markDropped(it) }
-            )
+            manifestAdapter.submit(manifest)
             val plate = getSharedPreferences("session", MODE_PRIVATE).getString("bus_plate", "") ?: ""
             val prefix = if (plate.isNotEmpty()) "Bus $plate" else "Driver"
             binding.tvStudentCount.text = "$prefix | ${manifest.size} students"
         }
 
         vm.routeStops.observe(this) { stops ->
-            binding.mapView.overlays.removeAll { it is Marker }
+            // Remove route markers but keep the driver's own-location marker.
+            binding.mapView.overlays.removeAll { it is Marker && it !== selfMarker }
             stops.forEachIndexed { i, stop ->
                 Marker(binding.mapView).apply {
                     position = GeoPoint(stop.lat, stop.lng)
@@ -189,12 +191,10 @@ class DriverActivity : AppCompatActivity() {
             }
         }
 
-        // One-shot: open Google Maps navigation when a trip starts.
-        vm.openNav.observe(this) { stops ->
-            if (stops != null) {
-                openGoogleMapsNavigation(stops)
-                vm.navHandled()
-            }
+        // One-shot: open Google Maps navigation when a trip starts (does not
+        // replay on rotation thanks to the Event wrapper).
+        vm.openNav.observe(this) { event ->
+            event.getIfNotHandled()?.let { stops -> openGoogleMapsNavigation(stops) }
         }
     }
 
@@ -264,11 +264,23 @@ class DriverActivity : AppCompatActivity() {
         })
     }
 
-    override fun onResume() { super.onResume(); binding.mapView.onResume() }
-    override fun onPause() { super.onPause(); binding.mapView.onPause() }
+    override fun onResume() {
+        super.onResume()
+        binding.mapView.onResume()
+        // Resume GPS only if a trip is in progress.
+        if (vm.tripActive.value == true) startLocationUpdates()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        binding.mapView.onPause()
+        // Stop GPS when not in the foreground to save battery / avoid hidden-map work.
+        fusedLocation.removeLocationUpdates(locationCallback)
+    }
 
     override fun onDestroy() {
         super.onDestroy()
         fusedLocation.removeLocationUpdates(locationCallback)
+        binding.mapView.onDetach()
     }
 }

@@ -10,8 +10,9 @@ import java.net.URI
 object SocketManager {
 
     private const val TAG = "SocketManager"
-    private var socket: Socket? = null
+    @Volatile private var socket: Socket? = null
 
+    @Synchronized
     fun connect(cookieHeader: String, joinBusId: Int = -1) {
         if (socket?.connected() == true) {
             if (joinBusId >= 0) joinRoom(joinBusId)
@@ -79,15 +80,22 @@ object SocketManager {
         socket?.emit("join_bus_stream", JSONObject().put("bus_id", busId))
     }
 
+    @Synchronized
     fun on(event: String, callback: (Array<Any>) -> Unit) {
+        // Replace any previous handler for this event so re-registering on
+        // onResume/refresh doesn't stack duplicate listeners.
+        socket?.off(event)
         socket?.on(event, callback)
     }
 
+    @Synchronized
     fun off(event: String) {
         socket?.off(event)
     }
 
+    @Synchronized
     fun disconnect() {
+        socket?.off()
         socket?.disconnect()
         socket = null
     }

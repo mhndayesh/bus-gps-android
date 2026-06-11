@@ -75,9 +75,9 @@ data class RouteStop(
 )
 
 data class OptimizeRouteResponse(
-    val status: String,
-    val stops: List<RouteStop>,
-    val count: Int
+    val status: String?,
+    val stops: List<RouteStop>? = null,
+    val count: Int? = null
 )
 
 data class GenericResponse(
@@ -97,8 +97,8 @@ data class BusLocationUpdate(
 data class StudentStatusUpdate(
     @SerializedName("student_id") val studentId: String,
     val status: String,
-    @SerializedName("bus_id") val busId: Int,
-    val timestamp: String?
+    @SerializedName("bus_id") val busId: Int? = null,
+    val timestamp: String? = null
 )
 
 data class AddStudentRequest(

@@ -14,3 +14,7 @@ backups
 tmp
 *.md
 docker-compose.yml
+.env
+.env.*
+android
+.gradle

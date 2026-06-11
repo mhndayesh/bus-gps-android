@@ -25,6 +25,7 @@ class ParentDashboardActivity : AppCompatActivity() {
     private val vm: ParentViewModel by viewModels()
     private val busMarkers = mutableMapOf<Int, Marker>()
     private var selectedBusId: Int? = null
+    private val kidAdapter by lazy { KidAdapter { kid -> onKidTapped(kid) } }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +58,25 @@ class ParentDashboardActivity : AppCompatActivity() {
 
     private fun setupRecycler() {
         binding.rvKids.layoutManager = LinearLayoutManager(this)
+        binding.rvKids.adapter = kidAdapter
+    }
+
+    private fun onKidTapped(kid: Kid) {
+        val busId = kid.busId ?: return
+        AlertDialog.Builder(this)
+            .setTitle(kid.name)
+            .setItems(arrayOf("Track on map", "📹 Watch camera")) { _, which ->
+                selectedBusId = busId
+                vm.joinBusRoom(busId)
+                if (which == 1) {
+                    startActivity(
+                        Intent(this, CameraViewerActivity::class.java)
+                            .putExtra(CameraViewerActivity.EXTRA_BUS_ID, busId)
+                            .putExtra(CameraViewerActivity.EXTRA_TITLE, kid.name)
+                    )
+                }
+            }
+            .show()
     }
 
     private fun observeViewModel() {
@@ -73,24 +93,7 @@ class ParentDashboardActivity : AppCompatActivity() {
             if (selectedBusId == null) {
                 selectedBusId = kids.firstOrNull { it.busId != null }?.busId
             }
-            binding.rvKids.adapter = KidAdapter(kids) { kid ->
-                kid.busId?.let { busId ->
-                    AlertDialog.Builder(this)
-                        .setTitle(kid.name)
-                        .setItems(arrayOf("Track on map", "📹 Watch camera")) { _, which ->
-                            selectedBusId = busId
-                            vm.joinBusRoom(busId)
-                            if (which == 1) {
-                                startActivity(
-                                    Intent(this, CameraViewerActivity::class.java)
-                                        .putExtra(CameraViewerActivity.EXTRA_BUS_ID, busId)
-                                        .putExtra(CameraViewerActivity.EXTRA_TITLE, kid.name)
-                                )
-                            }
-                        }
-                        .show()
-                }
-            }
+            kidAdapter.submit(kids)  // reuse adapter; no scroll reset on the 10s poll
             binding.tvNoKids.visibility = if (kids.isEmpty()) View.VISIBLE else View.GONE
         }
 
@@ -133,5 +136,10 @@ class ParentDashboardActivity : AppCompatActivity() {
         super.onPause()
         binding.mapView.onPause()
         vm.stopPolling()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        binding.mapView.onDetach()
     }
 }

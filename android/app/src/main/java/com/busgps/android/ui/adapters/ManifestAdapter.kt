@@ -7,10 +7,17 @@ import com.busgps.android.databinding.ItemManifestBinding
 import com.busgps.android.model.ManifestItem
 
 class ManifestAdapter(
-    private val items: List<ManifestItem>,
     private val onBoard: (String) -> Unit,
     private val onDrop: (String) -> Unit
 ) : RecyclerView.Adapter<ManifestAdapter.VH>() {
+
+    private val items = mutableListOf<ManifestItem>()
+
+    fun submit(newItems: List<ManifestItem>) {
+        items.clear()
+        items.addAll(newItems)
+        notifyDataSetChanged()
+    }
 
     inner class VH(val binding: ItemManifestBinding) : RecyclerView.ViewHolder(binding.root)
 

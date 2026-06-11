@@ -35,7 +35,9 @@ class ParentViewModel : ViewModel() {
     fun loadKids() {
         _loading.value = true
         viewModelScope.launch {
-            _kids.value = repo.getMyKids()
+            // postValue everywhere so _kids has a single, thread-consistent writer
+            // path (the socket handler also posts) and updates don't race.
+            _kids.postValue(repo.getMyKids())
             _loading.value = false
         }
     }
@@ -50,7 +52,7 @@ class ParentViewModel : ViewModel() {
         pollingJob = viewModelScope.launch {
             while (isActive) {
                 delay(10_000)
-                try { _kids.value = repo.getMyKids() } catch (_: Exception) {}
+                try { _kids.postValue(repo.getMyKids()) } catch (_: Exception) {}
             }
         }
     }

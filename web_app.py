@@ -113,7 +113,11 @@ if not _secret_key:
 app.config['SECRET_KEY'] = _secret_key
 
 # SECURITY: Session cookie settings
-app.config['SESSION_COOKIE_SECURE'] = os.environ.get('RENDER') is not None  # HTTPS-only in production
+# Production is detected via several common platform signals (Railway/Render) or an
+# explicit PRODUCTION flag, so the Secure flag is not silently off behind HTTPS.
+_IS_PRODUCTION = any(os.environ.get(v) for v in
+                     ('RENDER', 'RAILWAY_ENVIRONMENT', 'RAILWAY_PROJECT_ID', 'PRODUCTION'))
+app.config['SESSION_COOKIE_SECURE'] = _IS_PRODUCTION  # HTTPS-only in production
 app.config['SESSION_COOKIE_HTTPONLY'] = True      # No JavaScript access
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'     # CSRF protection
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600   # 1 hour session expiry
@@ -172,6 +176,14 @@ def _valid_coords(lat, lng):
     except (TypeError, ValueError):
         return False
     return -90 <= lat <= 90 and -180 <= lng <= 180
+
+
+def _safe_int(value):
+    """Parse an int without raising; returns None on missing/non-numeric input."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 # --- SOCKET EVENT RATE LIMITING (throttles high-frequency events per client) ---
@@ -235,7 +247,8 @@ def force_migrate():
         init_db()
         return "✅ Database Migration Forced Successfully!", 200
     except Exception as e:
-        return f"❌ Migration Failed: {e}", 500
+        print(f"Force migrate error: {e}")
+        return "Migration failed — see server logs", 500
 
 # --- TOUR PAGES (Public Landing Pages) ---
 @app.route('/tour')
@@ -331,7 +344,7 @@ def dashboard_stats():
         print(f"❌ Dashboard stats error: {e}")
         import traceback
         traceback.print_exc()
-        return json.dumps({"error": str(e)}), 500
+        return json.dumps({"error": "Internal server error"}), 500
 
 
 # --- WEB ROUTES ---
@@ -420,7 +433,7 @@ def get_my_kids():
         print(f"❌ Error getting kids: {e}")
         import traceback
         traceback.print_exc()
-        return json.dumps({"status": "error", "message": str(e)}), 500
+        return json.dumps({"status": "error", "message": "Internal server error"}), 500
 
 @app.route('/admin')
 @role_required(['SUPER_ADMIN', 'SCHOOL_ADMIN'])
@@ -451,15 +464,24 @@ def _upgrade_password_hash(user_id, plaintext):
 
 def _verify_and_login(allowed_roles, redirect_endpoint):
     """Shared login handler: verify credentials, enforce role, start a session."""
-    username = request.form['username']
-    password = request.form['password']
+    username = request.form.get('username', '').strip()
+    password = request.form.get('password', '')
+    if not username or not password:
+        return "❌ Invalid Login", 401
 
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT id, name, role, school_id, password_hash FROM users WHERE name = %s", (username,))
-    user = cur.fetchone()
-    cur.close()
-    conn.close()
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id, name, role, school_id, password_hash FROM users WHERE name = %s", (username,))
+        user = cur.fetchone()
+    except Exception as e:
+        print(f"Login error: {e}")
+        return "Internal server error", 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 
     if user and user[4]:
         user_id, user_name, role, school_id, stored_hash = user
@@ -474,6 +496,8 @@ def _verify_and_login(allowed_roles, redirect_endpoint):
         if password_valid:
             if role not in allowed_roles:
                 return "❌ Access Denied: Use the correct portal for your role.", 403
+            # SECURITY: regenerate the session on privilege change (prevents fixation).
+            session.clear()
             session['user_id'] = user_id
             session['user_name'] = user_name
             session['user_role'] = role
@@ -484,7 +508,7 @@ def _verify_and_login(allowed_roles, redirect_endpoint):
 
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("20 per minute", methods=["POST"])
+@limiter.limit("5 per minute", methods=["POST"])
 def login():
     """Admin Login Portal — SUPER_ADMIN and SCHOOL_ADMIN only."""
     if request.method == 'POST':
@@ -493,7 +517,7 @@ def login():
 
 
 @app.route('/driver/login', methods=['GET', 'POST'])
-@limiter.limit("20 per minute", methods=["POST"])
+@limiter.limit("5 per minute", methods=["POST"])
 def driver_login():
     """Driver Login Portal — DRIVER only."""
     if request.method == 'POST':
@@ -502,7 +526,7 @@ def driver_login():
 
 
 @app.route('/parent/login', methods=['GET', 'POST'])
-@limiter.limit("20 per minute", methods=["POST"])
+@limiter.limit("5 per minute", methods=["POST"])
 def parent_login():
     """Parent Login Portal — PARENT only."""
     if request.method == 'POST':
@@ -593,12 +617,13 @@ def add_student():
 
         new_student_id = cur.fetchone()[0]
         conn.commit()
-        cur.close()
-        conn.close()
         return json.dumps({"status": "success", "id": new_student_id}), 200
     except Exception as e:
         print(f"Error adding student: {e}")
         return "Internal server error", 500
+    finally:
+        cur.close()
+        conn.close()
 
 # --- API: Create Parent (SCHOOL_ADMIN ONLY) ---
 @app.route('/api/create_parent', methods=['POST'])
@@ -635,12 +660,18 @@ def create_parent():
         """, (new_id, username, school_id, hashed_password))
 
         conn.commit()
-        cur.close()
-        conn.close()
         return json.dumps({"status": "success", "id": new_id}), 200
+    except psycopg2.errors.UniqueViolation:
+        if conn: conn.rollback()
+        return json.dumps({"status": "error", "message": "Username already taken"}), 409
     except Exception as e:
         print(f"Error creating parent: {e}")
         return json.dumps({"status": "error", "message": "Internal server error"}), 500
+    finally:
+        try:
+            cur.close(); conn.close()
+        except Exception:
+            pass
 
 # --- API: Get Driver Manifest ---
 @app.route('/api/driver/manifest')
@@ -752,7 +783,8 @@ def get_students():
              cur.execute("SELECT id, name, student_code, parent_id, lat, lng, home_address_text FROM students")
              
         rows = cur.fetchall()
-        students = [{"id": str(r[0]), "name": r[1], "code": r[2] if r[2] else "", "parent_id": str(r[3]),
+        students = [{"id": str(r[0]), "name": r[1], "code": r[2] if r[2] else "",
+                     "parent_id": str(r[3]) if r[3] is not None else None,
                      "lat": r[4], "lng": r[5], "address_text": r[6] if r[6] else ""} for r in rows]
         
         cur.close()
@@ -806,77 +838,100 @@ def update_student_location():
     if not _valid_coords(lat, lng):
         return "Invalid coordinates", 400
 
+    conn = None
+    cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Security Check
-        # Universal Update (No PostGIS check needed)
-        # We update lat, lng, and address_text directly
+        # Update the student's home location, scoped to the admin's school.
         if session.get('user_role') == 'SCHOOL_ADMIN':
             school_id = session.get('school_id')
             cur.execute("""
-                UPDATE students 
+                UPDATE students
                 SET lat = %s, lng = %s, home_address_text = %s
                 WHERE id = %s AND school_id = %s
             """, (lat, lng, address_text, student_id, school_id))
         else:
              cur.execute("""
-                UPDATE students 
+                UPDATE students
                 SET lat = %s, lng = %s, home_address_text = %s
                 WHERE id = %s
             """, (lat, lng, address_text, student_id))
-            
+
+        # IDOR guard: if a SCHOOL_ADMIN targeted a student outside their school,
+        # the UPDATE above affected 0 rows — do not touch the manifest either.
+        if cur.rowcount == 0:
+            conn.rollback()
+            return "Student not found", 404
+
         # SYNC TO MANIFEST (If student is currently boarded/listed)
         cur.execute("""
             UPDATE bus_manifest
             SET lat = %s, lng = %s
             WHERE student_id = %s
         """, (lat, lng, student_id))
-            
+
         conn.commit()
-        cur.close()
-        conn.close()
         return "Location Updated", 200
     except Exception as e:
         print(f"Error updating location: {e}")
         return "Internal server error", 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 
 # --- API: Assign Bus / Create Stop (SCHOOL_ADMIN ONLY) ---
 @app.route('/api/assign_bus', methods=['POST'])
 @limiter.limit("30 per minute")
 @role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
 def assign_bus():
-    data = request.json
+    data = request.json or {}
     student_id = data.get('student_id')
-    bus_id = int(data.get('bus_id')) # We don't strictly use this in the simple logic yet, but good for record
-    
+    bus_id = _safe_int(data.get('bus_id'))
+    if not student_id or bus_id is None:
+        return "Missing or invalid student_id / bus_id", 400
+
+    conn = None
+    cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        
-        # Universal Mode: Use Lat/Lng Columns (No PostGIS)
-        cur.execute("SELECT name FROM students WHERE id = %s", (student_id,))
+
+        is_school_admin = session.get('user_role') == 'SCHOOL_ADMIN'
+        school_id = session.get('school_id')
+
+        # IDOR guard: a SCHOOL_ADMIN may only link their own student to their own bus.
+        if is_school_admin:
+            cur.execute("SELECT name FROM students WHERE id = %s AND school_id = %s", (student_id, school_id))
+        else:
+            cur.execute("SELECT name FROM students WHERE id = %s", (student_id,))
         student = cur.fetchone()
         if not student:
             return "Student not found", 404
-        
+
+        if is_school_admin:
+            cur.execute("SELECT 1 FROM buses WHERE id = %s AND school_id = %s", (bus_id, school_id))
+            if not cur.fetchone():
+                return "Bus not found", 404
+
         student_name = student[0]
-        
+
         # Remove any existing stop for this student on this bus, then insert fresh
         cur.execute("DELETE FROM route_stops WHERE bus_id = %s AND assigned_student_id = %s::text", (bus_id, student_id))
         cur.execute("""
             INSERT INTO route_stops (stop_name, assigned_student_id, bus_id, lat, lng)
             SELECT %s, id::text, %s, lat, lng FROM students WHERE id = %s
         """, (f"{student_name}'s Home", bus_id, student_id))
-        
+
         conn.commit()
-        cur.close()
-        conn.close()
         return "Bus Assigned (Stop Created)", 200
     except Exception as e:
         print(f"Error assigning bus: {e}")
         return "Internal server error", 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 
 # --- API: Get Buses (Helper for Dropdown) ---
 @app.route('/api/get_buses', methods=['GET'])
@@ -914,22 +969,25 @@ def get_buses():
 @limiter.limit("30 per minute")
 @role_required(['SUPER_ADMIN'])
 def delete_bus():
-    data = request.json
-    bus_id = int(data.get('bus_id'))
-    
-    conn = get_db_connection()
-    cur = conn.cursor()
-    
-    if not bus_id:
-        cur.close()
-        conn.close()
+    data = request.json or {}
+    bus_id = _safe_int(data.get('bus_id'))
+    if bus_id is None:
         return "Bus ID required", 400
 
-    cur.execute("DELETE FROM buses WHERE id = %s", (bus_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return "Bus Deleted", 200
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM buses WHERE id = %s", (bus_id,))
+        conn.commit()
+        return "Bus Deleted", 200
+    except Exception as e:
+        print(f"Error deleting bus: {e}")
+        return "Internal server error", 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 
 # --- API: Add Bus (SUPER_ADMIN ONLY) ---
 @app.route('/api/add_bus', methods=['POST'])
@@ -1031,30 +1089,37 @@ def update_parent_credentials():
     if not parent_id or not new_username or not new_password:
         return "Missing Fields", 400
 
+    conn = None
+    cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        
+
         # SECURITY: Hash the password before storing
         hashed_password = generate_password_hash(new_password)
-        
+
         # Update entry
         cur.execute("""
-            UPDATE users 
-            SET name = %s, password_hash = %s 
+            UPDATE users
+            SET name = %s, password_hash = %s
             WHERE id = %s AND role = 'PARENT'
         """, (new_username, hashed_password, parent_id))
-        
+
         if cur.rowcount == 0:
+            conn.rollback()
             return "Parent not found", 404
-            
+
         conn.commit()
-        cur.close()
-        conn.close()
         return "Parent Credentials Updated", 200
+    except psycopg2.errors.UniqueViolation:
+        if conn: conn.rollback()
+        return "Username already taken", 409
     except Exception as e:
         print(f"Error updating credentials: {e}")
         return "Internal server error", 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 
 # --- NEW: Camera "Switchboard" ---
 @app.route('/get_camera/<bus_id>')
@@ -1079,38 +1144,42 @@ def get_my_children(parent_id):
     # SECURITY: a parent may only view their own children.
     if parent_id != session.get('user_id'):
         abort(403)
-    conn = get_db_connection()
-    cur = conn.cursor()
-    
-    # 3. Get Children & Their Status
-    # Join by student UUID — bus_manifest.student_id is always a student UUID,
-    # set by both manual attendance and NFC tap (listener.py resolves NFC→UUID).
-    query = """
-        SELECT s.id, s.name, s.nfc_tag_id,
-               bm.bus_id,
-               b.plate_number
-        FROM students s
-        LEFT JOIN bus_manifest bm ON bm.student_id = s.id::text AND bm.status = 'BOARDED'
-        LEFT JOIN buses b ON bm.bus_id = b.id
-        WHERE s.parent_id = %s
-    """
-    cur.execute(query, (parent_id,))
-    children = cur.fetchall()
-    
-    cur.close()
-    conn.close()
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
 
-    # Format for JSON
-    result = []
-    for child in children:
-        result.append({
-            "name": child[1],
-            "status": "ON BUS" if child[3] else "AT SCHOOL / HOME",
-            "bus_id": child[3],  # None if not on bus
-            "bus_plate": child[4]
-        })
-        
-    return json.dumps(result)
+        # Get Children & Their Status.
+        # Join by student UUID — bus_manifest.student_id is always a student UUID,
+        # set by both manual attendance and NFC tap (listener.py resolves NFC→UUID).
+        query = """
+            SELECT s.id, s.name, s.nfc_tag_id,
+                   bm.bus_id,
+                   b.plate_number
+            FROM students s
+            LEFT JOIN bus_manifest bm ON bm.student_id = s.id::text AND bm.status = 'BOARDED'
+            LEFT JOIN buses b ON bm.bus_id = b.id
+            WHERE s.parent_id = %s
+        """
+        cur.execute(query, (parent_id,))
+        children = cur.fetchall()
+
+        result = []
+        for child in children:
+            result.append({
+                "name": child[1],
+                "status": "ON BUS" if child[3] else "AT SCHOOL / HOME",
+                "bus_id": child[3],  # None if not on bus
+                "bus_plate": child[4]
+            })
+        return json.dumps(result)
+    except Exception as e:
+        print(f"Error fetching children: {e}")
+        return "Internal server error", 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 
 # --- API: Create Driver ---
 @app.route('/api/create_driver', methods=['POST'])
@@ -1146,12 +1215,18 @@ def create_driver():
         """, (new_id, driver_username, school_id, hashed_password))
 
         conn.commit()
-        cur.close()
-        conn.close()
         return json.dumps({"status": "success", "id": new_id}), 200
+    except psycopg2.errors.UniqueViolation:
+        if conn: conn.rollback()
+        return json.dumps({"status": "error", "message": "Username already taken"}), 409
     except Exception as e:
         print(f"Error creating driver: {e}")
         return json.dumps({"status": "error", "message": "Internal server error"}), 500
+    finally:
+        try:
+            cur.close(); conn.close()
+        except Exception:
+            pass
 
 # --- API: Get Drivers ---
 @app.route('/api/get_drivers', methods=['GET'])
@@ -1186,29 +1261,130 @@ def get_drivers():
 @limiter.limit("30 per minute")
 @role_required(['SCHOOL_ADMIN', 'SUPER_ADMIN'])
 def assign_driver():
-    data = request.json
+    data = request.json or {}
     driver_id = data.get('driver_id')
-    bus_id = int(data.get('bus_id'))
-    
+    bus_id = _safe_int(data.get('bus_id'))
+    if not driver_id or bus_id is None:
+        return "Missing or invalid driver_id / bus_id", 400
+
+    conn = None
+    cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        
-        # 1. Clear previous assignment for this bus
-        cur.execute("UPDATE buses SET driver_id = NULL WHERE id = %s", (bus_id,))
-        
-        # 2. Assign new driver
-        cur.execute("UPDATE buses SET driver_id = %s WHERE id = %s", (driver_id, bus_id))
-        
+
+        is_school_admin = session.get('user_role') == 'SCHOOL_ADMIN'
+        school_id = session.get('school_id')
+
+        # IDOR guard: validate the driver is a real DRIVER, and (for school admins)
+        # that both the driver and the bus belong to the admin's own school.
+        if is_school_admin:
+            cur.execute("SELECT 1 FROM users WHERE id = %s AND role = 'DRIVER' AND school_id = %s",
+                        (driver_id, school_id))
+        else:
+            cur.execute("SELECT 1 FROM users WHERE id = %s AND role = 'DRIVER'", (driver_id,))
+        if not cur.fetchone():
+            return "Driver not found", 404
+
+        if is_school_admin:
+            cur.execute("SELECT 1 FROM buses WHERE id = %s AND school_id = %s", (bus_id, school_id))
+            if not cur.fetchone():
+                return "Bus not found", 404
+
+        # Assign (the bus row is implicitly scoped by the checks above for school admins).
+        if is_school_admin:
+            cur.execute("UPDATE buses SET driver_id = %s WHERE id = %s AND school_id = %s",
+                        (driver_id, bus_id, school_id))
+        else:
+            cur.execute("UPDATE buses SET driver_id = %s WHERE id = %s", (driver_id, bus_id))
+
         conn.commit()
-        cur.close()
-        conn.close()
         return "Driver Assigned", 200
     except Exception as e:
         print(f"Error assigning driver: {e}")
         return "Internal server error", 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
 
 # --- SOCKET.IO HANDLERS ---
+
+# Per-connection cache of the driver's assigned bus, so GPS ticks don't hit the DB
+# every 0.5s. Cleared on disconnect.
+_driver_bus_cache = {}  # sid -> bus_id (int)
+
+
+def _driver_bus_id():
+    """Return the bus_id assigned to the logged-in driver, or None."""
+    uid = session.get('user_id')
+    if not uid:
+        return None
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM buses WHERE driver_id = %s", (uid,))
+        row = cur.fetchone()
+        return row[0] if row else None
+    except Exception:
+        return None
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
+
+def _driver_owns_bus(bus_id):
+    """True if the given bus_id is the bus assigned to the current driver."""
+    bid = _safe_int(bus_id)
+    if bid is None:
+        return False
+    sid = getattr(request, 'sid', None)
+    cached = _driver_bus_cache.get(sid)
+    if cached is None:
+        cached = _driver_bus_id()
+        if cached is not None:
+            _driver_bus_cache[sid] = cached
+    return cached is not None and cached == bid
+
+
+def _can_access_bus(bus_id):
+    """Authorize the current session's user to receive/join a given bus room."""
+    role = session.get('user_role')
+    bid = _safe_int(bus_id)
+    if bid is None or not role:
+        return False
+    if role == 'SUPER_ADMIN':
+        return True
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        if role == 'DRIVER':
+            cur.execute("SELECT 1 FROM buses WHERE id = %s AND driver_id = %s",
+                        (bid, session.get('user_id')))
+        elif role == 'SCHOOL_ADMIN':
+            cur.execute("SELECT 1 FROM buses WHERE id = %s AND school_id = %s",
+                        (bid, session.get('school_id')))
+        elif role == 'PARENT':
+            cur.execute("""
+                SELECT 1 FROM route_stops rs JOIN students s ON rs.assigned_student_id = s.id::text
+                WHERE rs.bus_id = %s AND s.parent_id = %s
+                UNION
+                SELECT 1 FROM bus_manifest bm JOIN students s ON bm.student_id = s.id::text
+                WHERE bm.bus_id = %s AND s.parent_id = %s
+                LIMIT 1
+            """, (bid, session.get('user_id'), bid, session.get('user_id')))
+        else:
+            return False
+        return cur.fetchone() is not None
+    except Exception:
+        return False
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
 
 @socketio.on('connect')
 def handle_connect():
@@ -1218,12 +1394,16 @@ def handle_connect():
 def handle_disconnect():
     print(f"❌ Client Disconnected: {request.sid}")
     _socket_rate.pop(request.sid, None)
+    _driver_bus_cache.pop(request.sid, None)
 
 @socketio.on('join')
 def on_join(data):
     room = data.get('room', '') if isinstance(data, dict) else ''
-    # Only allow joining bus rooms (numeric IDs) or known named rooms
+    # Must be an authenticated user joining a numeric bus room they're authorized for.
     if not room or not str(room).isdigit():
+        return
+    if not _can_access_bus(room):
+        print(f"🚫 Client {request.sid} denied join to room {room}")
         return
     from flask_socketio import join_room
     join_room(str(room))
@@ -1249,9 +1429,12 @@ def handle_driver_gps(data):
         return
     if not _valid_coords(lat, lng):
         return
+    # A driver may only post GPS for their own assigned bus.
+    if not _driver_owns_bus(bus_id):
+        return
 
-    # Broadcast to parent/admin maps — clients filter by bus_id client-side.
-    socketio.emit('update_map', data)
+    # Broadcast only to clients subscribed to this bus's room (no cross-tenant leak).
+    socketio.emit('update_map', data, room=str(_safe_int(bus_id)))
 
     # 2. Update DB (Asynchronously via eventlet/psycogreen)
     try:
@@ -1281,6 +1464,9 @@ def handle_manual_attendance(data):
     bus_id = data.get('bus_id')
 
     if not student_id or not bus_id or status not in ('BOARDED', 'DROPPED'):
+        return
+    # A driver may only mark attendance on their own assigned bus.
+    if not _driver_owns_bus(bus_id):
         return
 
     print(f"🚌 Manual Attendance: Student {student_id} -> {status} (Bus {bus_id})")
@@ -1319,13 +1505,13 @@ def handle_manual_attendance(data):
             
         conn.commit()
         
-        # Notify parents/admins — clients filter by bus_id or reload on receipt.
+        # Notify only the parents/admins subscribed to this bus's room.
         socketio.emit('student_status_update', {
             'student_id': student_id,
             'status': status,
             'bus_id': bus_id if status == 'BOARDED' else None,
             'timestamp': str(datetime.now())
-        })
+        }, room=str(_safe_int(bus_id)))
         
         cur.close()
         conn.close()
@@ -1342,18 +1528,22 @@ def handle_stream_start(data):
     if session.get('user_role') != 'DRIVER':
         return
     bus_id = data.get('bus_id')
+    if not _driver_owns_bus(bus_id):
+        return
     active_streams[bus_id] = True
     print(f"📹 Stream Started for Bus {bus_id}")
-    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': True})
+    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': True}, room=str(_safe_int(bus_id)))
 
 @socketio.on('camera_stream_stop')
 def handle_stream_stop(data):
     if session.get('user_role') != 'DRIVER':
         return
     bus_id = data.get('bus_id')
+    if not _driver_owns_bus(bus_id):
+        return
     active_streams.pop(bus_id, None)
     print(f"🛑 Stream Stopped for Bus {bus_id}")
-    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': False})
+    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': False}, room=str(_safe_int(bus_id)))
 
 @socketio.on('camera_frame')
 def handle_camera_frame(data):
@@ -1362,7 +1552,11 @@ def handle_camera_frame(data):
     # Throttle to ~12 fps per client to limit bandwidth and DoS exposure.
     if not _socket_allow('camera_frame', 0.08):
         return
-    socketio.emit('bus_camera_frame', data)
+    bus_id = data.get('bus_id')
+    if not _driver_owns_bus(bus_id):
+        return
+    # Only subscribers in this bus's room receive frames (no cross-tenant leak).
+    socketio.emit('bus_camera_frame', data, room=str(_safe_int(bus_id)))
 
 @socketio.on('join_bus_stream')
 def handle_join_stream(data):
@@ -1370,7 +1564,13 @@ def handle_join_stream(data):
     if session.get('user_role') not in ('PARENT', 'SCHOOL_ADMIN', 'SUPER_ADMIN'):
         return
     bus_id = data.get('bus_id')
-    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': bus_id in active_streams})
+    if not _can_access_bus(bus_id):
+        return
+    # Join the room so this viewer receives the room-scoped bus_camera_frame events.
+    from flask_socketio import join_room
+    join_room(str(_safe_int(bus_id)))
+    socketio.emit('bus_stream_status', {'bus_id': bus_id, 'streaming': bus_id in active_streams},
+                  room=request.sid)
 
 @app.route('/api/optimize_route/<int:bus_id>', methods=['GET'])
 @role_required(['DRIVER', 'SCHOOL_ADMIN', 'SUPER_ADMIN'])
@@ -1431,7 +1631,9 @@ def optimize_route(bus_id):
 
         if not students:
              print("❌ OptRoute: No valid GPS data found for boarded students.")
-             return json.dumps({"status": "empty", "message": "No valid GPS data for boarded students"}), 200
+             # Always include stops/count so every client parses a consistent shape.
+             return json.dumps({"status": "empty", "stops": [], "count": 0,
+                                "message": "No valid GPS data for boarded students"}), 200
 
         print(f"✅ OptRoute: Final List Size: {len(students)}")
             
@@ -1488,7 +1690,8 @@ def optimize_route(bus_id):
 
     except Exception as e:
         print(f"❌ Route Calc Error: {e}")
-        return json.dumps({"status": "error", "message": str(e)}), 500
+        return json.dumps({"status": "error", "stops": [], "count": 0,
+                           "message": "Internal server error"}), 500
     finally:
         if cur: cur.close()
         if conn: conn.close()
@@ -1503,7 +1706,8 @@ def api_fix_gps():
         fix_gps() # Run the fix
         return "✅ Success! All students now have GPS locations. You can now use the Route Calculator.", 200
     except Exception as e:
-        return f"❌ Error: {e}", 500
+        print(f"fix_gps error: {e}")
+        return "Error running GPS fix — see server logs", 500
 
 # --- START ---
 if __name__ == '__main__':

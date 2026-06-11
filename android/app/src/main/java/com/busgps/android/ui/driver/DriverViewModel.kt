@@ -9,6 +9,7 @@ import com.busgps.android.model.ManifestItem
 import com.busgps.android.model.RouteStop
 import com.busgps.android.network.SocketManager
 import com.busgps.android.repository.DataRepository
+import com.busgps.android.util.Event
 import kotlinx.coroutines.launch
 
 class DriverViewModel : ViewModel() {
@@ -30,9 +31,10 @@ class DriverViewModel : ViewModel() {
     private val _tripActive = MutableLiveData(false)
     val tripActive: LiveData<Boolean> = _tripActive
 
-    // One-shot event: stops to launch Google Maps navigation with (null = nothing pending).
-    private val _openNav = MutableLiveData<List<RouteStop>?>()
-    val openNav: LiveData<List<RouteStop>?> = _openNav
+    // One-shot event: stops to launch Google Maps navigation with. Wrapped in
+    // Event so it fires exactly once and does NOT replay on rotation.
+    private val _openNav = MutableLiveData<Event<List<RouteStop>>>()
+    val openNav: LiveData<Event<List<RouteStop>>> = _openNav
 
     var busId: Int = -1
     private var lastLocation: Location? = null
@@ -62,11 +64,9 @@ class DriverViewModel : ViewModel() {
         viewModelScope.launch {
             val stops = repo.optimizeRoute(busId, lastLocation?.latitude, lastLocation?.longitude)
             _routeStops.value = stops
-            _openNav.value = stops
+            _openNav.value = Event(stops)
         }
     }
-
-    fun navHandled() { _openNav.value = null }
 
     fun endTrip() {
         _tripActive.value = false

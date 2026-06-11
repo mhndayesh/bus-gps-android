@@ -7,9 +7,16 @@ import com.busgps.android.databinding.ItemKidStatusBinding
 import com.busgps.android.model.Kid
 
 class KidAdapter(
-    private val kids: List<Kid>,
     private val onTrack: (Kid) -> Unit
 ) : RecyclerView.Adapter<KidAdapter.VH>() {
+
+    private val kids = mutableListOf<Kid>()
+
+    fun submit(newKids: List<Kid>) {
+        kids.clear()
+        kids.addAll(newKids)
+        notifyDataSetChanged()
+    }
 
     inner class VH(val binding: ItemKidStatusBinding) : RecyclerView.ViewHolder(binding.root)
 
