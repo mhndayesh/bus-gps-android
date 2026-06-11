@@ -49,6 +49,11 @@
         <activity android:name=".ui.common.MapPickerActivity"
             android:screenOrientation="portrait" />
 
+        <activity android:name=".ui.driver.CameraStreamActivity"
+            android:screenOrientation="portrait" />
+        <activity android:name=".ui.common.CameraViewerActivity"
+            android:screenOrientation="portrait" />
+
     </application>
 
 </manifest>

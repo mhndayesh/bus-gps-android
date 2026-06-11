@@ -1,5 +1,6 @@
 package com.busgps.android.ui.parent
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -11,6 +12,7 @@ import com.busgps.android.databinding.ActivityParentDashboardBinding
 import com.busgps.android.model.Kid
 import com.busgps.android.network.ApiClient
 import com.busgps.android.ui.adapters.KidAdapter
+import com.busgps.android.ui.common.CameraViewerActivity
 import com.busgps.android.ui.login.RoleSelectActivity
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -69,9 +71,21 @@ class ParentDashboardActivity : AppCompatActivity() {
                 selectedBusId = kids.firstOrNull { it.busId != null }?.busId
             }
             binding.rvKids.adapter = KidAdapter(kids) { kid ->
-                kid.busId?.let {
-                    selectedBusId = it
-                    vm.joinBusRoom(it)
+                kid.busId?.let { busId ->
+                    AlertDialog.Builder(this)
+                        .setTitle(kid.name)
+                        .setItems(arrayOf("Track on map", "📹 Watch camera")) { _, which ->
+                            selectedBusId = busId
+                            vm.joinBusRoom(busId)
+                            if (which == 1) {
+                                startActivity(
+                                    Intent(this, CameraViewerActivity::class.java)
+                                        .putExtra(CameraViewerActivity.EXTRA_BUS_ID, busId)
+                                        .putExtra(CameraViewerActivity.EXTRA_TITLE, kid.name)
+                                )
+                            }
+                        }
+                        .show()
                 }
             }
             binding.tvNoKids.visibility = if (kids.isEmpty()) View.VISIBLE else View.GONE

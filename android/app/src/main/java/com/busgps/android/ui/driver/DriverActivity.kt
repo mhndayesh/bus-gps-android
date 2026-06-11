@@ -73,6 +73,14 @@ class DriverActivity : AppCompatActivity() {
         vm.loadManifest()
 
         binding.btnOptimize.setOnClickListener { vm.optimizeRoute() }
+        binding.btnCamera.setOnClickListener {
+            if (vm.busId < 0) {
+                Snackbar.make(binding.root, "No bus assigned — ask your admin", Snackbar.LENGTH_LONG).show()
+            } else {
+                startActivity(Intent(this, CameraStreamActivity::class.java)
+                    .putExtra(CameraStreamActivity.EXTRA_BUS_ID, vm.busId))
+            }
+        }
         binding.swipeRefresh.setOnRefreshListener { vm.loadManifest() }
         binding.btnLogout.setOnClickListener { logout() }
 

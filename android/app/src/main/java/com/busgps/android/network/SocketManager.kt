@@ -61,6 +61,24 @@ object SocketManager {
         socket?.emit("manual_attendance", payload)
     }
 
+    // --- Camera streaming ---
+
+    fun emitCameraStart(busId: Int) {
+        socket?.emit("camera_stream_start", JSONObject().put("bus_id", busId))
+    }
+
+    fun emitCameraStop(busId: Int) {
+        socket?.emit("camera_stream_stop", JSONObject().put("bus_id", busId))
+    }
+
+    fun emitCameraFrame(busId: Int, dataUrl: String) {
+        socket?.emit("camera_frame", JSONObject().put("bus_id", busId).put("frame", dataUrl))
+    }
+
+    fun joinBusStream(busId: Int) {
+        socket?.emit("join_bus_stream", JSONObject().put("bus_id", busId))
+    }
+
     fun on(event: String, callback: (Array<Any>) -> Unit) {
         socket?.on(event, callback)
     }

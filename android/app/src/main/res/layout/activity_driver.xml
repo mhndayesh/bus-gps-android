@@ -42,17 +42,36 @@
         android:layout_width="match_parent"
         android:layout_height="180dp" />
 
-    <!-- Optimize route button -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnOptimize"
+    <!-- Action buttons -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="@string/optimize_route"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginTop="8dp"
-        app:cornerRadius="8dp"
-        android:backgroundTint="@color/secondary" />
+        android:layout_marginTop="8dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnOptimize"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:text="@string/optimize_route"
+            app:cornerRadius="8dp"
+            android:backgroundTint="@color/secondary" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCamera"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:text="📹 Camera"
+            app:cornerRadius="8dp"
+            android:backgroundTint="@color/role_driver" />
+
+    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/progressBar"
