@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background">
+
+    <!-- Toolbar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:background="@color/role_admin"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Admin Dashboard"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLogout"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:text="@string/logout"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+    <!-- Tabs -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:tabMode="scrollable"
+        app:tabGravity="start"
+        app:tabIndicatorColor="@color/role_admin"
+        app:tabSelectedTextColor="@color/role_admin"
+        app:tabTextColor="@color/text_secondary" />
+
+    <!-- Stats card (Overview tab) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/statsCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        android:visibility="visible">
+
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="2"
+            android:padding="16dp"
+            android:rowCount="2">
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_columnWeight="1" android:orientation="vertical" android:gravity="center"
+                android:padding="8dp">
+                <TextView android:id="@+id/tvTotalBuses" android:textSize="28sp" android:textStyle="bold"
+                    android:textColor="@color/primary" android:text="0" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="Total Buses" android:textSize="12sp" android:textColor="@color/text_secondary"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_columnWeight="1" android:orientation="vertical" android:gravity="center"
+                android:padding="8dp">
+                <TextView android:id="@+id/tvActiveBuses" android:textSize="28sp" android:textStyle="bold"
+                    android:textColor="@color/green" android:text="0" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="Active Buses" android:textSize="12sp" android:textColor="@color/text_secondary"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_columnWeight="1" android:orientation="vertical" android:gravity="center"
+                android:padding="8dp">
+                <TextView android:id="@+id/tvTotalStudents" android:textSize="28sp" android:textStyle="bold"
+                    android:textColor="@color/primary" android:text="0" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="Students" android:textSize="12sp" android:textColor="@color/text_secondary"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_columnWeight="1" android:orientation="vertical" android:gravity="center"
+                android:padding="8dp">
+                <TextView android:id="@+id/tvPresent" android:textSize="28sp" android:textStyle="bold"
+                    android:textColor="@color/secondary" android:text="0" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="On Bus Now" android:textSize="12sp" android:textColor="@color/text_secondary"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+        </GridLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- List content -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvItems"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:visibility="gone" />
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- FAB -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAdd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:src="@android:drawable/ic_input_add"
+        app:backgroundTint="@color/role_admin" />
+
+</LinearLayout>

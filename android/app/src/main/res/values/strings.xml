@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Bus GPS</string>
+    <string name="select_role">Who are you?</string>
+    <string name="role_parent">Parent</string>
+    <string name="role_driver">Driver</string>
+    <string name="role_admin">School Admin</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="logout">Logout</string>
+    <string name="back">Back</string>
+    <string name="loading">Loading…</string>
+    <string name="no_kids">No children registered</string>
+    <string name="on_bus">On Bus</string>
+    <string name="at_home">At School / Home</string>
+    <string name="optimize_route">Optimize Route</string>
+    <string name="refresh">Refresh</string>
+    <string name="add">Add</string>
+    <string name="delete">Delete</string>
+    <string name="assign_bus">Assign Bus</string>
+    <string name="assign_driver">Assign Driver</string>
+    <string name="board">Board</string>
+    <string name="drop">Drop</string>
+    <string name="overview">Overview</string>
+    <string name="students">Students</string>
+    <string name="buses">Buses</string>
+    <string name="drivers">Drivers</string>
+    <string name="parents">Parents</string>
+</resources>

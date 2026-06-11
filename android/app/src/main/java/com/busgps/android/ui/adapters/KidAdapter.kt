@@ -1,0 +1,32 @@
+package com.busgps.android.ui.adapters
+
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import androidx.recyclerview.widget.RecyclerView
+import com.busgps.android.databinding.ItemKidStatusBinding
+import com.busgps.android.model.Kid
+
+class KidAdapter(
+    private val kids: List<Kid>,
+    private val onTrack: (Kid) -> Unit
+) : RecyclerView.Adapter<KidAdapter.VH>() {
+
+    inner class VH(val binding: ItemKidStatusBinding) : RecyclerView.ViewHolder(binding.root)
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+        VH(ItemKidStatusBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+
+    override fun getItemCount() = kids.size
+
+    override fun onBindViewHolder(holder: VH, position: Int) {
+        val kid = kids[position]
+        holder.binding.apply {
+            tvKidName.text = kid.name
+            tvStatus.text = if (kid.onBus) "On Bus" else "At School / Home"
+            tvBusPlate.text = kid.busPlate ?: "—"
+            val color = if (kid.onBus) 0xFF4CAF50.toInt() else 0xFF9E9E9E.toInt()
+            tvStatus.setTextColor(color)
+            root.setOnClickListener { if (kid.onBus) onTrack(kid) }
+        }
+    }
+}
