@@ -155,6 +155,31 @@ def create_tables():
         conn.rollback()
         print(f"⚠️ Migration failed for route_stops table: {e}")
 
+    # MIGRATION: de-duplicate route_stops and prevent it recurring.
+    # A student must be assigned to a given bus at most once; duplicate rows
+    # were surfacing as duplicate students in the driver manifest and as
+    # duplicate stops in navigation.
+    try:
+        print("🔄 De-duplicating route_stops...")
+        # Keep the lowest id per (bus_id, assigned_student_id); drop the rest.
+        cur.execute("""
+            DELETE FROM route_stops a
+            USING route_stops b
+            WHERE a.id > b.id
+              AND a.bus_id = b.bus_id
+              AND a.assigned_student_id = b.assigned_student_id;
+        """)
+        # Unique index doubles as a constraint and is idempotent to create.
+        cur.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS route_stops_bus_student_uniq
+            ON route_stops (bus_id, assigned_student_id);
+        """)
+        conn.commit()
+        print("✅ route_stops de-duplicated + unique index ensured.")
+    except Exception as e:
+        conn.rollback()
+        print(f"⚠️ route_stops de-dup migration failed: {e}")
+
     # 5. Manifest (Denormalized for Performance)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS bus_manifest (

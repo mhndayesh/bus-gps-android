@@ -693,13 +693,16 @@ def get_driver_manifest():
         
         # Get Assigned Students (via Route Stops)
         # Assuming simplified model where stops link student to bus
+        # DISTINCT ON (s.id) collapses any duplicate route_stops rows for the same
+        # student on this bus, so a student is never listed twice in the manifest.
         cur.execute("""
-            SELECT s.id, s.name, s.lat, s.lng,
+            SELECT DISTINCT ON (s.id) s.id, s.name, s.lat, s.lng,
                    COALESCE(m.status, 'DROPPED') as status
             FROM route_stops rs
             JOIN students s ON rs.assigned_student_id = s.id::text
             LEFT JOIN bus_manifest m ON m.student_id = s.id::text AND m.bus_id = %s
             WHERE rs.bus_id = %s
+            ORDER BY s.id
         """, (bus_id, bus_id))
         
         rows = cur.fetchall()
@@ -926,6 +929,7 @@ def assign_bus():
         cur.execute("""
             INSERT INTO route_stops (stop_name, assigned_student_id, bus_id, lat, lng)
             SELECT %s, id::text, %s, lat, lng FROM students WHERE id = %s
+            ON CONFLICT (bus_id, assigned_student_id) DO NOTHING
         """, (f"{student_name}'s Home", bus_id, student_id))
 
         conn.commit()
@@ -1727,9 +1731,12 @@ def bus_route(bus_id):
             if not cur.fetchone():
                 return json.dumps({"status": "error", "stops": [], "count": 0, "message": "Bus not found"}), 404
 
+        # DISTINCT ON (assigned_student_id) so a duplicate assignment doesn't
+        # produce a duplicate navigation stop.
         cur.execute("""
-            SELECT stop_name, lat, lng FROM route_stops
+            SELECT DISTINCT ON (assigned_student_id) stop_name, lat, lng FROM route_stops
             WHERE bus_id = %s AND lat IS NOT NULL AND lng IS NOT NULL
+            ORDER BY assigned_student_id
         """, (bus_id,))
         stops = [{"name": r[0], "lat": r[1], "lng": r[2]} for r in cur.fetchall()]
 
